@@ -52,24 +52,22 @@ def plot_time_to_disrupt(device, dataset, shot_number, risk_time, model, transfo
 
     survival_times = []
 
-    # Integrate survival probability over time to get expected time to disruption
-    max_t = 2
+    # Find expected value of survival time
+    max_t = 3
     min_t = 0
     num_t = 100
-    dt = (max_t - min_t) / num_t
-    integration_times = np.linspace(min_t, max_t, num_t)
+    test_times = np.linspace(min_t, max_t, num_t)
 
     for i in range(len(shot)):
         slice_data = shot.iloc[i]
 
-        cumulative_survival = 0
-        for time in integration_times:
-            cumulative_survival += model.predict_survival(slice_data, time)[0]*dt
-            if cumulative_survival > 0.5:
-                survival_times.append(time)
-                break
-        if cumulative_survival <= 0.5:
-            survival_times.append(max_t)
+        expected_survival = 0
+        for time in test_times:
+            expected_survival += model.predict_survival(slice_data, time)[0]
+
+        expected_survival /= num_t
+        survival_times.append(expected_survival)
+        
 
     # get max ip
     max_ip = max(abs(ip))
