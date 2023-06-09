@@ -1,10 +1,11 @@
 import io
 import pkgutil
 
+import numpy as np
 import pandas as pd
 
 
-def load_dataset(device='cmod', dataset='small_set'):
+def load_dataset(device, dataset):
     """ Load the dataset from the given device and dataset
     Parameters
     ----------
@@ -23,9 +24,9 @@ def load_dataset(device='cmod', dataset='small_set'):
     return data
 
 
-def load_dataset_train(device='cmod', dataset='small_set'):
+def load_features_outcomes(device, dataset):
     """ Load the specified dataset from a device,
-    and return the features and outcomes for training
+    and return the features and outcomes for usage in survival analysis
     Parameters
     ----------
     device : str
@@ -41,7 +42,7 @@ def load_dataset_train(device='cmod', dataset='small_set'):
         A dataframe containing the features for each shot
         TODO: should this match DPRF ordering?
     """
-    data = load_dataset(device=device, dataset=dataset)
+    data = load_dataset(device, dataset)
 
     # Add time of last measurement for each shot
     data['last_time'] = data.groupby('shot')['time'].transform('max')
@@ -55,10 +56,46 @@ def load_dataset_train(device='cmod', dataset='small_set'):
     outcomes['time'] = data['time_until_disrupt'].fillna(data['last_time'] - data['time'])
     outcomes = outcomes[['event', 'time']]
 
-    
     # trim data to only include features used for training
     # TODO: add in aminor, squareness, and triangularity 
-    train_feats = ['ip','Wmhd','n_e','kappa','li']
+    features = ['ip','Wmhd','n_e','kappa','li']
 
-    return outcomes, data[train_feats]
+    return outcomes, data[features]
 
+
+def make_training_sets(device, dataset):
+    """
+    Split the raw data into training, test, and validation sets
+    """
+
+    # Load the raw dataset
+    data = load_dataset(device, dataset+ '_raw')
+
+    # Eliminate timeslices with null values in any feature except time_until_disrupt
+    data = data.dropna(subset=['ip', 'Wmhd', 'n_e', 'kappa', 'li'])
+
+    # Find the unique shots in the dataset
+    shots = data['shot'].unique()
+
+    # Shuffle the shots
+    np.random.shuffle(shots)
+
+    # Split the shots into training, test, and validation sets
+    train_shots = shots[:int(len(shots)*0.6)]
+    test_shots = shots[int(len(shots)*0.6):int(len(shots)*0.8)]
+    val_shots = shots[int(len(shots)*0.8):]
+
+    # Split the data into training, test, and validation sets
+    train_data = data[data['shot'].isin(train_shots)]
+    test_data = data[data['shot'].isin(test_shots)]
+    val_data = data[data['shot'].isin(val_shots)]
+
+    # Save the training, test, and validation sets
+    train_data.to_csv('data/{}/{}_train.csv'.format(device, dataset), index=False)
+    test_data.to_csv('data/{}/{}_test.csv'.format(device, dataset), index=False)
+    val_data.to_csv('data/{}/{}_val.csv'.format(device, dataset), index=False)
+
+    # Print the number of shots in each set
+    print('Training shots: {}'.format(len(train_shots)))
+    print('Test shots: {}'.format(len(test_shots)))
+    print('Validation shots: {}'.format(len(val_shots)))
