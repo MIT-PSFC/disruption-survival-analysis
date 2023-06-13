@@ -20,9 +20,9 @@ make_training_sets(device, dataset)
 
 from auton_survival.preprocessing import Preprocessor
 # Load and preprocess training, test, validation sets
-outcomes_train, features_train = load_features_outcomes(device, dataset+'_train')
-outcomes_test, features_test = load_features_outcomes(device, dataset+'_test')
-outcomes_val, features_val = load_features_outcomes(device, dataset+'_val')
+features_train, outcomes_train = load_features_outcomes(device, dataset+'_train')
+features_test, outcomes_test = load_features_outcomes(device, dataset+'_test')
+features_val, outcomes_val = load_features_outcomes(device, dataset+'_val')
 
 # Replace zeros in outcomes.time with 1e-6
 outcomes_train['time'] = outcomes_train['time'].replace(0, 1e-6)
@@ -44,15 +44,15 @@ y_val = outcomes_val
 # Run all the models
 #cph_model = run_cph(x_train, x_val, y_train, y_val)
 #dcph_model = run_dcph(x_train, x_val, y_train, y_val)
-dsm_model = run_dsm(x_train, x_val, y_train, y_val)
-#dcm_model = run_dcm(x_train, x_val, y_train, y_val)
+#dsm_model = run_dsm(x_train, x_val, y_train, y_val)
+dcm_model = run_dcm(x_train, x_val, y_train, y_val)
 #rsf_model = run_rsf(x_train, x_val, y_train, y_val)
 
 # Evaluate all the models
 #cph_results, cph_times = eval_model(cph_model, x_test, y_train, y_test)
 #dcph_results, dcph_times = eval_model(dcph_model, x_test, y_train, y_test)
-dsm_results, dsm_times = eval_model(dsm_model, x_test, y_train, y_test)
-#dcm_results, dcm_times = eval_model(dcm_model, x_test, y_train, y_test)
+#dsm_results, dsm_times = eval_model(dsm_model, x_test, y_train, y_test)
+dcm_results, dcm_times = eval_model(dcm_model, x_test, y_train, y_test)
 #rsf_results, rsf_times = eval_model(rsf_model, x_test, y_train, y_test)
 
 # Plot the results
@@ -64,6 +64,6 @@ rsf_title = 'Random Survival Forest on ' + dataset + ' dataset'
 
 #plot_performance_metrics(cph_results, cph_times, cph_title)
 #plot_performance_metrics(dcph_results, dcph_times, dcph_title)
-plot_performance_metrics(dsm_results, dsm_times, dsm_title)
-#plot_performance_metrics(dcm_results, dcm_times, dcm_title)
+#plot_performance_metrics(dsm_results, dsm_times, dsm_title)
+plot_performance_metrics(dcm_results, dcm_times, dcm_title)
 #plot_performance_metrics(rsf_results, rsf_times, rsf_title)
