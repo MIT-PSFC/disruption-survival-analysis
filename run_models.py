@@ -30,7 +30,7 @@ def hyperparam_tuning(model_string, params, x_tr, x_val, y_tr, y_val):
         models = []
         for param in params:
             if model_string == 'cph':
-                model = SurvivalModel(model_string, l2=param['l2'])
+                model = SurvivalModel('cph', l2=param['l2'])
             elif model_string == 'dcph':
                 model = SurvivalModel('dcph', bs=param['bs'], learning_rate=param['learning_rate'], layers=param['layers'])
             elif model_string == 'dsm':
@@ -47,8 +47,13 @@ def hyperparam_tuning(model_string, params, x_tr, x_val, y_tr, y_val):
 
             # Obtain survival probabilities for validation set and compute the Integrated Brier Score 
             predictions_val = model.predict_survival(x_val, times)
-            metric_val = survival_regression_metric('ibs', y_val, predictions_val, times, y_tr)
-            models.append([metric_val, model])
+            
+            # Find if predictions_val contains nan, indicating there was an issue with running the model
+            if np.isnan(predictions_val).any():
+                print(f"NaN in predictions_val for parameters: {param}")
+            else:
+                metric_val = survival_regression_metric('ibs', y_val, predictions_val, times, y_tr)
+                models.append([metric_val, model])
             
         # Select the best model based on the mean metric value computed for the validation set
         metric_vals = [i[0] for i in models]
@@ -131,6 +136,46 @@ def run_dcph(x_tr, x_val, y_tr, y_val):
     params = ParameterGrid(param_grid)
 
     model = hyperparam_tuning('dcph', params, x_tr, x_val, y_tr, y_val)
+
+    return model
+
+def run_dsm(x_tr, x_val, y_tr, y_val):
+
+    # Define parameters for tuning the model
+    param_grid = {'layers' : [[100], [100, 100], [200]],
+              'distribution' : ['Weibull', 'LogNormal'],
+              'max_features' : ['sqrt', 'log2']
+             }
+    params = ParameterGrid(param_grid)
+
+    model = hyperparam_tuning('dsm', params, x_tr, x_val, y_tr, y_val)
+
+    return model
+
+def run_dcm(x_tr, x_val, y_tr, y_val):
+
+    # Define parameters for tuning the model
+    param_grid = {'k' : [2, 3],
+              'learning_rate' : [1e-3, 1e-4],
+              'layers' : [[100], [100, 100]]
+             }
+    params = ParameterGrid(param_grid)
+
+    model = hyperparam_tuning('dcm', params, x_tr, x_val, y_tr, y_val)
+
+    return model
+
+def run_rsf(x_tr, x_val, y_tr, y_val):
+
+    # Define parameters for tuning the model
+    param_grid = {'n_estimators' : [100, 300],
+              'max_depth' : [3, 5],
+              'max_features' : ['sqrt', 'log2']
+             }
+
+    params = ParameterGrid(param_grid)
+
+    model = hyperparam_tuning('rsf', params, x_tr, x_val, y_tr, y_val)
 
     return model
 

@@ -24,7 +24,7 @@ def load_dataset(device, dataset):
     return data
 
 
-def load_features_outcomes(device, dataset):
+def load_features_outcomes(device, dataset, features=None):
     """ Load the specified dataset from a device,
     and return the features and outcomes for usage in survival analysis
     Parameters
@@ -44,23 +44,24 @@ def load_features_outcomes(device, dataset):
     """
     data = load_dataset(device, dataset)
 
-    # Add time of last measurement for each shot
-    data['last_time'] = data.groupby('shot')['time'].transform('max')
-
-    # For each timeslice, determine if the shot was disrupted
-    # And the time until disruption or last measurement
     outcomes = data.copy()
-    # Outcomes 'event' is 1 if time_until_disrupt is not null
-    outcomes['event'] = outcomes['time_until_disrupt'].notnull().astype(int)
     
-    outcomes['time'] = data['time_until_disrupt'].fillna(data['last_time'] - data['time'])
-    outcomes = outcomes[['event', 'time']]
+    # Outcomes 'event' is 1 if time_until_disrupt is not null
+    outcomes['event'] = data['time_until_disrupt'].notnull().astype(int)
 
+    # Create a 'time to last measurement' column for each shot
+    # This is the time from the present time to the last measurement
+    data['time_to_last'] = data.groupby('shot')['time'].transform(max) - data['time']
+
+    # Outcomes 'time' is time_until_disrupt if it is not null, and time_to_last otherwise
+    outcomes['time'] = data['time_until_disrupt'].fillna(data['time_to_last'])
+    
     # trim data to only include features used for training
-    # TODO: add in aminor, squareness, and triangularity 
-    features = ['ip','Wmhd','n_e','kappa','li']
+    # TODO: add in aminor, squareness, and triangularity
+    if features is None:
+        features = ['ip','Wmhd','n_e','kappa','li']
 
-    return outcomes, data[features]
+    return data[features], outcomes[['event', 'time']]
 
 
 def make_training_sets(device, dataset):
@@ -73,6 +74,11 @@ def make_training_sets(device, dataset):
 
     # Eliminate timeslices with null values in any feature except time_until_disrupt
     data = data.dropna(subset=['ip', 'Wmhd', 'n_e', 'kappa', 'li'])
+    # Eliminate timeslices with negative values in time
+    data = data[data['time'] >= 0]
+
+    # If remove where time_until_disrupt is negative, keeping where time_until_disrupt is null
+    data = data[(data['time_until_disrupt'] >= 0) | (data['time_until_disrupt'].isnull())]
 
     # Find the unique shots in the dataset
     shots = data['shot'].unique()
