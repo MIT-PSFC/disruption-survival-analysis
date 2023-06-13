@@ -55,6 +55,9 @@ def load_features_outcomes(device, dataset, features=None):
 
     # Outcomes 'time' is time_until_disrupt if it is not null, and time_to_last otherwise
     outcomes['time'] = data['time_until_disrupt'].fillna(data['time_to_last'])
+
+    # Replace zeros in outcomes.time with low-value epsilon 1e-6
+    outcomes['time'] = outcomes['time'].replace(0, 1e-6)
     
     # trim data to only include features used for training
     # TODO: add in aminor, squareness, and triangularity

@@ -6,6 +6,7 @@ import numpy as np
 
 from auton_survival.estimators import SurvivalModel # CPH, DCPH, DSM, DCM, RSF, 
 from auton_survival import DeepRecurrentCoxPH # DCPH with recurrent neural network
+from auton_survival.models.dsm import DeepRecurrentSurvivalMachines # DSM with recurrent neural network
 
 # Hyperparameter tuning and evaluation
 from auton_survival.metrics import survival_regression_metric
@@ -24,7 +25,7 @@ def hyperparam_tuning(model_string, params, x_tr, x_val, y_tr, y_val):
     # TODO What should this be? 
     times = np.quantile(y_tr['time'][y_tr['event']==1], np.linspace(0.1, 0.9, 10)).tolist()
 
-    if model_string in ['cph', 'dcph', 'dsm', 'dcm', 'rsf']:
+    if model_string in ['cph', 'dcph', 'dsm', 'dcm', 'rsf', 'drsm']:
         
         # Perform hyperparameter tuning for SurvivalModel 
         models = []
@@ -39,11 +40,16 @@ def hyperparam_tuning(model_string, params, x_tr, x_val, y_tr, y_val):
                 model = SurvivalModel('dcm', k=param['k'], learning_rate=param['learning_rate'], layers=param['layers'])
             elif model_string == 'rsf':
                 model = SurvivalModel('rsf', n_estimators=param['n_estimators'], max_depth=param['max_depth'], max_features=param['max_features'])
+            elif model_string == 'drsm':
+                model = DeepRecurrentSurvivalMachines(k=param['k'], distribution=param['distribution'], hidden=param['hidden'], typ=param['typ'], layers=param['layers'])
             else:
                 raise ValueError(f"Invalid model string: {model_string}")
 
             # The fit method is called to train the model
-            model.fit(x_tr, y_tr)
+            if model_string == 'drsm':
+                model.fit(x_tr, y_tr['time'], y_tr['event'], learning_rate=param['learning_rate'])
+            else:
+                model.fit(x_tr, y_tr)
 
             # Obtain survival probabilities for validation set and compute the Integrated Brier Score 
             predictions_val = model.predict_survival(x_val, times)
@@ -179,8 +185,18 @@ def run_rsf(x_tr, x_val, y_tr, y_val):
 
     return model
 
-def run_cph_recurrent(x):
+def run_drsm(x_tr, x_val, y_tr, y_val):
 
-    model = DeepRecurrentCoxPH()
+    param_grid = {'k' : [3, 4, 6],
+              'distribution' : ['LogNormal', 'Weibull'],
+              'learning_rate' : [1e-4, 1e-3],
+              'hidden': [50, 100],
+              'layers': [3, 2, 1],
+              'typ': ['LSTM', 'GRU', 'RNN']
+             }
+    params = ParameterGrid(param_grid)
 
+    model = hyperparam_tuning('drsm', params, x_tr, x_val, y_tr, y_val)
+
+    return model
 
