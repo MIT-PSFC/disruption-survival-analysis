@@ -114,12 +114,12 @@ def run_survival_model(model_string, x_tr, x_val, y_tr, y_val):
             metric_val = survival_regression_metric('ibs', y_val, predictions_val, times, y_tr)
             models.append([metric_val, model])
             
-        # Select the best model based on the mean metric value computed for the validation set
-        metric_vals = [i[0] for i in models]
-        first_min_idx = metric_vals.index(min(metric_vals))
-        model = models[first_min_idx][1]
+    # Select the best model based on the mean metric value computed for the validation set
+    metric_vals = [i[0] for i in models]
+    first_min_idx = metric_vals.index(min(metric_vals))
+    model = models[first_min_idx][1]
 
-        return model
+    return model
 
 def run_recurrent_model(model_string, x_tr, t_tr, e_tr, x_val, t_val, e_val):
     """

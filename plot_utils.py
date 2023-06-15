@@ -92,6 +92,9 @@ def get_transformed_shot(device, dataset, shot_number, transformer, features=DEF
     shot = data[data['shot'] == shot_number]
     shot = shot.sort_values('time')
 
+    # Determine if the shot was disrupted
+    disruptive = shot['time_until_disrupt'].notnull().any()
+
     times = shot['time'].values
     
     shot = shot[features]
@@ -99,39 +102,14 @@ def get_transformed_shot(device, dataset, shot_number, transformer, features=DEF
     # Transform the features
     shot = transformer.transform(shot)
 
-    return shot, times
+    return shot, times, disruptive
 
 
-def plot_risk(device, dataset, shot_number, risk_time, model, transformer):
-    """ Given a database and a trained model, plot the predicted risk
-    over a certain time horizon against the actual ip"""
-    
-    shot, times = get_transformed_shot(device, dataset, shot_number, transformer)
-
-    ip = shot['ip'].values
-
-    # Predict the risk for each feature timeslice in shot
-    risks = []
-    for i in range(len(shot)):
-        risks.append(model.predict_risk(shot.iloc[i], risk_time)[0])
-
-    # get max ip
-    max_ip = max(abs(ip))
-
-    # Plot the risk against the actual ip
-    fig, ax = plt.subplots()
-    ax.plot(times, -ip/max_ip, label='ip')
-    ax.plot(times, risks, label='risk')
-    ax.set_ylim(0, 1)
-    ax.set_xlabel('time')
-    ax.set_ylabel('ip')
-    ax.legend()
-
-def plot_survival(device, dataset, shot_number, survival_time, models, transformer):
+def plot_survival(device, dataset, shot_number, survival_time, models, names, transformer):
     """ Given a database and a trained model, plot the predicted survival probability
     over a certain time horizon against the actual ip"""
     
-    shot, times = get_transformed_shot(device, dataset, shot_number, transformer)
+    shot, times, disruptive = get_transformed_shot(device, dataset, shot_number, transformer)
 
     ip = shot['ip'].values
 
@@ -139,22 +117,81 @@ def plot_survival(device, dataset, shot_number, survival_time, models, transform
     # against the actual ip
     # make distinct lines on same plot
     fig, ax = plt.subplots()
-    ax.plot(times, -ip/max(abs(ip)), label='ip')
+
+    # Get normalization factor to ensure ip is always between 0 and 1
+    if (-min(ip) > max(ip)):
+        ip = -ip
+
+    ax.plot(times, ip/max(ip), label='ip')
     for i, model in enumerate(models):
         # If model is an instance of SurvivalModel, use predict_survival
         # Otherwise, use predict_proba
-        survival = []
-        if hasattr(model, 'predict_survival'):
-            for j in range(len(shot)):
-                survival.append(model.predict_survival(shot.iloc[j], survival_time)[0])
-        else:
-            survival = model.predict_proba(shot)[:, 1]
-        
-        ax.plot(times, survival, label='model {}'.format(i))
+        try:
+            survival = []
+            if hasattr(model, 'predict_survival'):
+                for j in range(len(shot)):
+                    survival.append(model.predict_survival(shot.iloc[j], survival_time)[0])
+            else:
+                survival = model.predict_proba(shot)[:, 0]
+        except:
+            # Hack to stop RSF from crashing
+            survival = model.predict_survival(shot, survival_time)
+
+        ax.plot(times, survival, label=names[i])
 
     ax.set_ylim(0, 1)
     ax.set_xlabel('time')
-    ax.set_ylabel('ip')
+    ax.set_ylabel(f'ip and {survival_time} [s] survival probability')
     ax.legend()
+    if disruptive:
+        fig.suptitle(f"Survival of Shot {shot_number} from {dataset} dataset on {device} (disrupted)")
+    else:
+        fig.suptitle(f"Survival of Shot {shot_number} from {dataset} dataset on {device} (not disrupted)")
+    fig.show()
+    
+
+
+def plot_risk(device, dataset, shot_number, survival_time, models, names, transformer):
+    """ Given a database and a trained model, plot the predicted survival probability
+    over a certain time horizon against the actual ip"""
+    
+    shot, times, disruptive = get_transformed_shot(device, dataset, shot_number, transformer)
+
+    ip = shot['ip'].values
+
+    # For each model, plot the predicted survival probability at survival time
+    # against the actual ip
+    # make distinct lines on same plot
+    fig, ax = plt.subplots()
+
+    # Get normalization factor to ensure ip is always between 0 and 1
+    if (-min(ip) > max(ip)):
+        ip = -ip
+
+    ax.plot(times, ip/max(ip), label='ip')
+    for i, model in enumerate(models):
+        # If model is an instance of SurvivalModel, use predict_survival
+        # Otherwise, use predict_proba
+        try:
+            survival = []
+            if hasattr(model, 'predict_risk'):
+                for j in range(len(shot)):
+                    survival.append(model.predict_risk(shot.iloc[j], survival_time)[0])
+            else:
+                survival = model.predict_proba(shot)[:, 1]
+        except:
+            # Hack to stop RSF from crashing
+            survival = model.predict_risk(shot, survival_time)
+
+        ax.plot(times, survival, label=names[i])
+
+    ax.set_ylim(0, 1)
+    ax.set_xlabel('time')
+    ax.set_ylabel(f'ip and {survival_time} [s] risk')
+    ax.legend()
+    if disruptive:
+        fig.suptitle(f"Risk of Shot {shot_number} from {dataset} dataset on {device} (disrupted)")
+    else:
+        fig.suptitle(f"Risk of Shot {shot_number} from {dataset} dataset on {device} (not disrupted)")
     fig.show()
     
