@@ -37,10 +37,10 @@ x_train = transformer.transform(features_train)
 x_test = transformer.transform(features_test)
 x_val = transformer.transform(features_val)
 
-survival_model_str = 'cph'
+survival_model_str = 'rsf'
 
 
-"""
+
 # Run the survival model
 survival_model = run_survival_model(survival_model_str, x_train, x_val, outcomes_train, outcomes_val)
 
@@ -61,4 +61,5 @@ rf_results = rf_model.predict_proba(x_test)[:,1]
 rf_title = 'Random Forest on ' + dataset + ' dataset'
 #plot_performance_metrics(rf_results, outcomes_test, rf_title)
 
-plot_survival(device, dataset+'_test', 1160504021, 0.15, [rf_model], transformer)
+#plot_survival(device, dataset+'_test', 1160504021, 0.15, [rf_model], transformer)
+"""

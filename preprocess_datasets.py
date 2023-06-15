@@ -26,7 +26,7 @@ def load_dataset(device, dataset):
     return data
 
 
-def parse_dataset(device, dataset, epsilon=1e-6):
+def parse_dataset(device, dataset, epsilon=1e-4):
     """ Parse the dataset from the given device
     adds a 'time_to_last' column to the dataset
     Replace zeroes in time_until_disruption with epsilon
@@ -35,8 +35,8 @@ def parse_dataset(device, dataset, epsilon=1e-6):
     
     data = load_dataset(device,dataset)
 
-    # Replace zeros in time with low-value epsilon 1e-6
-    data['time'] = data['time'].replace(0, 1e-6)
+    # Replace zeros in time with low-value epsilon
+    data['time'] = data['time'].replace(0, epsilon)
     
     # Create a 'time to last measurement' column for each shot
     # This is the time from the present time to the last measurement
