@@ -24,9 +24,15 @@ def load_dataset(device, dataset):
     return data
 
 
+def parse_dataset(device, dataset):
+    # 
+    pass
+
+
+
 def load_features_outcomes(device, dataset, features=None):
     """ Load the specified dataset from a device,
-    and return the features and outcomes for usage in survival analysis
+    and return the features and outcomes for usage in SurvivalModel
     Parameters
     ----------
     device : str
@@ -42,7 +48,7 @@ def load_features_outcomes(device, dataset, features=None):
         A dataframe containing the features for each shot
         TODO: should this match DPRF ordering?
     """
-    data = load_dataset(device, dataset)
+    data = load_dataset(device,dataset)
 
     outcomes = data.copy()
     
@@ -65,6 +71,35 @@ def load_features_outcomes(device, dataset, features=None):
         features = ['ip','Wmhd','n_e','kappa','li']
 
     return data[features], outcomes[['event', 'time']]
+
+
+
+def load_features_events_indicators(device, dataset, features=None):
+    """ For usage in Recurrent DSM and Recurrent CPH
+    Load the specified dataset from a device,
+    and return the features and outcomes and event indicators,
+    grouped by shot number
+
+    Parameters
+    ----------
+    device : str
+        The device for which to load the data
+    dataset : str
+        The dataset to load
+    Returns
+    -------
+    outcomes : pandas.DataFrame
+        A dataframe containing the outcomes for each shot
+        Outcomes are whether or not the event occurred, and the time until the event or last measurement
+    features : pandas.DataFrame
+        A dataframe containing the features for each shot
+    """
+    
+
+def load_features_labels(device, dataset, features=None):
+    """For usage in Random Forest Classifier
+    
+    """
 
 
 def make_training_sets(device, dataset):
