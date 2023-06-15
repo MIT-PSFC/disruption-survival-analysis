@@ -17,53 +17,77 @@ from auton_survival.metrics import survival_regression_metric
 from sklearn.model_selection import ParameterGrid
 
 
-def hyperparam_tuning(model_string, params, x_tr, x_val, y_tr, y_val):
+def run_survival_model(model_string, x_tr, x_val, y_tr, y_val):
     """
-    Perform hyperparameter tuning for a given model
+    Train and tune a SurvivalModel from auton-survival package
     
     Taken from example script in auton-survival package
     Survival Regression with Auton-Survival.ipynb
     """
+
+    # Define the hyperparameter grid for hyperparameter tuning
+    if model_string == 'cph':
+        param_grid = {'l2' : [1e-3, 1e-4]}
+    elif model_string == 'dcph':
+        param_grid = {'bs' : [100, 200],
+                'learning_rate' : [ 1e-4, 1e-3],
+                'layers' : [ [100], [100, 100] ]
+                }
+    elif model_string == 'dsm':
+        param_grid = {'layers' : [[100], [100, 100], [200]],
+              'distribution' : ['Weibull', 'LogNormal'],
+              'max_features' : ['sqrt', 'log2']
+             }
+    elif model_string == 'dcm':
+        param_grid = {'k' : [2, 3],
+              'learning_rate' : [1e-3, 1e-4],
+              'layers' : [[100], [100, 100]]
+             }
+    elif model_string == 'rsf':
+        param_grid = {'n_estimators' : [100, 300],
+              'max_depth' : [3, 5],
+              'max_features' : ['sqrt', 'log2']
+             }
+    else:
+        raise ValueError(f"Invalid model string: {model_string}")
+
+    params = ParameterGrid(param_grid)
     
     # Define the times for model evaluation
     # TODO What should this be? 
     times = np.quantile(y_tr['time'][y_tr['event']==1], np.linspace(0.1, 0.9, 10)).tolist()
 
-    if model_string in ['cph', 'dcph', 'dsm', 'dcm', 'rsf', 'drsm']:
-        
-        # Perform hyperparameter tuning for SurvivalModel 
-        models = []
-        for param in params:
-            if model_string == 'cph':
-                model = SurvivalModel('cph', l2=param['l2'])
-                model.fit(x_tr, y_tr)
-            elif model_string == 'dcph':
-                model = SurvivalModel('dcph', bs=param['bs'], learning_rate=param['learning_rate'], layers=param['layers'])
-                model.fit(x_tr, y_tr)
-            elif model_string == 'dsm':
-                model = SurvivalModel('dsm', layers=param['layers'], distribution=param['distribution'], max_features=param['max_features'])
-                model.fit(x_tr, y_tr)
-            elif model_string == 'dcm':
-                model = SurvivalModel('dcm', k=param['k'], learning_rate=param['learning_rate'], layers=param['layers'])
-                model.fit(x_tr, y_tr)
-            elif model_string == 'rsf':
-                model = SurvivalModel('rsf', n_estimators=param['n_estimators'], max_depth=param['max_depth'], max_features=param['max_features'])
-                model.fit(x_tr, y_tr)
-            elif model_string == 'drsm':
-                model = DeepRecurrentSurvivalMachines(k=param['k'], distribution=param['distribution'], hidden=param['hidden'], typ=param['typ'], layers=param['layers'])
-                model.fit(x_tr, y_tr['time'], y_tr['event'], learning_rate=param['learning_rate'])
-            else:
-                raise ValueError(f"Invalid model string: {model_string}")
+    # Perform hyperparameter tuning for SurvivalModel 
+    models = []
+    for param in params:
+        if model_string == 'cph':
+            model = SurvivalModel('cph', l2=param['l2'])
+            model.fit(x_tr, y_tr)
+        elif model_string == 'dcph':
+            model = SurvivalModel('dcph', bs=param['bs'], learning_rate=param['learning_rate'], layers=param['layers'])
+            model.fit(x_tr, y_tr)
+        elif model_string == 'dsm':
+            model = SurvivalModel('dsm', layers=param['layers'], distribution=param['distribution'], max_features=param['max_features'])
+            model.fit(x_tr, y_tr)
+        elif model_string == 'dcm':
+            model = SurvivalModel('dcm', k=param['k'], learning_rate=param['learning_rate'], layers=param['layers'])
+            model.fit(x_tr, y_tr)
+        elif model_string == 'rsf':
+            model = SurvivalModel('rsf', n_estimators=param['n_estimators'], max_depth=param['max_depth'], max_features=param['max_features'])
+        else:
+            raise ValueError(f"Invalid model string: {model_string}")
 
-            # Obtain survival probabilities for validation set and compute the Integrated Brier Score 
-            predictions_val = model.predict_survival(x_val, times)
-            
-            # Find if predictions_val contains nan, indicating there was an issue with running the model
-            if np.isnan(predictions_val).any():
-                print(f"NaN in predictions_val for parameters: {param}")
-            else:
-                metric_val = survival_regression_metric('ibs', y_val, predictions_val, times, y_tr)
-                models.append([metric_val, model])
+
+        model.fit(x_tr, y_tr)
+        # Obtain survival probabilities for validation set and compute the Integrated Brier Score 
+        predictions_val = model.predict_survival(x_val, times)
+        
+        # Find if predictions_val contains nan, indicating there was an issue with running the model
+        if np.isnan(predictions_val).any():
+            print(f"NaN in predictions_val for parameters: {param}")
+        else:
+            metric_val = survival_regression_metric('ibs', y_val, predictions_val, times, y_tr)
+            models.append([metric_val, model])
             
         # Select the best model based on the mean metric value computed for the validation set
         metric_vals = [i[0] for i in models]
@@ -72,6 +96,37 @@ def hyperparam_tuning(model_string, params, x_tr, x_val, y_tr, y_val):
 
         return model
 
+def run_recurrent_model(model_string, x_tr, t_tr, e_tr, x_val, t_val, e_val):
+    """
+    Train and tune a recurrent model from auton-survival package
+    Taken from RDSM on PBC dataset.ipynb
+    """
+
+    param_grid = {'k' : [3, 4, 6],
+              'distribution' : ['LogNormal', 'Weibull'],
+              'learning_rate' : [1e-4, 1e-3],
+              'hidden': [50, 100],
+              'layers': [3, 2, 1],
+              'typ': ['LSTM', 'GRU', 'RNN']
+             }
+
+    #model = DeepRecurrentSurvivalMachines(k=param['k'], distribution=param['distribution'], hidden=param['hidden'], typ=param['typ'], layers=param['layers'])
+    #model.fit(x_tr, y_tr['time'], y_tr['event'], learning_rate=param['learning_rate'])
+    pass
+
+def run_rf_model(x_tr, x_val, y_tr, y_val):
+    """
+    Train and tune a random forest model
+    """
+
+    param_grid = {'n_estimators' : [100, 300],
+              'max_depth' : [3, 5],
+              'max_features' : ['sqrt', 'log2']
+             }
+    
+    model = RandomForestClassifier()
+
+    pass
 
 def eval_model(model, x_te, y_tr, y_te):
     """
@@ -95,129 +150,3 @@ def eval_model(model, x_te, y_tr, y_te):
                                                         times=times, outcomes_train=y_tr)
     
     return results, times
-
-
-def run_cph(x_tr, x_val, y_tr, y_val):
-    """
-    Run Cox Proportional Hazards model
-
-    Parameters
-    ----------
-    x_tr : numpy array
-        Training set features
-    x_val : numpy array
-        Validation set features
-    y_tr : numpy array
-        Training set outcomes
-    y_val : numpy array
-        Validation set outcomes
-    """
-
-    # Define parameters for tuning the model
-    param_grid = {'l2' : [1e-3, 1e-4]}
-    params = ParameterGrid(param_grid)
-
-    model = hyperparam_tuning('cph', params, x_tr, x_val, y_tr, y_val)
-
-    return model
-
-def run_dcph(x_tr, x_val, y_tr, y_val):
-    """
-    Run Deep Cox Proportional Hazards model
-
-    Parameters
-    ----------
-    x_tr : numpy array
-        Training set features
-    x_val : numpy array
-        Validation set features
-    y_tr : numpy array
-        Training set outcomes
-    y_val : numpy array
-        Validation set outcomes
-    """
-
-    # Define parameters for tuning the model
-    # Define parameters for tuning the model
-    param_grid = {'bs' : [100, 200],
-                'learning_rate' : [ 1e-4, 1e-3],
-                'layers' : [ [100], [100, 100] ]
-                }
-    params = ParameterGrid(param_grid)
-
-    model = hyperparam_tuning('dcph', params, x_tr, x_val, y_tr, y_val)
-
-    return model
-
-def run_dsm(x_tr, x_val, y_tr, y_val):
-
-    # Define parameters for tuning the model
-    param_grid = {'layers' : [[100], [100, 100], [200]],
-              'distribution' : ['Weibull', 'LogNormal'],
-              'max_features' : ['sqrt', 'log2']
-             }
-    params = ParameterGrid(param_grid)
-
-    model = hyperparam_tuning('dsm', params, x_tr, x_val, y_tr, y_val)
-
-    return model
-
-def run_dcm(x_tr, x_val, y_tr, y_val):
-
-    # Define parameters for tuning the model
-    param_grid = {'k' : [2, 3],
-              'learning_rate' : [1e-3, 1e-4],
-              'layers' : [[100], [100, 100]]
-             }
-    params = ParameterGrid(param_grid)
-
-    model = hyperparam_tuning('dcm', params, x_tr, x_val, y_tr, y_val)
-
-    return model
-
-def run_rsf(x_tr, x_val, y_tr, y_val):
-
-    # Define parameters for tuning the model
-    param_grid = {'n_estimators' : [100, 300],
-              'max_depth' : [3, 5],
-              'max_features' : ['sqrt', 'log2']
-             }
-
-    params = ParameterGrid(param_grid)
-
-    model = hyperparam_tuning('rsf', params, x_tr, x_val, y_tr, y_val)
-
-    return model
-
-def run_drsm(x_tr, x_val, y_tr, y_val):
-
-    param_grid = {'k' : [3, 4, 6],
-              'distribution' : ['LogNormal', 'Weibull'],
-              'learning_rate' : [1e-4, 1e-3],
-              'hidden': [50, 100],
-              'layers': [3, 2, 1],
-              'typ': ['LSTM', 'GRU', 'RNN']
-             }
-    params = ParameterGrid(param_grid)
-
-    model = hyperparam_tuning('drsm', params, x_tr, x_val, y_tr, y_val)
-
-    return model
-
-
-def run_rf(x_tr, x_val, y_tr, y_val):
-
-    param_grid = {'n_estimators' : [100, 300],
-              'max_depth' : [3, 5],
-              'max_features' : ['sqrt', 'log2']
-             }
-
-    params = ParameterGrid(param_grid)
-
-    model = RandomForestClassifier()
-
-    #model.predict_proba()
-
-    #model = hyperparam_tuning('rf', params, x_tr, x_val, y_tr, y_val)
-
-    return model
