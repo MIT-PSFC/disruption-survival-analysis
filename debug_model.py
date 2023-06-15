@@ -39,15 +39,24 @@ x_val = transformer.transform(features_val)
 
 survival_model_str = 'cph'
 
+
+"""
 # Run the survival model
-#survival_model = run_survival_model(survival_model_str, x_train, x_val, outcomes_train, outcomes_val)
+survival_model = run_survival_model(survival_model_str, x_train, x_val, outcomes_train, outcomes_val)
 
 # Evaluate the survival model
-#survival_results, survival_times = eval_model(survival_model, x_test, outcomes_train, outcomes_test)
+survival_results, survival_times = eval_model(survival_model, x_test, outcomes_train, outcomes_test)
 
 # Plot the results
-#survival_title = survival_model_str + ' on ' + dataset + ' dataset'
-#plot_performance_metrics(survival_results, survival_times, survival_title)
+survival_title = survival_model_str + ' on ' + dataset + ' dataset'
+plot_performance_metrics(survival_results, survival_times, survival_title)
+"""
 
 # Run the random forest model
 rf_model = run_rf_model(x_train, x_val, labels_train, labels_val)
+
+rf_results = rf_model.predict_proba(x_test)[:,1]
+
+# Plot the results
+rf_title = 'Random Forest on ' + dataset + ' dataset'
+plot_performance_metrics(rf_results, outcomes_test, rf_title)
