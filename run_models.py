@@ -16,6 +16,26 @@ from sklearn.ensemble import RandomForestClassifier
 from auton_survival.metrics import survival_regression_metric
 from sklearn.model_selection import ParameterGrid
 
+# Constants
+CUTOFF_TIME = 0.5 # Cutoff time for plotting
+
+def get_train_times(y_tr):
+    """
+    Get the training times for survival models
+    """
+    try:
+        return np.quantile(y_tr['time'][y_tr['event']==1], np.linspace(0.1, 0.9, 10)).tolist()
+    except:
+        return np.quantile(y_tr['time'], np.linspace(0.1, 0.9, 10)).tolist()
+
+
+def get_test_times(y_tr):
+    """
+    Get the test times for survival models
+    """
+    # TODO: this should be limited to under 500 ms
+    return np.quantile(y_tr['time'][y_tr['event']==1], np.linspace(0.1, 0.9, 10)).tolist()
+
 
 def run_survival_model(model_string, x_tr, x_val, y_tr, y_val):
     """
@@ -54,26 +74,29 @@ def run_survival_model(model_string, x_tr, x_val, y_tr, y_val):
     params = ParameterGrid(param_grid)
     
     # Define the times for model evaluation
-    # TODO What should this be? 
-    times = np.quantile(y_tr['time'][y_tr['event']==1], np.linspace(0.1, 0.9, 10)).tolist()
+    times = get_train_times(y_tr)
 
     # Perform hyperparameter tuning for SurvivalModel 
     models = []
     for param in params:
         if model_string == 'cph':
             model = SurvivalModel('cph', l2=param['l2'])
-            model.fit(x_tr, y_tr)
         elif model_string == 'dcph':
-            model = SurvivalModel('dcph', bs=param['bs'], learning_rate=param['learning_rate'], layers=param['layers'])
-            model.fit(x_tr, y_tr)
+            model = SurvivalModel('dcph', bs=param['bs'], 
+                                  learning_rate=param['learning_rate'], 
+                                  layers=param['layers'])
         elif model_string == 'dsm':
-            model = SurvivalModel('dsm', layers=param['layers'], distribution=param['distribution'], max_features=param['max_features'])
-            model.fit(x_tr, y_tr)
+            model = SurvivalModel('dsm', layers=param['layers'], 
+                                  distribution=param['distribution'], 
+                                  max_features=param['max_features'])
         elif model_string == 'dcm':
-            model = SurvivalModel('dcm', k=param['k'], learning_rate=param['learning_rate'], layers=param['layers'])
-            model.fit(x_tr, y_tr)
+            model = SurvivalModel('dcm', k=param['k'], 
+                                  learning_rate=param['learning_rate'], 
+                                  layers=param['layers'])
         elif model_string == 'rsf':
-            model = SurvivalModel('rsf', n_estimators=param['n_estimators'], max_depth=param['max_depth'], max_features=param['max_features'])
+            model = SurvivalModel('rsf', n_estimators=param['n_estimators'], 
+                                  max_depth=param['max_depth'], 
+                                  max_features=param['max_features'])
         else:
             raise ValueError(f"Invalid model string: {model_string}")
 
@@ -124,9 +147,28 @@ def run_rf_model(x_tr, x_val, y_tr, y_val):
               'max_features' : ['sqrt', 'log2']
              }
     
-    model = RandomForestClassifier()
+    params = ParameterGrid(param_grid)
+    
 
-    pass
+    # Perform hyperparameter tuning for SurvivalModel
+    models = []
+    for param in params:
+        model = RandomForestClassifier(n_estimators=param['n_estimators'],
+                                       max_depth=param['max_depth'],
+                                       max_features=param['max_features'])
+        model.fit(x_tr, y_tr)
+
+        # Get score
+        score = model.score(x_val, y_val)
+        models.append([score, model])
+
+    # Select the best model based on the best metric value computed for the validation set
+    metric_vals = [i[0] for i in models]
+    first_min_idx = metric_vals.index(min(metric_vals))
+    model = models[first_min_idx][1]
+
+    return model
+
 
 def eval_model(model, x_te, y_tr, y_te):
     """
@@ -135,9 +177,8 @@ def eval_model(model, x_te, y_tr, y_te):
     Survival Regression with Auton-Survival.ipynb
     """    
 
-    # Define the times for model evaluation
-    # TODO What should this be?
-    times = np.quantile(y_tr['time'][y_tr['event']==1], np.linspace(0.1, 0.9, 10)).tolist()
+    # Define the times for model testing
+    times = get_test_times(y_tr)
 
     # Obtain survival probabilities for test set
     predictions_te = model.predict_survival(x_te, times)
