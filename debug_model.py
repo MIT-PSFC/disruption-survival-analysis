@@ -6,8 +6,8 @@ import pandas as pd
 import sys
 sys.path.append('../')
 from plot_utils import *
-from preprocess_datasets import load_features_outcomes, make_training_sets
-from run_models import run_cph, run_dcph, run_dsm, run_dcm, run_rsf, run_drsm, eval_model
+from preprocess_datasets import load_features_outcomes, load_features_labels, make_training_sets
+from run_models import run_survival_model, run_rf_model, eval_model
 from estimators_demo_utils import plot_performance_metrics
 
 # Make training sets if they haven't been created yet
@@ -24,45 +24,30 @@ features_train, outcomes_train = load_features_outcomes(device, dataset+'_train'
 features_test, outcomes_test = load_features_outcomes(device, dataset+'_test')
 features_val, outcomes_val = load_features_outcomes(device, dataset+'_val')
 
+# The features should match the above
+_, labels_train = load_features_labels(device, dataset+'_train', 0.15)
+_, labels_test = load_features_labels(device, dataset+'_test', 0.15)
+_, labels_val = load_features_labels(device, dataset+'_val', 0.15)
+
 # Fit the imputer and scaler to the training data and transform the training, test, and validation data
 preprocessor = Preprocessor(cat_feat_strat='ignore', num_feat_strat='mean')
-transformer=preprocessor.fit(features_train, cat_feats=[], num_feats=numeric_feats, one_hot=True, fill_value=-1)
+transformer = preprocessor.fit(features_train, cat_feats=[], num_feats=numeric_feats, one_hot=True, fill_value=-1)
 
 x_train = transformer.transform(features_train)
 x_test = transformer.transform(features_test)
 x_val = transformer.transform(features_val)
 
-y_train = outcomes_train
-y_test = outcomes_test
-y_val = outcomes_val
+survival_model_str = 'cph'
 
-# Run all the models
-#cph_model = run_cph(x_train, x_val, y_train, y_val)
-#dcph_model = run_dcph(x_train, x_val, y_train, y_val)
-#dsm_model = run_dsm(x_train, x_val, y_train, y_val)
-#dcm_model = run_dcm(x_train, x_val, y_train, y_val)
-#rsf_model = run_rsf(x_train, x_val, y_train, y_val)
-drsm_model = run_drsm(x_train, x_val, y_train, y_val)
+# Run the survival model
+#survival_model = run_survival_model(survival_model_str, x_train, x_val, outcomes_train, outcomes_val)
 
-# Evaluate all the models
-#cph_results, cph_times = eval_model(cph_model, x_test, y_train, y_test)
-#dcph_results, dcph_times = eval_model(dcph_model, x_test, y_train, y_test)
-#dsm_results, dsm_times = eval_model(dsm_model, x_test, y_train, y_test)
-#dcm_results, dcm_times = eval_model(dcm_model, x_test, y_train, y_test)
-#rsf_results, rsf_times = eval_model(rsf_model, x_test, y_train, y_test)
-drsm_results, drsm_times = eval_model(drsm_model, x_test, y_train, y_test)
+# Evaluate the survival model
+#survival_results, survival_times = eval_model(survival_model, x_test, outcomes_train, outcomes_test)
 
 # Plot the results
-cph_title = 'Cox Proportional Hazards on ' + dataset + ' dataset'
-dcph_title = 'Deep Cox Proportional Hazards on ' + dataset + ' dataset'
-dsm_title = 'Deep Survival Machines on ' + dataset + ' dataset'
-dcm_title = 'Deep Cox Machines on ' + dataset + ' dataset'
-rsf_title = 'Random Survival Forest on ' + dataset + ' dataset'
-drsm_title = 'Deep Recurrent Survival Machines on ' + dataset + ' dataset'
+#survival_title = survival_model_str + ' on ' + dataset + ' dataset'
+#plot_performance_metrics(survival_results, survival_times, survival_title)
 
-#plot_performance_metrics(cph_results, cph_times, cph_title)
-#plot_performance_metrics(dcph_results, dcph_times, dcph_title)
-#plot_performance_metrics(dsm_results, dsm_times, dsm_title)
-#plot_performance_metrics(dcm_results, dcm_times, dcm_title)
-#plot_performance_metrics(rsf_results, rsf_times, rsf_title)
-plot_performance_metrics(drsm_results, drsm_times, drsm_title)
+# Run the random forest model
+rf_model = run_rf_model(x_train, x_val, labels_train, labels_val)
