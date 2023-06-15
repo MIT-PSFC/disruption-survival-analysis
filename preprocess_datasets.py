@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 
 
+DEFAULT_FEATURES = ['ip','Wmhd','n_e','kappa','li']
+
 def load_dataset(device, dataset):
     """ Load the dataset from the given device and dataset
     Parameters
@@ -20,15 +22,27 @@ def load_dataset(device, dataset):
         In the form of unsorted timeslices of all included shots
     """
     data = pkgutil.get_data(__name__, 'data/{}/{}.csv'.format(device, dataset))
-    data = pd.read_csv(io.BytesIO(data))
+    data = pd.read_csv(io.BytesIO(data)) # type: ignore
     return data
 
 
-def parse_dataset(device, dataset):
-    # 
-    pass
+def parse_dataset(device, dataset, epsilon=1e-6):
+    """ Parse the dataset from the given device
+    adds a 'time_to_last' column to the dataset
+    Replace zeroes in time_until_disruption with epsilon
+    
+    """
+    
+    data = load_dataset(device,dataset)
 
+    # Replace zeros in time with low-value epsilon 1e-6
+    data['time'] = data['time'].replace(0, 1e-6)
+    
+    # Create a 'time to last measurement' column for each shot
+    # This is the time from the present time to the last measurement
+    data['time_to_last'] = data.groupby('shot')['time'].transform(max) - data['time']
 
+    return data
 
 def load_features_outcomes(device, dataset, features=None):
     """ Load the specified dataset from a device,
@@ -48,30 +62,22 @@ def load_features_outcomes(device, dataset, features=None):
         A dataframe containing the features for each shot
         TODO: should this match DPRF ordering?
     """
-    data = load_dataset(device,dataset)
+    
+    data = parse_dataset(device, dataset)
 
-    outcomes = data.copy()
+    outcomes = pd.DataFrame()
     
     # Outcomes 'event' is 1 if time_until_disrupt is not null
     outcomes['event'] = data['time_until_disrupt'].notnull().astype(int)
 
-    # Create a 'time to last measurement' column for each shot
-    # This is the time from the present time to the last measurement
-    data['time_to_last'] = data.groupby('shot')['time'].transform(max) - data['time']
-
     # Outcomes 'time' is time_until_disrupt if it is not null, and time_to_last otherwise
     outcomes['time'] = data['time_until_disrupt'].fillna(data['time_to_last'])
 
-    # Replace zeros in outcomes.time with low-value epsilon 1e-6
-    outcomes['time'] = outcomes['time'].replace(0, 1e-6)
-    
     # trim data to only include features used for training
-    # TODO: add in aminor, squareness, and triangularity
     if features is None:
-        features = ['ip','Wmhd','n_e','kappa','li']
+        features = DEFAULT_FEATURES
 
-    return data[features], outcomes[['event', 'time']]
-
+    return data[features], outcomes
 
 
 def load_features_events_indicators(device, dataset, features=None):
@@ -94,13 +100,29 @@ def load_features_events_indicators(device, dataset, features=None):
     features : pandas.DataFrame
         A dataframe containing the features for each shot
     """
-    
 
-def load_features_labels(device, dataset, features=None):
+    data = parse_dataset(device, dataset)
+
+    # TODO fill this out after get DPRF working
+    return None
+
+
+
+def load_features_labels(device, dataset, cutoff_threshold, features=None):
     """For usage in Random Forest Classifier
     
     """
 
+    data = parse_dataset(device, dataset)
+
+    # label is '1' if time_until_disrupt is less than cutoff_threshold, '0' otherwise
+    labels = (data['time_until_disrupt'] < cutoff_threshold).astype(int)
+
+    # trim data to only include features used for training
+    if features is None:
+        features = DEFAULT_FEATURES
+    
+    return data[features], labels
 
 def make_training_sets(device, dataset):
     """
@@ -115,7 +137,7 @@ def make_training_sets(device, dataset):
     # Eliminate timeslices with negative values in time
     data = data[data['time'] >= 0]
 
-    # If remove where time_until_disrupt is negative, keeping where time_until_disrupt is null
+    # Remove where time_until_disrupt is negative, keeping where time_until_disrupt is null
     data = data[(data['time_until_disrupt'] >= 0) | (data['time_until_disrupt'].isnull())]
 
     # Find the unique shots in the dataset
