@@ -59,4 +59,6 @@ rf_results = rf_model.predict_proba(x_test)[:,1]
 
 # Plot the results
 rf_title = 'Random Forest on ' + dataset + ' dataset'
-plot_performance_metrics(rf_results, outcomes_test, rf_title)
+#plot_performance_metrics(rf_results, outcomes_test, rf_title)
+
+plot_survival(device, dataset+'_test', 1160504021, 0.15, [rf_model], transformer)
