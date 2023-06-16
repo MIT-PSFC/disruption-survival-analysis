@@ -61,5 +61,15 @@ class TestLoadFeaturesOutcomes(unittest.TestCase):
         self.features, self.outcomes = load_features_outcomes('cmod', 'random100_val')
         self.assertTrue((self.outcomes['time'] >= 0).all())
 
-    
+    def test_no_zero_outcome_real(self):
+        """Ensure there are no zero time to event in the outcomes"""
+
+        _, self.outcomes = load_features_outcomes('cmod', 'random100_train')
+        self.assertTrue((self.outcomes['time'] != 0).all())
+
+        _, self.outcomes = load_features_outcomes('cmod', 'random100_test')
+        self.assertTrue((self.outcomes['time'] != 0).all())
+
+        _, self.outcomes = load_features_outcomes('cmod', 'random100_val')
+        self.assertTrue((self.outcomes['time'] != 0).all())
 
