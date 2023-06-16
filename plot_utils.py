@@ -111,14 +111,16 @@ def plot_survival(device, dataset, shot_number, survival_time, models, names, tr
     
     shot, times, disruptive = get_transformed_shot(device, dataset, shot_number, transformer)
 
-    ip = shot['ip'].values
+    raw_data = load_dataset(device, dataset)
+    raw_shot = raw_data[raw_data['shot'] == shot_number]
+    ip = raw_shot['ip'].values
 
     # For each model, plot the predicted survival probability at survival time
     # against the actual ip
     # make distinct lines on same plot
     fig, ax = plt.subplots()
 
-    # Get normalization factor to ensure ip is always between 0 and 1
+    # If shot makes ip go negative, flip it
     if (-min(ip) > max(ip)):
         ip = -ip
 
@@ -160,36 +162,38 @@ def plot_risk(device, dataset, shot_number, survival_time, models, names, transf
     
     shot, times, disruptive = get_transformed_shot(device, dataset, shot_number, transformer)
 
-    ip = shot['ip'].values
+    raw_data = load_dataset(device, dataset)
+    raw_shot = raw_data[raw_data['shot'] == shot_number]
+    ip = raw_shot['ip'].values
 
     # For each model, plot the predicted survival probability at survival time
     # against the actual ip
     # make distinct lines on same plot
     fig, ax = plt.subplots()
 
-    # Get normalization factor to ensure ip is always between 0 and 1
+    # If shot makes ip go negative, flip it
     if (-min(ip) > max(ip)):
         ip = -ip
 
-    ax.plot(times, ip/max(ip), label='ip')
+    ax.plot(times, ip/max(abs(ip)), label='ip')
     for i, model in enumerate(models):
         # If model is an instance of SurvivalModel, use predict_survival
         # Otherwise, use predict_proba
-        #try:
-        survival = []
-        if hasattr(model, 'predict_risk'):
-            for j in range(len(shot)):
-                survival.append(model.predict_risk(shot.iloc[j], survival_time)[0])
-        else:
-            survival = model.predict_proba(shot)[:, 1]
-        #except:
+        try:
+            survival = []
+            if hasattr(model, 'predict_risk'):
+                for j in range(len(shot)):
+                    survival.append(model.predict_risk(shot.iloc[j], survival_time)[0])
+            else:
+                survival = model.predict_proba(shot)[:, 1]
+        except:
             # Hack to stop RSF from crashing
-            #survival = model.predict_risk(shot, survival_time)
-        #    pass
+            survival = model.predict_risk(shot, survival_time)
+            pass
 
         ax.plot(times, survival, label=names[i])
 
-    ax.set_ylim(0, 1)
+    ax.set_ylim(0, 1.1)
     ax.set_xlabel('time')
     ax.set_ylabel(f'ip and {survival_time} [s] risk')
     ax.legend()
