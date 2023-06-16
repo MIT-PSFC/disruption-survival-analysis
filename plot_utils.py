@@ -175,19 +175,17 @@ def plot_risk(device, dataset, shot_number, survival_time, models, names, transf
     for i, model in enumerate(models):
         # If model is an instance of SurvivalModel, use predict_survival
         # Otherwise, use predict_proba
-        try:
-            survival = []
-            if hasattr(model, 'predict_risk'):
-                for j in range(len(shot)):
-                    try:
-                        survival.append(model.predict_risk(shot.iloc[j], survival_time)[0])
-                    except:
-                        survival.append(model.predict_risk(shot.iloc[j], np.array([survival_time]))[0])
-            else:
-                survival = model.predict_proba(shot)[:, 1]
-        except:
+        #try:
+        survival = []
+        if hasattr(model, 'predict_risk'):
+            for j in range(len(shot)):
+                survival.append(model.predict_risk(shot.iloc[j], survival_time)[0])
+        else:
+            survival = model.predict_proba(shot)[:, 1]
+        #except:
             # Hack to stop RSF from crashing
-            survival = model.predict_risk(shot, survival_time)
+            #survival = model.predict_risk(shot, survival_time)
+        #    pass
 
         ax.plot(times, survival, label=names[i])
 
