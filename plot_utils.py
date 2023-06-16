@@ -130,7 +130,10 @@ def plot_survival(device, dataset, shot_number, survival_time, models, names, tr
             survival = []
             if hasattr(model, 'predict_survival'):
                 for j in range(len(shot)):
-                    survival.append(model.predict_survival(shot.iloc[j], survival_time)[0])
+                    try:
+                        survival.append(model.predict_survival(shot.iloc[j], survival_time)[0])
+                    except:
+                        survival.append(model.predict_survival(shot.iloc[j], [survival_time])[0])
             else:
                 survival = model.predict_proba(shot)[:, 0]
         except:
@@ -176,7 +179,10 @@ def plot_risk(device, dataset, shot_number, survival_time, models, names, transf
             survival = []
             if hasattr(model, 'predict_risk'):
                 for j in range(len(shot)):
-                    survival.append(model.predict_risk(shot.iloc[j], survival_time)[0])
+                    try:
+                        survival.append(model.predict_risk(shot.iloc[j], survival_time)[0])
+                    except:
+                        survival.append(model.predict_risk(shot.iloc[j], np.array([survival_time]))[0])
             else:
                 survival = model.predict_proba(shot)[:, 1]
         except:

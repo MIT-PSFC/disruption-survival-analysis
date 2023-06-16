@@ -35,12 +35,13 @@ def parse_dataset(device, dataset, epsilon=1e-4):
     
     data = load_dataset(device,dataset)
 
-    # Replace zeros in time with low-value epsilon
-    data['time'] = data['time'].replace(0, epsilon)
-    
     # Create a 'time to last measurement' column for each shot
     # This is the time from the present time to the last measurement
     data['time_to_last'] = data.groupby('shot')['time'].transform(max) - data['time']
+
+    # Replace zeros in times with low-value epsilon
+    data['time_to_last'] = data['time_to_last'].replace(0, epsilon)
+    data['time_until_disrupt'] = data['time_until_disrupt'].replace(0, epsilon)
 
     return data
 
@@ -72,6 +73,9 @@ def load_features_outcomes(device, dataset, features=None):
 
     # Outcomes 'time' is time_until_disrupt if it is not null, and time_to_last otherwise
     outcomes['time'] = data['time_until_disrupt'].fillna(data['time_to_last'])
+
+    # make outcomes is the correct type
+    outcomes = outcomes.astype({'event': 'int64', 'time': 'float64'})
 
     # trim data to only include features used for training
     if features is None:
