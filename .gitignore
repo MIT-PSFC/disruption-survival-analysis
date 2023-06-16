@@ -171,5 +171,10 @@ Survival Regression with Auton-Survival copy.ipynb
 data/cmod
 data/d3d
 
+# Locally made test,train,validation sets
+*_test.csv
+*_train.csv
+*_val.csv
+
 # Locally trained model pikles
 models
