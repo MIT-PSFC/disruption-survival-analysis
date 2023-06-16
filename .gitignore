@@ -159,6 +159,9 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
+# VsCode
+.vscode
+
 # Local libraries and other non-project test files
 auton-survival
 estimators_demo_utils.py
@@ -167,3 +170,6 @@ Survival Regression with Auton-Survival copy.ipynb
 # Data files from Alcator C-Mod and DIII-D
 data/cmod
 data/d3d
+
+# Locally trained model pikles
+models

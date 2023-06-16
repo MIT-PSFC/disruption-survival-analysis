@@ -169,3 +169,31 @@ def make_training_sets(device, dataset):
     print('Training shots: {}'.format(len(train_shots)))
     print('Test shots: {}'.format(len(test_shots)))
     print('Validation shots: {}'.format(len(val_shots)))
+
+def get_disruptive_shot_list(device, dataset):
+    """
+    Get the list of disruptive shots from the dataset
+    """
+
+    # Load the raw dataset
+    data = load_dataset(device, dataset)
+
+    # Find the disruptive shots in the dataset
+    disruptive_shots = data[data['time_until_disrupt'] >= 0]['shot'].unique()
+
+    # Return the list of disruptive shots
+    return disruptive_shots
+
+def get_non_disruptive_shot_list(device, dataset):
+    """
+    Get the list of non-disruptive shots from the dataset
+    """
+
+    # Load the raw dataset
+    data = load_dataset(device, dataset)
+
+    # Find the non-disruptive shots in the dataset
+    non_disruptive_shots = data[data['time_until_disrupt'].isnull()]['shot'].unique()
+
+    # Return the list of non-disruptive shots
+    return non_disruptive_shots
