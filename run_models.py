@@ -100,13 +100,11 @@ def run_survival_model(model_string, x_tr, x_val, y_tr, y_val):
         else:
             raise ValueError(f"Invalid model string: {model_string}")
 
-
         model.fit(x_tr, y_tr)
+
         # Obtain survival probabilities for validation set and compute the Integrated Brier Score 
         predictions_val = model.predict_survival(x_val, times)
         
-        
-
         # Find if predictions_val contains nan, indicating there was an issue with running the model
         if np.isnan(predictions_val).any():
             print(f"NaN in predictions_val for parameters: {param}")
