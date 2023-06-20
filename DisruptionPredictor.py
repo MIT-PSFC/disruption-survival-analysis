@@ -27,6 +27,31 @@ class DisruptionPredictor:
         self.features = features
         self.transformer = transformer
 
+    def calculate_risk(self, data, horizon):
+        """
+        Finds the risk of disruption for a given shot at each time slice
+        when looking horizon seconds into the future
+
+        Parameters
+        ----------
+        data : pandas.DataFrame
+            The data to calculate the risk for
+            Should be sorted by time and transformed by the predictor's transformer
+        horizon : float
+            How far into the future the predictor is looking
+
+        Returns
+        -------
+        risk_time : pandas.DataFrame
+            The risk of disruption for each time slice
+        """
+
+        risk_time = data.copy()
+
+        # Iterate through the data and calculate the risk for each time slice
+        risk_time['risk'] = self.model.predict_risk(data, horizon)
+
+        return risk_time['risk', 'time']
 
     def calculate_disruption_time(self, shot_data, threshold, horizon):
         """
@@ -52,7 +77,47 @@ class DisruptionPredictor:
             If no disruption is predicted, returns None in that position
         """
 
-        return []
+        # Calculate the risk for each time slice
+        risk_time = self.calculate_risk(shot_data, horizon)
+
+        # Only consider the times more than 'horizon' seconds before the end of the shot
+        risk_time = risk_time[risk_time['time'] < shot_data['time'].iloc[-1] - horizon]
+        
+        # If a single threshold is given, make it a list
+        if not isinstance(threshold, list):
+            threshold = [threshold]
+        # Make a copy of the thresholds to keep track of which ones have been used
+        avail_thresholds = threshold.copy()
+
+        disruption_times = []
+        # Go through the shot data and find the first time the risk exceeds each threshold
+        for risk in risk_time['risk']:
+            # If there are no more thresholds, stop
+            if len(avail_thresholds) == 0:
+                break
+
+            # If the risk ever exceeds the threshold, add the time to the list
+            # and remove the threshold from the list
+            # Then keep going until the risk is below the next threshold
+            # or there are no more thresholds
+            while risk > avail_thresholds[0]:
+                disruption_times.append(risk_time['time'])
+                avail_thresholds.pop(0)
+                if len(avail_thresholds) == 0:
+                    break
+        
+        # If there is a mismatch between disruption times and thresholds,
+        # fill in the rest of the disruption times with None
+        if len(disruption_times) < len(threshold):
+            for i in range(len(threshold) - len(disruption_times)):
+                disruption_times.append(None)
+
+        # If there is only one threshold, return a single disruption time
+        if len(disruption_times) == 1:
+            return disruption_times[0]
+        # Otherwise, return a list of disruption times
+        else:
+            return disruption_times
 
     def calculate_disruption_time_hysterisis(self, shot_data, 
                                              upper_threshold, lower_threshold, window,
