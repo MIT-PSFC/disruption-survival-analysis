@@ -1,5 +1,9 @@
 """Utilities to evaluate the performance of a disruption predictor"""
 
+import numpy as np
+import pandas as pd
+
+from preprocess_datasets import load_dataset_grouped, get_disruptive_shot_list
 from DisruptionPredictor import DisruptionPredictor
 
 def benchmark(predictor:DisruptionPredictor, horizons, device, dataset):
@@ -25,13 +29,32 @@ def benchmark(predictor:DisruptionPredictor, horizons, device, dataset):
         The area under the ROC curve for each horizon
     """
 
-    # Load the data
+    # Load the data grouped by shot number
+    raw_data = load_dataset_grouped(device, dataset)
 
-    # Transform the data
+    # Get a list of all disruptive shots (disruption happens during flattop)
+    disruptive_shots = get_disruptive_shot_list(device, dataset)
+
+    data = []
+    for entry in raw_data:
+        # Replace the shot numbers with a boolean indicating if the shot is disruptive
+        shotnumber = entry[0]
+        disrupt = shotnumber in disruptive_shots
+
+        # Trim the raw data to only include the features used by the predictor
+        # and apply the transformer
+        raw_shot_data = entry[1]
+        shot_data = predictor.transformer.transform(raw_shot_data[predictor.features])
+        data.append((disrupt, shot_data))
 
     # Iterate through horizons
+    au_rocs = []
+    for horizon in horizons:
+        # Calculate the area under the ROC curve
+        au_roc = calc_au_roc(predictor, horizon, data)
+        au_rocs.append(au_roc)
 
-    # Return
+    return au_rocs
 
 def calc_au_roc(predictor:DisruptionPredictor, horizon, data):
     """
@@ -50,16 +73,39 @@ def calc_au_roc(predictor:DisruptionPredictor, horizon, data):
         Expected to already be transformed by the predictor's transformer
     """
     
+    # Set the thresholds to use
+    thresholds = np.linspace(0, 1, 10)
+
+    # Create arrays to store the results
+    # Array is of shape (num_shots, num_thresholds)
+    true_positives = np.zeros((len(data), len(thresholds)))
+    false_positives = np.zeros((len(data), len(thresholds)))
+
     # Iterate through shots
+    for i, entry in enumerate(data):
+        disrupt = entry[0]
+        shot_data = entry[1]
+        # Calculate the disruption time
+        disruption_times = predictor.calculate_disruption_time(shot_data, thresholds, horizon)
 
-    # Set the thresholds
+        # Fill in true positives and false positives TODO check this logic
+        true_positives[i] = np.array([disrupt and disruption_time is not None for disruption_time in disruption_times])
+        false_positives[i] = np.array([not disrupt and disruption_time is not None for disruption_time in disruption_times])
 
-    # Calculate the disruption time for each shot
-
-    # Find the true positive and false positive rates
+    # Calculate the true positive rate and false positive rate for each threshold
+    true_positive_rates = np.sum(true_positives, axis=0) / len(data)
+    false_positive_rates = np.sum(false_positives, axis=0) / len(data)
 
     # Find the ROC curve
+    # Sort by false positive rate
+    sort_indices = np.argsort(false_positive_rates)
+    true_positive_rates_roc = true_positive_rates[sort_indices]
+    false_positive_rates_roc = false_positive_rates[sort_indices]
 
     # Calculate the area under the ROC curve
+    # Use the trapezoidal rule
+    au_roc = np.trapz(true_positive_rates_roc, false_positive_rates_roc)
+
+    return au_roc
 
 
