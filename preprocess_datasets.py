@@ -19,12 +19,13 @@ def load_dataset(device, dataset):
     -------
     data : pandas.DataFrame
         A dataframe containing the data in the dataset
-        In the form of unsorted timeslices of all included shots
+        In the form of data sorted first by shot then by time
     """
     data = pkgutil.get_data(__name__, 'data/{}/{}.csv'.format(device, dataset))
     data = pd.read_csv(io.BytesIO(data)) # type: ignore
+    # Sort by shot number and time
+    data = data.sort_values(['shot','time'])
     return data
-
 
 def parse_dataset(device, dataset, epsilon=1e-4):
     """ Parse the dataset from the given device
@@ -197,3 +198,17 @@ def get_non_disruptive_shot_list(device, dataset):
 
     # Return the list of non-disruptive shots
     return non_disruptive_shots
+
+def load_dataset_grouped(device, dataset):
+    """
+    Load dataset grouped by shot number
+    """
+
+    # Load the raw dataset
+    data = load_dataset(device, dataset)
+
+    # Group the data by shot number
+    group_data = data.groupby('shot')
+
+    # Return the grouped dataset
+    return group_data
