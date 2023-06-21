@@ -40,8 +40,8 @@ class DisruptionPredictor:
         Parameters
         ----------
         data : pandas.DataFrame
-            The data to calculate the risk for
-            Should be sorted by time and transformed by the predictor's transformer
+            The data to calculate the risk for. 
+            Should already be sorted by time and transformed by the predictor's transformer
         horizon : float
             How far into the future the predictor is looking
 
@@ -131,7 +131,7 @@ class DisruptionPredictor:
         and remains above the lower threshold for the window length, a disruption
         is predicted
         """
-
+        raise NotImplementedError("Hysterisis method not yet implemented")
 
 class DisruptionPredictorSM(DisruptionPredictor):
     """Disruption Predictors using SurvivalModel from Auton-Survival package"""

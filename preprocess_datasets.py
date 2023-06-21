@@ -129,7 +129,7 @@ def load_features_labels(device, dataset, cutoff_threshold, features=None):
     
     return data[features], labels
 
-def make_training_sets(device, dataset):
+def make_training_sets(device, dataset, random_seed=0):
     """
     Split the raw data into training, test, and validation sets
     """
@@ -149,6 +149,7 @@ def make_training_sets(device, dataset):
     shots = data['shot'].unique()
 
     # Shuffle the shots
+    np.random.seed(random_seed)
     np.random.shuffle(shots)
 
     # Split the shots into training, test, and validation sets
