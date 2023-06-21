@@ -49,7 +49,10 @@ def benchmark(predictor:DisruptionPredictor, horizons, device, dataset):
         shot_data['time'] = raw_shot_data['time']
         data.append((disrupt, shot_data))
 
-    # Iterate through horizons
+    # TODO: calculating all horizons at once would be more efficient, but not working yet
+    #au_rocs = calc_au_roc(predictor, horizons, data)
+
+    # Calculate area under the ROC curve for all horizons
     au_rocs = []
     for horizon in horizons:
         # Calculate the area under the ROC curve
@@ -83,6 +86,9 @@ def calc_au_roc(predictor:DisruptionPredictor, horizon, data):
     true_positives = np.zeros((len(data), len(thresholds)))
     false_positives = np.zeros((len(data), len(thresholds)))
 
+    # Get a running total of number of disruptive shots
+    num_disruptive = 0
+
     # Iterate through shots
     for i, entry in enumerate(data):
         disrupt = entry[0]
@@ -94,9 +100,12 @@ def calc_au_roc(predictor:DisruptionPredictor, horizon, data):
         true_positives[i] = np.array([disrupt and (disruption_time is not None) for disruption_time in disruption_times])
         false_positives[i] = np.array([not disrupt and (disruption_time is not None) for disruption_time in disruption_times])
 
+        if disrupt:
+            num_disruptive += 1
+
     # Calculate the true positive rate and false positive rate for each threshold
-    true_positive_rates = np.sum(true_positives, axis=0) / len(data)
-    false_positive_rates = np.sum(false_positives, axis=0) / len(data)
+    true_positive_rates = np.sum(true_positives, axis=0) / num_disruptive
+    false_positive_rates = np.sum(false_positives, axis=0) / (len(data) - num_disruptive)
 
     # Find the ROC curve
     # Sort by false positive rate
