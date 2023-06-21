@@ -1,4 +1,4 @@
-
+import numpy as np
 
 from auton_survival.preprocessing import Preprocessor
 from auton_survival.estimators import SurvivalModel
@@ -87,14 +87,17 @@ class DisruptionPredictor:
         risk_time = risk_time[risk_time['time'] < shot_data['time'].iloc[-1] - horizon]
         
         # If a single threshold is given, make it a list
-        if not isinstance(threshold, list):
-            threshold = [threshold]
-        # Make a copy of the thresholds to keep track of which ones have been used
-        avail_thresholds = threshold.copy()
+        # If a list is given, make a copy of it to keep track of which thresholds have been used
+        if isinstance(threshold, np.ndarray):
+            avail_thresholds = threshold.tolist()
+        else:
+            if not isinstance(threshold, list):
+                threshold = [threshold]
+            avail_thresholds = threshold.copy()
 
         disruption_times = []
         # Go through the shot data and find the first time the risk exceeds each threshold
-        for risk in risk_time['risk']:
+        for i in range(len(risk_time)):
             # If there are no more thresholds, stop
             if len(avail_thresholds) == 0:
                 break
@@ -103,8 +106,9 @@ class DisruptionPredictor:
             # and remove the threshold from the list
             # Then keep going until the risk is below the next threshold
             # or there are no more thresholds
+            risk = risk_time.iloc[i]['risk']
             while risk > avail_thresholds[0]:
-                disruption_times.append(risk_time['time'])
+                disruption_times.append(risk_time.iloc[i]['time'])
                 avail_thresholds.pop(0)
                 if len(avail_thresholds) == 0:
                     break
@@ -144,9 +148,10 @@ class DisruptionPredictorSM(DisruptionPredictor):
         risk_time = data.copy()
 
         # Iterate through the data and calculate the risk for each time slice
-        risk_time['risk'] = self.model.predict_risk(data, horizon)
+        risk_time['risk'] = self.model.predict_risk(data[self.features], horizon)
 
-        return risk_time['risk', 'time']
+        # Trim the data to only include the risk and time columns
+        return risk_time[['risk', 'time']]
     
 
 class DisruptionPredictorRF(DisruptionPredictor):
