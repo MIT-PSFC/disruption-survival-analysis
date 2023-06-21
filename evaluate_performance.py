@@ -90,9 +90,9 @@ def calc_au_roc(predictor:DisruptionPredictor, horizon, data):
         # Calculate the disruption time
         disruption_times = predictor.calculate_disruption_time(shot_data, thresholds, horizon)
 
-        # Fill in true positives and false positives TODO check this logic
-        true_positives[i] = np.array([disrupt and disruption_time is not None for disruption_time in disruption_times])
-        false_positives[i] = np.array([not disrupt and disruption_time is not None for disruption_time in disruption_times])
+        # Fill in true positives and false positives
+        true_positives[i] = np.array([disrupt and (disruption_time is not None) for disruption_time in disruption_times])
+        false_positives[i] = np.array([not disrupt and (disruption_time is not None) for disruption_time in disruption_times])
 
     # Calculate the true positive rate and false positive rate for each threshold
     true_positive_rates = np.sum(true_positives, axis=0) / len(data)
