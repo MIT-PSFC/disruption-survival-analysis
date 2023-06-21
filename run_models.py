@@ -2,6 +2,8 @@
 # [1] auton-survival: an Open-Source Package for Regression, Counterfactual Estimation, 
 # Evaluation and Phenotyping with Censored Time-to-Event Data. arXiv (2022)
 
+import dill
+
 import numpy as np
 
 # Auton-Survival models
@@ -191,3 +193,17 @@ def eval_model(model, x_te, y_tr, y_te):
                                                         times=times, outcomes_train=y_tr)
     
     return results, times
+
+def save_model(model, transformer, model_name, device, dataset):
+    """Save model and transformer to file"""
+    model_path = 'models/' + model_name + '_' + device + '_' + dataset + '.pkl'
+    dill.dump([model, transformer], open(model_path, 'wb'))
+    print('Saved model to ' + model_path)
+
+def load_model(model_name, device, dataset):
+    """Load model and transformer from file"""
+    model_path = 'models/' + model_name + '_' + device + '_' + dataset + '.pkl'
+    with open(model_path, 'rb') as f:
+        model, transformer = dill.load(f)
+    print('Loaded model from ' + model_path)
+    return model, transformer
