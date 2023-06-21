@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from preprocess_datasets import load_dataset_grouped, get_disruptive_shot_list
-from DisruptionPredictor import DisruptionPredictor
+from DisruptionPredictors import DisruptionPredictor
 
 def benchmark(predictor:DisruptionPredictor, horizons, device, dataset):
     """

@@ -1,6 +1,8 @@
 
 
 from auton_survival.preprocessing import Preprocessor
+from auton_survival.estimators import SurvivalModel
+from sklearn.ensemble import RandomForestClassifier
 
 class DisruptionPredictor:
     """Analog to how a machine learning model would be seen by the plasma control system
@@ -27,6 +29,9 @@ class DisruptionPredictor:
         self.features = features
         self.transformer = transformer
 
+    # Methods for calculating the risk at each time slice for a given shot
+    # using different models
+
     def calculate_risk(self, data, horizon):
         """
         Finds the risk of disruption for a given shot at each time slice
@@ -46,12 +51,10 @@ class DisruptionPredictor:
             The risk of disruption for each time slice
         """
 
-        risk_time = data.copy()
+        raise NotImplementedError("calculate_risk() must be implemented by a subclass of DisruptionPredictor")
+    
 
-        # Iterate through the data and calculate the risk for each time slice
-        risk_time['risk'] = self.model.predict_risk(data, horizon)
-
-        return risk_time['risk', 'time']
+    # Methods for calculating the disruption time using different algorithms
 
     def calculate_disruption_time(self, shot_data, threshold, horizon):
         """
@@ -129,5 +132,34 @@ class DisruptionPredictor:
         is predicted
         """
 
-    def _calculate_disruption_time_cph(self):
-        pass
+
+class DisruptionPredictorSM(DisruptionPredictor):
+    """Disruption Predictors using SurvivalModel from Auton-Survival package"""
+
+    def __init__(self, name, model, features, transformer:Preprocessor):
+        super().__init__(name, model, features, transformer)
+
+    def calculate_risk(self, data, horizon):
+
+        risk_time = data.copy()
+
+        # Iterate through the data and calculate the risk for each time slice
+        risk_time['risk'] = self.model.predict_risk(data, horizon)
+
+        return risk_time['risk', 'time']
+    
+
+class DisruptionPredictorRF(DisruptionPredictor):
+    """Disruption Predictors using RandomForestClassifier from sklearn"""
+
+    def __init__(self, name, model, features, transformer:Preprocessor):
+        super().__init__(name, model, features, transformer)
+
+    def calculate_risk(self, data, horizon):
+
+        risk_time = data.copy()
+
+        # Iterate through the data and calculate the risk for each time slice
+        risk_time['risk'] = self.model.predict_proba(data, horizon)[:,1]
+
+        return risk_time['risk', 'time']
