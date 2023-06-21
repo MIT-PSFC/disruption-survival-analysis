@@ -148,7 +148,11 @@ class DisruptionPredictorSM(DisruptionPredictor):
         risk_time = data.copy()
 
         # Iterate through the data and calculate the risk for each time slice
-        risk_time['risk'] = self.model.predict_risk(data[self.features], horizon)
+        try:
+            risk_time['risk'] = self.model.predict_risk(data[self.features], horizon)
+        except:
+            # DSM expects horizons in a list
+            risk_time['risk'] = self.model.predict_risk(data[self.features], [horizon])
 
         # Trim the data to only include the risk and time columns
         return risk_time[['risk', 'time']]
