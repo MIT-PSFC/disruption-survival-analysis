@@ -160,11 +160,11 @@ class DisruptionPredictorRF(DisruptionPredictor):
     def __init__(self, name, model, features, transformer:Preprocessor):
         super().__init__(name, model, features, transformer)
 
-    def calculate_risk(self, data, horizon):
+    def calculate_risk(self, data, horizon=None):
 
         risk_time = data.copy()
 
         # Iterate through the data and calculate the risk for each time slice
-        risk_time['risk'] = self.model.predict_proba(data, horizon)[:,1]
+        risk_time['risk'] = self.model.predict_proba(data[self.features])[:,1]
 
-        return risk_time['risk', 'time']
+        return risk_time[['risk', 'time']]
