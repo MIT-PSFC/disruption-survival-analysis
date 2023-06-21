@@ -45,6 +45,8 @@ def benchmark(predictor:DisruptionPredictor, horizons, device, dataset):
         # and apply the transformer
         raw_shot_data = entry[1]
         shot_data = predictor.transformer.transform(raw_shot_data[predictor.features])
+        # Put the times back in
+        shot_data['time'] = raw_shot_data['time']
         data.append((disrupt, shot_data))
 
     # Iterate through horizons
