@@ -3,6 +3,8 @@
 import numpy as np
 import pandas as pd
 
+from sklearn.metrics import roc_auc_score
+
 from preprocess_datasets import load_dataset_grouped, get_disruptive_shot_list
 from DisruptionPredictors import DisruptionPredictor
 
@@ -79,7 +81,7 @@ def calc_au_roc(predictor:DisruptionPredictor, horizon, data):
     """
     
     # Set the thresholds to use
-    thresholds = np.linspace(0, 1, 10)
+    thresholds = np.linspace(0, 1, 100)
 
     # Create arrays to store the results
     # Array is of shape (num_shots, num_thresholds)
@@ -98,7 +100,7 @@ def calc_au_roc(predictor:DisruptionPredictor, horizon, data):
 
         # Fill in true positives and false positives
         true_positives[i] = np.array([disrupt and (disruption_time is not None) for disruption_time in disruption_times])
-        false_positives[i] = np.array([not disrupt and (disruption_time is not None) for disruption_time in disruption_times])
+        false_positives[i] = np.array([(not disrupt) and (disruption_time is not None) for disruption_time in disruption_times])
 
         if disrupt:
             num_disruptive += 1
@@ -107,15 +109,10 @@ def calc_au_roc(predictor:DisruptionPredictor, horizon, data):
     true_positive_rates = np.sum(true_positives, axis=0) / num_disruptive
     false_positive_rates = np.sum(false_positives, axis=0) / (len(data) - num_disruptive)
 
-    # Find the ROC curve
-    # Sort by false positive rate
-    sort_indices = np.argsort(false_positive_rates)
-    true_positive_rates_roc = true_positive_rates[sort_indices]
-    false_positive_rates_roc = false_positive_rates[sort_indices]
 
     # Calculate the area under the ROC curve
     # Use the trapezoidal rule
-    au_roc = np.trapz(true_positive_rates_roc, false_positive_rates_roc)
+    au_roc = -np.trapz(true_positive_rates, false_positive_rates)
 
     return au_roc
 

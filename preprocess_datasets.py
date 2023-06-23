@@ -172,6 +172,20 @@ def make_training_sets(device, dataset, random_seed=0):
     print('Test shots: {}'.format(len(test_shots)))
     print('Validation shots: {}'.format(len(val_shots)))
 
+def get_shot_list(device, dataset):
+    """
+    Get the list of shots from the dataset
+    """
+
+    # Load the raw dataset
+    data = load_dataset(device, dataset)
+
+    # Find the shots in the dataset
+    shots = data['shot'].unique()
+
+    # Return the list of shots
+    return shots
+
 def get_disruptive_shot_list(device, dataset):
     """
     Get the list of disruptive shots from the dataset

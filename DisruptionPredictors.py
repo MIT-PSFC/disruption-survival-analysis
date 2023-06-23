@@ -140,7 +140,7 @@ class DisruptionPredictor:
 class DisruptionPredictorSM(DisruptionPredictor):
     """Disruption Predictors using SurvivalModel from Auton-Survival package"""
 
-    def __init__(self, name, model, features, transformer:Preprocessor):
+    def __init__(self, name, model:SurvivalModel, features, transformer:Preprocessor):
         super().__init__(name, model, features, transformer)
 
     def calculate_risk(self, data, horizon):
@@ -161,7 +161,7 @@ class DisruptionPredictorSM(DisruptionPredictor):
 class DisruptionPredictorRF(DisruptionPredictor):
     """Disruption Predictors using RandomForestClassifier from sklearn"""
 
-    def __init__(self, name, model, features, transformer:Preprocessor):
+    def __init__(self, name, model:RandomForestClassifier, features, transformer:Preprocessor):
         super().__init__(name, model, features, transformer)
 
     def calculate_risk(self, data, horizon=None):
