@@ -2,7 +2,7 @@
 """
 import unittest
 
-from preprocess_datasets import load_features_outcomes, load_dataset
+from preprocess_datasets import *
 
 class TestLoadDataset(unittest.TestCase):
 
@@ -38,10 +38,10 @@ class TestLoadFeaturesOutcomes(unittest.TestCase):
         with synthetic data
         """
 
-        self.features, self.outcomes = load_features_outcomes('synthetic', 'test_train', features=['ip','feat2'])
+        self.features, self.outcomes = load_features_outcomes('synthetic', 'test', features=['ip','feat2'])
         
         # Assert that the times have actually been updated
-        data = load_dataset('synthetic', 'test_train')
+        data = load_dataset('synthetic', 'test')
         self.assertTrue((self.outcomes['time'] != data['time']).any())
 
         # Assert that there are no negative times
@@ -73,3 +73,27 @@ class TestLoadFeaturesOutcomes(unittest.TestCase):
         _, self.outcomes = load_features_outcomes('cmod', 'random100_val')
         self.assertTrue((self.outcomes['time'] != 0).all())
 
+class TestShotLists(unittest.TestCase):
+
+    def test_all_shots_covered(self):
+        """Ensure that all shots are covered by the disruptive and non-disruptive shot methods
+        """
+
+        # Set the dataset
+        device = 'synthetic'
+        dataset = 'synthetic100_train'
+
+        # Get the list of shots
+        shots = get_shot_list(device, dataset)
+
+        # Get the list of disruptive shots
+        disruptive_shots = get_disruptive_shot_list(device, dataset)
+        non_disruptive_shots = get_non_disruptive_shot_list(device, dataset)
+
+        # Ensure that all shots are covered
+        for shot in shots:
+            self.assertTrue(shot in disruptive_shots or shot in non_disruptive_shots)
+
+        # Ensure separation
+        for shot in disruptive_shots:
+            self.assertTrue(shot not in non_disruptive_shots)

@@ -4,6 +4,7 @@
 
 import pandas as pd
 import dill
+import torch
 import sys
 sys.path.append('../')
 from plot_utils import *
@@ -12,6 +13,8 @@ from run_models import run_survival_model, run_rf_model, eval_model
 from estimators_demo_utils import plot_performance_metrics
 
 # Make training sets if they haven't been created yet
+
+torch.set_num_threads(4)
 
 device = 'cmod'
 dataset = 'random100'
@@ -38,15 +41,15 @@ x_train = transformer.transform(features_train)
 x_test = transformer.transform(features_test)
 x_val = transformer.transform(features_val)
 
-survival_model_str = 'dsm'
+survival_model_str = 'rsf'
 
 # Run the survival model
-#survival_model = run_survival_model(survival_model_str, x_train, x_val, outcomes_train, outcomes_val)
+survival_model = run_survival_model(survival_model_str, x_train, x_val, outcomes_train, outcomes_val)
 
 #dill.dump(survival_model, open('models/dsm_model.pkl', 'wb'))
 
-with open ('models/dsm_model.pkl', 'rb') as f:
-    survival_model = dill.load(f)
+#with open ('models/dsm_model.pkl', 'rb') as f:
+#    survival_model = dill.load(f)
 
 # Evaluate the survival model
 #survival_results, survival_times = eval_model(survival_model, x_test, outcomes_train, outcomes_test)

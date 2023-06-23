@@ -2,6 +2,8 @@
 # [1] auton-survival: an Open-Source Package for Regression, Counterfactual Estimation, 
 # Evaluation and Phenotyping with Censored Time-to-Event Data. arXiv (2022)
 
+import dill
+
 import numpy as np
 
 # Auton-Survival models
@@ -100,20 +102,26 @@ def run_survival_model(model_string, x_tr, x_val, y_tr, y_val):
         else:
             raise ValueError(f"Invalid model string: {model_string}")
 
+        try:
+            model.fit(x_tr, y_tr)
 
-        model.fit(x_tr, y_tr)
-        # Obtain survival probabilities for validation set and compute the Integrated Brier Score 
-        predictions_val = model.predict_survival(x_val, times)
-        
-        
-
-        # Find if predictions_val contains nan, indicating there was an issue with running the model
-        if np.isnan(predictions_val).any():
-            print(f"NaN in predictions_val for parameters: {param}")
-        else:
-            metric_val = survival_regression_metric('ibs', y_val, predictions_val, times, y_tr)
-            models.append([metric_val, model])
+            # Obtain survival probabilities for validation set and compute the Integrated Brier Score 
+            predictions_val = model.predict_survival(x_val, times)
             
+            # Find if predictions_val contains nan, indicating there was an issue with running the model
+            if np.isnan(predictions_val).any():
+                print(f"NaN in predictions_val for parameters: {param}")
+            else:
+                metric_val = survival_regression_metric('ibs', y_val, predictions_val, times, y_tr)
+                models.append([metric_val, model])
+        except:
+            print(f"Error in fitting model for parameters: {param}")
+            
+    
+
+    if len(models) == 0:
+        raise ValueError(f"No models trained for {model_string}")
+
     # Select the best model based on the mean metric value computed for the validation set
     metric_vals = [i[0] for i in models]
     first_min_idx = metric_vals.index(min(metric_vals))
@@ -155,16 +163,25 @@ def run_rf_model(x_tr, x_val, y_tr, y_val):
     # Perform hyperparameter tuning for SurvivalModel
     models = []
     for param in params:
-        model = RandomForestClassifier(n_estimators=param['n_estimators'],
-                                       max_depth=param['max_depth'],
-                                       max_features=param['max_features'])
-        model.fit(x_tr, y_tr)
+        try:
+            model = RandomForestClassifier(n_estimators=param['n_estimators'],
+                                        max_depth=param['max_depth'],
+                                        max_features=param['max_features'])
+            model.fit(x_tr, y_tr)
 
-        # Get score
-        score = model.score(x_val, y_val)
-        models.append([score, model])
+            # Get score
+            score = model.score(x_val, y_val)
+            models.append([score, model])
+        except:
+            # If there is an error, skip this model
+            pass
 
     # Select the best model based on the best metric value computed for the validation set
+
+    if len(models) == 0:
+        print("Unable to train model")
+        return None
+
     metric_vals = [i[0] for i in models]
     first_min_idx = metric_vals.index(min(metric_vals))
     model = models[first_min_idx][1]
@@ -193,3 +210,17 @@ def eval_model(model, x_te, y_tr, y_te):
                                                         times=times, outcomes_train=y_tr)
     
     return results, times
+
+def save_model(model, transformer, model_name, device, dataset):
+    """Save model and transformer to file"""
+    model_path = 'models/' + model_name + '_' + device + '_' + dataset + '.pkl'
+    dill.dump([model, transformer], open(model_path, 'wb'))
+    print('Saved model to ' + model_path)
+
+def load_model(model_name, device, dataset):
+    """Load model and transformer from file"""
+    model_path = 'models/' + model_name + '_' + device + '_' + dataset + '.pkl'
+    with open(model_path, 'rb') as f:
+        model, transformer = dill.load(f)
+    print('Loaded model from ' + model_path)
+    return model, transformer

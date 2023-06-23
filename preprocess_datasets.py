@@ -19,12 +19,13 @@ def load_dataset(device, dataset):
     -------
     data : pandas.DataFrame
         A dataframe containing the data in the dataset
-        In the form of unsorted timeslices of all included shots
+        In the form of data sorted first by shot then by time
     """
     data = pkgutil.get_data(__name__, 'data/{}/{}.csv'.format(device, dataset))
     data = pd.read_csv(io.BytesIO(data)) # type: ignore
+    # Sort by shot number and time
+    data = data.sort_values(['shot','time'])
     return data
-
 
 def parse_dataset(device, dataset, epsilon=1e-4):
     """ Parse the dataset from the given device
@@ -128,7 +129,7 @@ def load_features_labels(device, dataset, cutoff_threshold, features=None):
     
     return data[features], labels
 
-def make_training_sets(device, dataset):
+def make_training_sets(device, dataset, random_seed=0):
     """
     Split the raw data into training, test, and validation sets
     """
@@ -148,6 +149,7 @@ def make_training_sets(device, dataset):
     shots = data['shot'].unique()
 
     # Shuffle the shots
+    np.random.seed(random_seed)
     np.random.shuffle(shots)
 
     # Split the shots into training, test, and validation sets
@@ -169,6 +171,20 @@ def make_training_sets(device, dataset):
     print('Training shots: {}'.format(len(train_shots)))
     print('Test shots: {}'.format(len(test_shots)))
     print('Validation shots: {}'.format(len(val_shots)))
+
+def get_shot_list(device, dataset):
+    """
+    Get the list of shots from the dataset
+    """
+
+    # Load the raw dataset
+    data = load_dataset(device, dataset)
+
+    # Find the shots in the dataset
+    shots = data['shot'].unique()
+
+    # Return the list of shots
+    return shots
 
 def get_disruptive_shot_list(device, dataset):
     """
@@ -197,3 +213,17 @@ def get_non_disruptive_shot_list(device, dataset):
 
     # Return the list of non-disruptive shots
     return non_disruptive_shots
+
+def load_dataset_grouped(device, dataset):
+    """
+    Load dataset grouped by shot number
+    """
+
+    # Load the raw dataset
+    data = load_dataset(device, dataset)
+
+    # Group the data by shot number
+    group_data = data.groupby('shot')
+
+    # Return the grouped dataset
+    return group_data
