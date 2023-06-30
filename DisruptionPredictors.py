@@ -172,3 +172,74 @@ class DisruptionPredictorRF(DisruptionPredictor):
         risk_time['risk'] = self.model.predict_proba(data[self.features])[:,1]
 
         return risk_time[['risk', 'time']]
+    
+class DisruptionPredictorTinguely(DisruptionPredictor):
+    """Disruption predictor like Tungluely et al. 2019"""
+
+    def __init__(self, name, model:RandomForestClassifier, features, transformer: Preprocessor):
+        super().__init__(name, model, features, transformer)
+
+    def linear_slope(self, x, y):
+        # Calculate the slope of a linear fit to the data
+        # x and y should be numpy arrays
+        return (len(x) * np.sum(x * y) - np.sum(x) * np.sum(y)) / (len(x) * np.sum(x**2) - np.sum(x)**2)
+    
+
+
+    def calculate_risk(self, data, horizon):
+        # This disruption predictor takes present predicted disruption risk and a
+        # linear least-square's fit over some previous time window to predict the
+        # disruption risk at some future time
+        # P_disrupt(t + horizon) = P_disrupt(t) + slope * horizon
+        
+        # Time in seconds to do linear fit over
+        # In paper, used 0.05, 0.1, 0.2
+        t_fit = 0.1 
+
+        risk_time = data.copy()
+
+        # Iterate through the data and calculate the initial risk for each time slice
+        risk_time['initial_risk'] = self.model.predict_proba(data[self.features])[:,1]
+
+        # This is a bit of a slow implementation, can speed up later if needed
+
+        fit_times = []
+        fit_points = []
+
+        fit_times.append(risk_time.iloc[0]['time'])
+        fit_points.append(risk_time.iloc[0]['initial_risk'])
+
+        # Iterate through the data and calculate the slope for each time slice
+        # Slope is calculated using a linear fit over the previous t_fit seconds
+        for i in range(1, len(risk_time)):
+
+            # Get the time for the new time slice
+            new_time = risk_time.iloc[i]['time']
+
+            # Add the new time to the fit
+            fit_times.append(new_time)
+            fit_points.append(risk_time.iloc[i]['initial_risk'])
+
+            # If the new time is outside the time window, remove the oldest point
+            if new_time - fit_times[0] > t_fit:
+                fit_times.pop(0)
+                fit_points.pop(0)
+            
+            # Calculate the slope of the linear fit
+            slope = self.linear_slope(np.array(fit_times), np.array(fit_points))
+
+            # Extrapolate the risk into the future using the slope
+            risk_time.at[i, 'risk'] = risk_time.iloc[i]['initial_risk'] + slope * horizon
+
+        return risk_time[['risk', 'time']]
+
+            
+
+
+
+
+
+
+        
+
+
