@@ -231,6 +231,9 @@ class DisruptionPredictorTinguely(DisruptionPredictor):
             # Extrapolate the risk into the future using the slope
             risk_time.at[i, 'risk'] = risk_time.iloc[i]['initial_risk'] + slope * horizon
 
+        # Replace all NaNs with 0
+        risk_time.fillna(0, inplace=True)
+
         return risk_time[['risk', 'time']]
 
             
