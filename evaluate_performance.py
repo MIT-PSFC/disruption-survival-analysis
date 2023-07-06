@@ -8,7 +8,31 @@ from sklearn.metrics import roc_auc_score
 from preprocess_datasets import load_dataset_grouped, get_disruptive_shot_list
 from DisruptionPredictors import DisruptionPredictor
 
-def benchmark(predictor:DisruptionPredictor, horizons, device, dataset):
+def load_benchmark_data(predictor:DisruptionPredictor, device, dataset):
+    
+    # Get a list of all disruptive shots (disruption happens during flattop)
+    disruptive_shots = get_disruptive_shot_list(device, dataset)
+
+    # Load the data grouped by shot number
+    raw_data = load_dataset_grouped(device, dataset)
+    
+    data = []
+    for entry in raw_data:
+        # Replace the shot numbers with a boolean indicating if the shot is disruptive
+        shotnumber = entry[0]
+        disrupt = shotnumber in disruptive_shots
+
+        # Trim the raw data to only include the features used by the predictor
+        # and apply the transformer
+        raw_shot_data = entry[1]
+        shot_data = predictor.transformer.transform(raw_shot_data[predictor.features])
+        # Put the times back in
+        shot_data['time'] = raw_shot_data['time']
+        data.append((disrupt, shot_data))
+
+    return data
+
+def benchmark_au_roc(predictor:DisruptionPredictor, horizons, device, dataset):
     """
     Calculate the area under the ROC curve for a given predictor
     at a variety of time horizons
@@ -31,25 +55,8 @@ def benchmark(predictor:DisruptionPredictor, horizons, device, dataset):
         The area under the ROC curve for each horizon
     """
 
-    # Load the data grouped by shot number
-    raw_data = load_dataset_grouped(device, dataset)
-
-    # Get a list of all disruptive shots (disruption happens during flattop)
-    disruptive_shots = get_disruptive_shot_list(device, dataset)
-
-    data = []
-    for entry in raw_data:
-        # Replace the shot numbers with a boolean indicating if the shot is disruptive
-        shotnumber = entry[0]
-        disrupt = shotnumber in disruptive_shots
-
-        # Trim the raw data to only include the features used by the predictor
-        # and apply the transformer
-        raw_shot_data = entry[1]
-        shot_data = predictor.transformer.transform(raw_shot_data[predictor.features])
-        # Put the times back in
-        shot_data['time'] = raw_shot_data['time']
-        data.append((disrupt, shot_data))
+    # Load the data and process it with predictor's transformer
+    data = load_benchmark_data(predictor, device, dataset)
 
     # TODO: calculating all horizons at once would be more efficient, but not working yet
     #au_rocs = calc_au_roc(predictor, horizons, data)
@@ -116,4 +123,96 @@ def calc_au_roc(predictor:DisruptionPredictor, horizon, data):
 
     return au_roc
 
+def benchmark_true_detection(predictor:DisruptionPredictor, horizon, device, dataset):
+    """
+    Calculate the Activity Monitoring Operator Characteristic (AMOC) curve at a single time horizon.
+    This is the average and standard deviation of the Time to First True Detection (T2FD)
+    for a given predictor vs false positive rate.
+    Used to compare performance of different predictors like in Fig. 3 of 
+    Dynamically Personalized Detection of Hemorrhage, Chirag et al 2019.
 
+    Parameters
+    ----------
+    predictor : DisruptionPredictor
+        The predictor to evaluate
+    horizon : float
+        How far into the future the predictor is looking
+    device : str
+        The device to evaluate the predictor on
+    dataset : str
+        The dataset to evaluate the predictor on
+        Should be a similar dataset to the one the predictor was trained on
+        and that the predictor's transformer was calculated for
+    Returns:
+    --------
+    false_positive_rates : list of float
+        The false positive rate
+    mean_detection_times : list of float
+        The average detection time for each false positive rate
+    std_detection_times : list of float
+        The standard deviation of the detection time for each false positive rate
+    """
+
+    # Load the data and process it with predictor's transformer
+    data = load_benchmark_data(predictor, device, dataset)
+
+    # Set the thresholds to use
+    thresholds = np.linspace(0, 1, 100)
+
+    # Create arrays to store the results
+    # Array is of shape (num_shots, num_thresholds)
+    false_positives = np.zeros((len(data), len(thresholds)))
+
+    # Create list to store detection times for each shot
+    # This is a list of arrays of variable length,
+    # but the arrays will line up such that each index corresponds to the same threshold
+    detection_times = []
+
+    # Get a running total of number of disruptive shots
+    num_disruptive = 0
+
+    # Iterate through shots
+    for i, entry in enumerate(data):
+        disrupt = entry[0]
+        shot_data = entry[1]
+        # Calculate the disruption time predicted by the model
+        disruption_times = predictor.calculate_disruption_time(shot_data, thresholds, horizon)
+
+        # Fill in false positives
+        false_positives[i] = np.array([(not disrupt) and (disruption_time is not None) for disruption_time in disruption_times])
+
+        if disrupt:
+            num_disruptive += 1
+            
+            # If shot is disruptive, can fill in Time to First True Detection
+
+            # Find actual disruption time by looking at last time in shot
+            onset_time = shot_data['time'].iloc[-1]
+
+            detection_times.append(np.array([onset_time - disruption_time for disruption_time in disruption_times if disruption_time is not None]))
+
+    # The way this is formatted isn't really 'T2FD' vs 'FPR' but rather
+    # 'T2FD at threshold' and 'FPR at threshold'
+    # When returned, the average T2FDs should correspond to a particular FPR
+
+    # Calculate the false positive rate for each threshold
+    false_positive_rates = np.sum(false_positives, axis=0) / (len(data) - num_disruptive)
+
+    mean_detection_times = []
+    std_detection_times = []
+
+    # TODO: Should really really vectorize this
+
+    # Calculate the average detection time for each threshold
+    for i in range(len(thresholds)):
+        threshold_times = []
+        for detection_time in detection_times:
+            try:
+                threshold_times.append(detection_time[i])
+            except IndexError:
+                pass
+        
+        mean_detection_times.append(np.mean(threshold_times))
+        std_detection_times.append(np.std(threshold_times))
+
+    return false_positive_rates, mean_detection_times, std_detection_times
