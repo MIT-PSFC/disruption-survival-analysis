@@ -137,6 +137,9 @@ def make_training_sets(device, dataset, random_seed=0):
     # Load the raw dataset
     data = load_dataset(device, dataset+ '_raw')
 
+    # Only include default features
+    data = data[DEFAULT_FEATURES + ['time', 'time_until_disrupt', 'shot']]
+
     # Eliminate timeslices with null values in any feature except time_until_disrupt
     data = data.dropna(subset=['ip', 'Wmhd', 'n_e', 'kappa', 'li'])
     # Eliminate timeslices with negative values in time
