@@ -146,7 +146,7 @@ def benchmark_true_detection(predictor:DisruptionPredictor, horizon, device, dat
     Returns:
     --------
     false_positive_rates : list of float
-        The false positive rate
+        The false positive rates
     mean_detection_times : list of float
         The average detection time for each false positive rate
     std_detection_times : list of float
@@ -191,9 +191,9 @@ def benchmark_true_detection(predictor:DisruptionPredictor, horizon, device, dat
 
             detection_times.append(np.array([onset_time - disruption_time for disruption_time in disruption_times if disruption_time is not None]))
 
-    # The way this is formatted isn't really 'T2FD' vs 'FPR' but rather
+    # The way this is formatted at this point isn't really 'T2FD' vs 'FPR' but rather
     # 'T2FD at threshold' and 'FPR at threshold'
-    # When returned, the average T2FDs should correspond to a particular FPR
+    # When returned, the average T2FDs will correspond to a particular FPR
 
     # Calculate the false positive rate for each threshold
     false_positive_rates = np.sum(false_positives, axis=0) / (len(data) - num_disruptive)
@@ -203,16 +203,27 @@ def benchmark_true_detection(predictor:DisruptionPredictor, horizon, device, dat
 
     # TODO: Should really really vectorize this
 
-    # Calculate the average detection time for each threshold
+    # Calculate the average detection time for each false positive rate
+    threshold_times = []
     for i in range(len(thresholds)):
-        threshold_times = []
+    
         for detection_time in detection_times:
             try:
                 threshold_times.append(detection_time[i])
             except IndexError:
                 pass
         
-        mean_detection_times.append(np.mean(threshold_times))
-        std_detection_times.append(np.std(threshold_times))
+        # Clump the detection times that share a false positive rate together
+        if i != 0 and false_positive_rates[i] != false_positive_rates[i-1]:
+            mean_detection_times.append(np.mean(threshold_times))
+            std_detection_times.append(np.std(threshold_times))
+            threshold_times = []
+        elif i == len(thresholds) - 1:
+            # If we're at the end, we need to add the last one
+            mean_detection_times.append(np.mean(threshold_times))
+            std_detection_times.append(np.std(threshold_times))
 
-    return false_positive_rates, mean_detection_times, std_detection_times
+    # Eliminate duplicate false positive rates
+    unique_false_positive_rates = np.unique(false_positive_rates)
+
+    return unique_false_positive_rates, mean_detection_times, std_detection_times
