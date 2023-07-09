@@ -6,6 +6,7 @@ import pandas as pd
 
 
 DEFAULT_FEATURES = ['ip','Wmhd','n_e','kappa','li']
+NOT_FEATURES = ['time', 'shot', 'time_until_disrupt'] # Columns that are not features
 
 def load_dataset(device, dataset):
     """ Load the dataset from the given device and dataset
@@ -129,7 +130,7 @@ def load_features_labels(device, dataset, cutoff_threshold, features=None):
     
     return data[features], labels
 
-def make_training_sets(device, dataset, random_seed=0):
+def make_training_sets(device, dataset, random_seed=0, window=None):
     """
     Split the raw data into training, test, and validation sets
     """
@@ -144,9 +145,23 @@ def make_training_sets(device, dataset, random_seed=0):
     data = data.dropna(subset=['ip', 'Wmhd', 'n_e', 'kappa', 'li'])
     # Eliminate timeslices with negative values in time
     data = data[data['time'] >= 0]
-
     # Remove where time_until_disrupt is negative, keeping where time_until_disrupt is null
     data = data[(data['time_until_disrupt'] >= 0) | (data['time_until_disrupt'].isnull())]
+
+    if window is not None:
+        # Add columns for temporal values of features over moving window
+        # Moving average
+        # Standard deviation
+        # Integral
+        # Derivative
+
+        # TODO: expand to arbitrary feature set
+        # Perform moving average over window duration in the 'time' column
+        for feature in DEFAULT_FEATURES:
+            data[f'{feature}_avg'] = data.rolling(window, on='time')[feature].mean()
+            data[f'{feature}_std'] = data.rolling(window, on='time')[feature].std()
+            data[f'{feature}_int'] = data.rolling(window, on='time')[feature].sum()
+            data[f'{feature}_der'] = data.rolling(window, on='time')[feature].apply(lambda x: np.gradient(x)[0])
 
     # Find the unique shots in the dataset
     shots = data['shot'].unique()
