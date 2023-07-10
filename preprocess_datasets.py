@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 
 DEFAULT_FEATURES = ['ip', 'Wmhd', 'n_e', 'kappa', 'li'] # Default features to use for training
+ALL_FEATURES = ['beta_n','beta_p','kappa','li','upper_gap','lower_gap','q0','qstar','q95','v_loop_efit','Wmhd','ssep','n_over_ncrit','R0','tritop','tribot','a_minor','chisq','dbetap_dt','dli_dt','dWmhd_dt','n_e','dn_dt','Greenwald_fraction','ip','dip_dt','dip_smoothed','ip_prog','dipprog_dt','ip_error','p_oh','v_loop']
 NOT_FEATURES = ['time', 'shot', 'time_until_disrupt'] # Columns that are not features
 
 def load_dataset(device, dataset):
@@ -143,6 +144,8 @@ def make_training_sets(device, dataset, random_seed=0, window=None):
     data = data[data['time'] >= 0]
     # Remove where time_until_disrupt is negative, keeping where time_until_disrupt is null
     data = data[(data['time_until_disrupt'] >= 0) | (data['time_until_disrupt'].isnull())]
+    # Remove shots shorter than 0.5 seconds
+    data = data.groupby('shot').filter(lambda x: x['time'].max() - x['time'].min() > 0.5)
 
     if window is not None:
         # Add columns for temporal values of features over moving window
