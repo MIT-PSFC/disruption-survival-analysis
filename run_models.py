@@ -39,35 +39,90 @@ def get_test_times(y_tr):
     return np.quantile(y_tr['time'][y_tr['event']==1], np.linspace(0.1, 0.9, 10)).tolist()
 
 
-def run_survival_model(model_string, x_tr, x_val, y_tr, y_val):
+def run_survival_model(model_string, x_tr, x_val, y_tr, y_val, selection='rough'):
     """
     Train and tune a SurvivalModel from auton-survival package
     
     Taken from example script in auton-survival package
     Survival Regression with Auton-Survival.ipynb
+
+    'rough', 'coarse', '1:1', 'fine', 'very fine'
     """
+
+    # l2 is penalizer. float. default 1e-3
+    # n_estimators is number of trees. int. default 50
+    # max_depth is max depth of tree. int. default 5
+    # max_features is max number of features to consider when splitting. str. default is 'sqrt', can also be 'log2'
+    # layers is list of hidden layer sizes. list of ints. default [100]
+    # learning rate is learning rate for optimizer. float. default 1e-3
+    # bs is batch size. int. default 100
+    # epochs is number of complete passes through training data. int default 50
+    # distribution is distribution of survival times. str. default 'Weibull', can also be 'LogNormal'
+
+    if selection == 'fine':
+        # Define hyperparameter grids for all models to use while tuning
+        l2_grid = np.logspace(-5,-2,10)
+        n_estimators_grid = np.linspace(50, 500, 10).astype(int)
+        max_depth_grid = np.linspace(2, 10, 5).astype(int)
+        max_features_grid = ['sqrt', 'log2']
+        layers_grid = [[100], [100, 100], [200]]
+        learning_rate_grid = np.logspace(-5,-2,10)
+        bs_grid = np.linspace(50, 500, 10).astype(int)
+        epochs = 200
+        distribution_grid = ['Weibull', 'LogNormal']
+        temperature_grid = np.linspace(0.5,1.5,10)
+        k_grid = [2, 3, 4, 5, 6]
+        smoothing_factor_grid = np.logspace(-5,-2,10)
+        gamma_grid = np.linspace(1, 21, 10).astype(int)
+    else:
+        l2_grid = [1e-3, 1e-4]
+        n_estimators_grid = [100, 300]
+        max_depth_grid = [3,5]
+        max_features_grid = ['sqrt', 'log2']
+        learning_rate_grid = [1e-3, 1e-4]
+        layers_grid = [[100], [100, 100]]
+        bs_grid = [50, 100]
+        epochs = 50
+        distribution_grid = ['Weibull', 'LogNormal']
+        temperature_grid = [1.0]
+        k_grid = [2, 3]
+        smoothing_factor_grid = [1e-3, 1e-4]
+        gamma_grid = [10]
+
+
 
     # Define the hyperparameter grid for hyperparameter tuning
     if model_string == 'cph':
-        param_grid = {'l2' : [1e-3, 1e-4]}
+        # l2, 
+        param_grid = {'l2' : l2_grid}
     elif model_string == 'dcph':
-        param_grid = {'bs' : [100, 200],
-                'learning_rate' : [ 1e-4, 1e-3],
-                'layers' : [ [100], [100, 100] ]
+        param_grid = {'bs' : bs_grid,
+                'learning_rate' : learning_rate_grid,
+                'layers' : layers_grid,
+                'epochs' : [epochs]
                 }
     elif model_string == 'dsm':
-        param_grid = {'layers' : [[100], [100, 100], [200]],
-              'distribution' : ['Weibull', 'LogNormal'],
-              'max_features' : ['sqrt', 'log2']
+        param_grid = {'layers' : layers_grid,
+              'distribution' : distribution_grid,
+              'temperature' : temperature_grid,
+              'batch_size' : bs_grid,
+              'learning_rate' : learning_rate_grid,
+              'epochs' : [epochs],
+              'max_features' : max_features_grid,
+              'k' : k_grid
              }
     elif model_string == 'dcm':
-        param_grid = {'k' : [2, 3],
-              'learning_rate' : [1e-3, 1e-4],
-              'layers' : [[100], [100, 100]]
+        param_grid = {'k' : k_grid,
+                'layers' : layers_grid,
+                'batch_size' : bs_grid,
+              'learning_rate' : learning_rate_grid,
+                'epochs' : [epochs],
+                'smoothing_factor' : smoothing_factor_grid,
+                'gamma' : gamma_grid
              }
     elif model_string == 'rsf':
-        param_grid = {'n_estimators' : [100, 300],
-              'max_depth' : [3, 5],
+        param_grid = {'n_estimators' : n_estimators_grid,
+              'max_depth' : max_depth_grid,
               'max_features' : ['sqrt', 'log2']
              }
     else:
@@ -86,15 +141,25 @@ def run_survival_model(model_string, x_tr, x_val, y_tr, y_val):
         elif model_string == 'dcph':
             model = SurvivalModel('dcph', bs=param['bs'], 
                                   learning_rate=param['learning_rate'], 
-                                  layers=param['layers'])
+                                  layers=param['layers'],
+                                  epochs=param['epochs'])
         elif model_string == 'dsm':
             model = SurvivalModel('dsm', layers=param['layers'], 
-                                  distribution=param['distribution'], 
-                                  max_features=param['max_features'])
+                                  distribution=param['distribution'],
+                                    temperature=param['temperature'],
+                                    batch_size=param['batch_size'],
+                                    learning_rate=param['learning_rate'],
+                                    iters=param['epochs'], 
+                                  max_features=param['max_features'],
+                                  k=param['k'])
         elif model_string == 'dcm':
             model = SurvivalModel('dcm', k=param['k'], 
+                                    batch_size=param['batch_size'],
+                                    epochs=param['epochs'],
                                   learning_rate=param['learning_rate'], 
-                                  layers=param['layers'])
+                                  layers=param['layers'],
+                                  smoothing_factor=param['smoothing_factor'],
+                                  gamma=param['gamma'])
         elif model_string == 'rsf':
             model = SurvivalModel('rsf', n_estimators=param['n_estimators'], 
                                   max_depth=param['max_depth'], 
