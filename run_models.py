@@ -26,9 +26,9 @@ def get_train_times(y_tr):
     Get the training times for survival models
     """
     try:
-        return np.quantile(y_tr['time'][y_tr['event']==1], np.linspace(0.001, 0.999, 1000)).tolist()
+        return np.quantile(y_tr['time'][y_tr['event']==1], np.linspace(0.01, 0.99, 100)).tolist()
     except:
-        return np.quantile(y_tr['time'], np.linspace(0.1, 0.9, 10)).tolist()
+        return np.quantile(y_tr['time'], np.linspace(0.01, 0.99, 100)).tolist()
 
 
 def get_test_times(y_tr):
@@ -36,7 +36,7 @@ def get_test_times(y_tr):
     Get the test times for survival models
     """
     # TODO: this should be limited to under 500 ms
-    return np.quantile(y_tr['time'][y_tr['event']==1], np.linspace(0.1, 0.9, 10)).tolist()
+    return np.quantile(y_tr['time'][y_tr['event']==1], np.linspace(0.01, 0.99, 100)).tolist()
 
 
 def run_survival_model(model_string, x_tr, x_val, y_tr, y_val, selection='rough'):
@@ -85,7 +85,7 @@ def run_survival_model(model_string, x_tr, x_val, y_tr, y_val, selection='rough'
         bs_grid = np.linspace(50, 500, 5).astype(int)
         epochs = 50
         distribution_grid = ['Weibull', 'LogNormal']
-        temperature_grid = np.linspace(0.5,1.5,3)
+        temperature_grid = [1.0]
         k_grid = [3]
         smoothing_factor_grid = np.logspace(-5,-2,3)
         gamma_grid = [10]
