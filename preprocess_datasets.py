@@ -4,8 +4,7 @@ import pkgutil
 import numpy as np
 import pandas as pd
 
-
-DEFAULT_FEATURES = ['ip','Wmhd','n_e','kappa','li']
+DEFAULT_FEATURES = ['ip', 'Wmhd', 'n_e', 'kappa', 'li'] # Default features to use for training
 NOT_FEATURES = ['time', 'shot', 'time_until_disrupt'] # Columns that are not features
 
 def load_dataset(device, dataset):
@@ -138,11 +137,8 @@ def make_training_sets(device, dataset, random_seed=0, window=None):
     # Load the raw dataset
     data = load_dataset(device, dataset+ '_raw')
 
-    # Only include default features
-    data = data[DEFAULT_FEATURES + ['time', 'time_until_disrupt', 'shot']]
-
     # Eliminate timeslices with null values in any feature except time_until_disrupt
-    data = data.dropna(subset=['ip', 'Wmhd', 'n_e', 'kappa', 'li'])
+    data = data.dropna(subset=DEFAULT_FEATURES)
     # Eliminate timeslices with negative values in time
     data = data[data['time'] >= 0]
     # Remove where time_until_disrupt is negative, keeping where time_until_disrupt is null

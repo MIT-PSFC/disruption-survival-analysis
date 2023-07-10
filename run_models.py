@@ -26,7 +26,7 @@ def get_train_times(y_tr):
     Get the training times for survival models
     """
     try:
-        return np.quantile(y_tr['time'][y_tr['event']==1], np.linspace(0.1, 0.9, 10)).tolist()
+        return np.quantile(y_tr['time'][y_tr['event']==1], np.linspace(0.001, 0.999, 1000)).tolist()
     except:
         return np.quantile(y_tr['time'], np.linspace(0.1, 0.9, 10)).tolist()
 
