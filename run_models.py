@@ -74,6 +74,21 @@ def run_survival_model(model_string, x_tr, x_val, y_tr, y_val, selection='rough'
         k_grid = [2, 3, 4, 5, 6]
         smoothing_factor_grid = np.logspace(-5,-2,10)
         gamma_grid = np.linspace(1, 21, 10).astype(int)
+    elif selection == '1:1':
+        # Define hyperparameter grids for all models to use while tuning
+        l2_grid = np.logspace(-5,-2,5)
+        n_estimators_grid = np.linspace(50, 500, 5).astype(int)
+        max_depth_grid = np.linspace(2, 10, 5).astype(int)
+        max_features_grid = ['sqrt', 'log2']
+        layers_grid = [[100], [100, 100], [200]]
+        learning_rate_grid = np.logspace(-5,-2,5)
+        bs_grid = np.linspace(50, 500, 5).astype(int)
+        epochs = 50
+        distribution_grid = ['Weibull', 'LogNormal']
+        temperature_grid = np.linspace(0.5,1.5,3)
+        k_grid = [3]
+        smoothing_factor_grid = np.logspace(-5,-2,3)
+        gamma_grid = [10]
     else:
         l2_grid = [1e-3, 1e-4]
         n_estimators_grid = [100, 300]

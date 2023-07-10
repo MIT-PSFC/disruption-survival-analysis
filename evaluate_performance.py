@@ -80,7 +80,7 @@ def benchmark_au_roc(predictor:DisruptionPredictor, horizons, device, dataset):
             y_score = np.concatenate((y_score, scored_data), axis=None)
 
         # TODO: There are MANY more 'not disruptive' shots than 'disruptive' time slices
-        # Might need to use 'weighted' option in roc_auc_score to account for this
+        # Don't do weighting though, acc Chirag
         # Doesn't appear to make much of a difference.
         # Calculate the area under the ROC curve 
         au_roc = roc_auc_score(y_true, y_score)
@@ -108,12 +108,12 @@ def label_shot_data(shot_data, disrupt, horizon):
     """
 
     if disrupt:
-        # If the shot is disruptive, label all time slices up to
+        # If the shot disrupts, label all time slices up to
         # horizon seconds before the disruption as non-disruptive
         # and all time slices after horizon seconds before the disruption as disruptive
         # Labels are either 0 (non-disruptive) or 1 (disruptive)
         disruption_time = shot_data['time'].max()
-        labeled_data = np.array(shot_data['time'] < (disruption_time - horizon)).astype(int)
+        labeled_data = np.array(shot_data['time'] > (disruption_time - horizon)).astype(int)
     else:
         # If the shot is not disruptive, label all time slices as non-disruptive
         labeled_data = np.zeros(len(shot_data))
