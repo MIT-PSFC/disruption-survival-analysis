@@ -289,16 +289,27 @@ def benchmark_true_detection(predictor:DisruptionPredictor, horizon, device, dat
                 pass
         
         # Clump the detection times that share a false positive rate together
-        if i != 0 and false_positive_rates[i] != false_positive_rates[i-1]:
-            mean_detection_times.append(np.mean(threshold_times))
-            std_detection_times.append(np.std(threshold_times))
-            threshold_times = []
-        elif i == len(thresholds) - 1:
-            # If we're at the end, we need to add the last one
-            mean_detection_times.append(np.mean(threshold_times))
-            std_detection_times.append(np.std(threshold_times))
+        # Or if we're at the end, we need to add the last one regardless
+        if i == len(thresholds) - 1 or (false_positive_rates[i] != false_positive_rates[i+1]):
+            if len(threshold_times) > 0:
+                mean_detection_times.append(np.mean(threshold_times))
+                std_detection_times.append(np.std(threshold_times))
+                threshold_times = []
+            else:
+                # If there are no detection times, that means false positive rate is 0. Detection time is 0.
+                mean_detection_times.append(0)
+                std_detection_times.append(0)
+            
 
-    # Eliminate duplicate false positive rates
+    # Eliminate duplicate false positive rates.
+    # However, this sorts the false positive rates, so we need to reverse the order afterwards
     unique_false_positive_rates = np.unique(false_positive_rates)
+    # Reverse the order so that the false positive rates are increasing (to once again line up with the detection times)
+    unique_false_positive_rates = unique_false_positive_rates[::-1]
+
+    # Ignore zero false positve rate results
+    unique_false_positive_rates = unique_false_positive_rates[:-1]
+    mean_detection_times = mean_detection_times[:-1]
+    std_detection_times = std_detection_times[:-1]
 
     return unique_false_positive_rates, mean_detection_times, std_detection_times
