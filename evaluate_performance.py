@@ -122,6 +122,7 @@ def label_shot_data(shot_data, disrupt, horizon):
 
 def calc_au_roc(predictor:DisruptionPredictor, horizon, data):
     """
+    DEPRECATED. USING SCIKIT-LEARN INSTEAD
     Calculate the area under the ROC curve for a given predictor and horizon
     Higher is better. Perfect score is 1, random score is 0.5
     
@@ -173,6 +174,57 @@ def calc_au_roc(predictor:DisruptionPredictor, horizon, data):
 
     return au_roc
 
+def calc_tp_fp_times(predictor:DisruptionPredictor, horizon, data, thresholds):
+    """
+    Calculate the True Positives, False Positives, and Time to First True Detection
+    at a given horizon for a given predictor and thresholds.
+    """
+
+    # Create arrays to store the results
+    # Array is of shape (num_shots, num_thresholds)
+    true_positives = np.zeros((len(data), len(thresholds)))
+    false_positives = np.zeros((len(data), len(thresholds)))
+
+    # Create list to store detection times for each shot
+    # This is a list of arrays of variable length,
+    # but the arrays will line up such that each index corresponds to the same threshold
+    detection_times = []
+
+    # Iterate through shots
+    for i, entry in enumerate(data):
+        disrupt = entry[0]
+        shot_data = entry[1]
+        # Calculate the disruption time predicted by the model
+        disruption_times = predictor.calculate_disruption_time(shot_data, thresholds, horizon)
+
+        # Fill in true and false positives
+        true_positives[i] = np.array([disrupt and (disruption_time is not None) for disruption_time in disruption_times])
+        false_positives[i] = np.array([(not disrupt) and (disruption_time is not None) for disruption_time in disruption_times])
+
+        # If shot is disruptive, can fill in Time to First True Detection
+        if disrupt:
+            # Find actual disruption time by looking at last time in shot
+            onset_time = shot_data['time'].iloc[-1]
+
+            detection_times.append(np.array([onset_time - disruption_time for disruption_time in disruption_times if disruption_time is not None]))
+
+    return true_positives, false_positives, detection_times
+
+def calc_num_disrupt(data):
+    """
+    Find number of disruptive shots in data
+    """
+
+    num_disruptive = 0
+
+    # Iterate through shots
+    for entry in data:
+        disrupt = entry[0]
+        if disrupt:
+            num_disruptive += 1
+
+    return num_disruptive
+
 def benchmark_true_detection(predictor:DisruptionPredictor, horizon, device, dataset):
     """
     Calculate the Activity Monitoring Operator Characteristic (AMOC) curve at a single time horizon.
@@ -209,37 +261,10 @@ def benchmark_true_detection(predictor:DisruptionPredictor, horizon, device, dat
     # Set the thresholds to use
     thresholds = np.linspace(0, 1, 100)
 
-    # Create arrays to store the results
-    # Array is of shape (num_shots, num_thresholds)
-    false_positives = np.zeros((len(data), len(thresholds)))
+    # Calculate the false positives, and detection times
+    _, false_positives, detection_times = calc_tp_fp_times(predictor, horizon, data, thresholds)
 
-    # Create list to store detection times for each shot
-    # This is a list of arrays of variable length,
-    # but the arrays will line up such that each index corresponds to the same threshold
-    detection_times = []
-
-    # Get a running total of number of disruptive shots
-    num_disruptive = 0
-
-    # Iterate through shots
-    for i, entry in enumerate(data):
-        disrupt = entry[0]
-        shot_data = entry[1]
-        # Calculate the disruption time predicted by the model
-        disruption_times = predictor.calculate_disruption_time(shot_data, thresholds, horizon)
-
-        # Fill in false positives
-        false_positives[i] = np.array([(not disrupt) and (disruption_time is not None) for disruption_time in disruption_times])
-
-        if disrupt:
-            num_disruptive += 1
-            
-            # If shot is disruptive, can fill in Time to First True Detection
-
-            # Find actual disruption time by looking at last time in shot
-            onset_time = shot_data['time'].iloc[-1]
-
-            detection_times.append(np.array([onset_time - disruption_time for disruption_time in disruption_times if disruption_time is not None]))
+    num_disruptive = calc_num_disrupt(data)
 
     # The way this is formatted at this point isn't really 'T2FD' vs 'FPR' but rather
     # 'T2FD at threshold' and 'FPR at threshold'
