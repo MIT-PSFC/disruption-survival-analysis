@@ -176,7 +176,7 @@ def calc_au_roc(predictor:DisruptionPredictor, horizon, data):
 
 def calc_tp_fp_times(predictor:DisruptionPredictor, horizon, data, thresholds):
     """
-    Calculate the True Positives, False Positives, and Time to First True Detection
+    Calculate the True Positives, False Positives, and Warning Times
     at a given horizon for a given predictor and thresholds.
     """
 
@@ -185,30 +185,30 @@ def calc_tp_fp_times(predictor:DisruptionPredictor, horizon, data, thresholds):
     true_positives = np.zeros((len(data), len(thresholds)))
     false_positives = np.zeros((len(data), len(thresholds)))
 
-    # Create list to store detection times for each shot
+    # Create list to store warning times
     # This is a list of arrays of variable length,
     # but the arrays will line up such that each index corresponds to the same threshold
-    detection_times = []
+    warning_times = []
 
     # Iterate through shots
     for i, entry in enumerate(data):
         disrupt = entry[0]
         shot_data = entry[1]
         # Calculate the disruption time predicted by the model
-        disruption_times = predictor.calculate_disruption_time(shot_data, thresholds, horizon)
+        predicted_times = predictor.calculate_disruption_time(shot_data, thresholds, horizon)
 
         # Fill in true and false positives
-        true_positives[i] = np.array([disrupt and (disruption_time is not None) for disruption_time in disruption_times])
-        false_positives[i] = np.array([(not disrupt) and (disruption_time is not None) for disruption_time in disruption_times])
+        true_positives[i] = np.array([disrupt and (predicted_time is not None) for predicted_time in predicted_times])
+        false_positives[i] = np.array([(not disrupt) and (predicted_time is not None) for predicted_time in predicted_times])
 
         # If shot is disruptive, can fill in Time to First True Detection
         if disrupt:
             # Find actual disruption time by looking at last time in shot
-            onset_time = shot_data['time'].iloc[-1]
+            true_time = shot_data['time'].iloc[-1]
 
-            detection_times.append(np.array([onset_time - disruption_time for disruption_time in disruption_times if disruption_time is not None]))
+            warning_times.append(np.array([true_time - predicted_time for predicted_time in predicted_times if predicted_time is not None]))
 
-    return true_positives, false_positives, detection_times
+    return true_positives, false_positives, warning_times
 
 def calc_num_disrupt(data):
     """
@@ -225,13 +225,15 @@ def calc_num_disrupt(data):
 
     return num_disruptive
 
-def benchmark_true_detection(predictor:DisruptionPredictor, horizon, device, dataset):
+def benchmark_warning_time(predictor:DisruptionPredictor, horizon, device, dataset):
     """
-    Calculate the Activity Monitoring Operator Characteristic (AMOC) curve at a single time horizon.
-    This is the average and standard deviation of the Time to First True Detection (T2FD)
-    for a given predictor vs false positive rate.
+    Calculate the warning time curve at a single time horizon.
+    This is the average and standard deviation of the warning time
+    for a given predictor vs false positive rate,
+    where warning time is defined as the time between predicted onset and the disruption actually happening.
     Used to compare performance of different predictors like in Fig. 3 of 
     Dynamically Personalized Detection of Hemorrhage, Chirag et al 2019.
+    (NOTE: these are diferent metrics, but the plots look similar and they convey similar information)
 
     Parameters
     ----------
@@ -249,10 +251,10 @@ def benchmark_true_detection(predictor:DisruptionPredictor, horizon, device, dat
     --------
     false_positive_rates : list of float
         The false positive rates
-    mean_detection_times : list of float
-        The average detection time for each false positive rate
-    std_detection_times : list of float
-        The standard deviation of the detection time for each false positive rate
+    mean_warning_times : list of float
+        The average warning time for each false positive rate
+    std_warning_times : list of float
+        The standard deviation of the warning time for each false positive rate
     """
 
     # Load the data and process it with predictor's transformer
@@ -261,44 +263,44 @@ def benchmark_true_detection(predictor:DisruptionPredictor, horizon, device, dat
     # Set the thresholds to use
     thresholds = np.linspace(0, 1, 100)
 
-    # Calculate the false positives, and detection times
-    _, false_positives, detection_times = calc_tp_fp_times(predictor, horizon, data, thresholds)
+    # Calculate the false positives, and warning times
+    _, false_positives, warning_times = calc_tp_fp_times(predictor, horizon, data, thresholds)
 
     num_disruptive = calc_num_disrupt(data)
 
-    # The way this is formatted at this point isn't really 'T2FD' vs 'FPR' but rather
-    # 'T2FD at threshold' and 'FPR at threshold'
-    # When returned, the average T2FDs will correspond to a particular FPR
+    # The way this is formatted at this point isn't really 'warning times' vs 'FPR' but rather
+    # 'warning times at threshold' and 'FPR at threshold'
+    # When returned, the warning time statistics will correspond to a particular FPR
 
     # Calculate the false positive rate for each threshold
     false_positive_rates = np.sum(false_positives, axis=0) / (len(data) - num_disruptive)
 
-    mean_detection_times = []
-    std_detection_times = []
+    mean_warning_times = []
+    std_warning_times = []
 
     # TODO: Should really really vectorize this
 
-    # Calculate the average detection time for each false positive rate
-    threshold_times = []
+    # Calculate the average warning time for each false positive rate
+    fpr_times = []
     for i in range(len(thresholds)):
     
-        for detection_time in detection_times:
+        for warning_time in warning_times:
             try:
-                threshold_times.append(detection_time[i])
+                fpr_times.append(warning_time[i])
             except IndexError:
                 pass
         
         # Clump the detection times that share a false positive rate together
         # Or if we're at the end, we need to add the last one regardless
         if i == len(thresholds) - 1 or (false_positive_rates[i] != false_positive_rates[i+1]):
-            if len(threshold_times) > 0:
-                mean_detection_times.append(np.mean(threshold_times))
-                std_detection_times.append(np.std(threshold_times))
-                threshold_times = []
+            if len(fpr_times) > 0:
+                mean_warning_times.append(np.mean(fpr_times))
+                std_warning_times.append(np.std(fpr_times))
+                fpr_times = []
             else:
                 # If there are no detection times, that means false positive rate is 0. Detection time is 0.
-                mean_detection_times.append(0)
-                std_detection_times.append(0)
+                mean_warning_times.append(0)
+                std_warning_times.append(0)
             
 
     # Eliminate duplicate false positive rates.
