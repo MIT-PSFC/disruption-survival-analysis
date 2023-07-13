@@ -261,7 +261,7 @@ def benchmark_warning_time(predictor:DisruptionPredictor, horizon, device, datas
     data = load_benchmark_data(predictor, device, dataset)
 
     # Set the thresholds to use
-    thresholds = np.linspace(0, 1, 100)
+    thresholds = np.linspace(0, 1, 1000)
 
     # Calculate the false positives, and warning times
     _, false_positives, warning_times = calc_tp_fp_times(predictor, horizon, data, thresholds)
@@ -288,7 +288,9 @@ def benchmark_warning_time(predictor:DisruptionPredictor, horizon, device, datas
             try:
                 fpr_times.append(warning_time[i])
             except IndexError:
-                pass
+                # This is a disruptive shot that didn't have a detection at this threshold
+                # Warning time is 0
+                fpr_times.append(0)
         
         # Clump the detection times that share a false positive rate together
         # Or if we're at the end, we need to add the last one regardless
@@ -310,8 +312,4 @@ def benchmark_warning_time(predictor:DisruptionPredictor, horizon, device, datas
     unique_false_positive_rates = unique_false_positive_rates[::-1]
 
     # Ignore zero false positve rate results
-    unique_false_positive_rates = unique_false_positive_rates[:-1]
-    mean_detection_times = mean_detection_times[:-1]
-    std_detection_times = std_detection_times[:-1]
-
-    return unique_false_positive_rates, mean_detection_times, std_detection_times
+    return unique_false_positive_rates[:-1], mean_warning_times[:-1], std_warning_times[:-1]
