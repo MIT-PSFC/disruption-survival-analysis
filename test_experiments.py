@@ -72,22 +72,34 @@ class TestTimeToDetection(unittest.TestCase):
         for i in range(len(false_positive_rates)-1):
             self.assertLessEqual(false_positive_rates[i+1], false_positive_rates[i])
 
-    def test_true_detection_ordering(self):
-        """Ensure that the mean detection times are always decreasing
+    def test_individual_warning_time_ordering(self):
+        """Ensure that the individual warning times are always decreasing
         As threshold increases, there should be less time between detection and disruption
         """
 
-        _, mean_detection_times, _ = benchmark_true_detection(self.predictor, self.horizon, self.device, self.dataset+'_test')
+        _, _, warning_times_array = calc_tp_fp_times(self.predictor, self.horizon, self.data, self.thresholds)
+
+        # Check that the mean warning times are always decreasing
+        for warning_times in warning_times_array:
+            for i in range(len(warning_times)-1):
+                self.assertLessEqual(warning_times[i+1], warning_times[i])
+
+    def test_mean_warning_time_ordering(self):
+        """Ensure that the mean warning times are always decreasing
+        As threshold increases, there should be less time between detection and disruption
+        """
+
+        _, mean_warning_times, _ = benchmark_warning_time(self.predictor, self.horizon, self.device, self.dataset+'_test')
 
         # Check that the mean detection times are always decreasing
-        for i in range(len(mean_detection_times)-1):
-            self.assertLessEqual(mean_detection_times[i+1], mean_detection_times[i])
+        for i in range(len(mean_warning_times)-1):
+            self.assertLessEqual(mean_warning_times[i+1], mean_warning_times[i])
 
 
-    def test_true_detection_sizes(self):
-        """Ensure all arrays returned by benchmark_true_detection are the same size"""
+    def test_warning_time_sizes(self):
+        """Ensure all arrays returned by benchmark_warning_time are the same size"""
 
-        false_positive_rates, mean_detection_times, std_detection_times = benchmark_true_detection(self.predictor, self.horizon, self.device, self.dataset+'_test')
+        false_positive_rates, mean_warning_times, std_warning_times = benchmark_warning_time(self.predictor, self.horizon, self.device, self.dataset+'_test')
 
-        self.assertEqual(len(false_positive_rates), len(mean_detection_times))
-        self.assertEqual(len(false_positive_rates), len(std_detection_times))
+        self.assertEqual(len(false_positive_rates), len(mean_warning_times))
+        self.assertEqual(len(false_positive_rates), len(std_warning_times))
