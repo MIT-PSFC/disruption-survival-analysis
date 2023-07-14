@@ -270,3 +270,46 @@ def load_benchmark_data(predictor:DisruptionPredictor, device, dataset):
         data.append((disrupt, shot_data))
 
     return data
+
+def make_stacked_sets(device, dataset, k):
+    """Given some dataset, stack the features so each row includes itself and the k previous rows
+    """
+
+    data = load_dataset(device, dataset)
+
+    # Get the columns to stack
+    features = list(data.columns)
+    features.remove('shot')
+    features.remove('time')
+    features.remove('time_until_disrupt')
+    # TODO check if anything else in here is bad
+
+    extended_features = features.copy()
+    for feature in features:
+        for i in range(k):
+            extended_features.append(f'{feature}_{i}')
+
+    stacked_features = pd.DataFrame(columns=extended_features)
+
+    # Get the shot numbers
+    shot_numbers = data['shot'].unique()
+
+    # For each shot, stack the features
+
+    for shot in shot_numbers:
+
+        shot_stack = data[data['shot'] == shot].copy()
+
+        for feature in features:
+            for i in range(k):
+                shot_stack[f'{feature}_{i}'] = shot_stack[feature].shift(k)
+
+        # Eliminate all rows with NaNs
+        shot_stack = shot_stack.dropna()
+
+        stacked_features = pd.concat([stacked_features, shot_stack], ignore_index=True)
+
+    stacked_features.to_csv(f'data/{device}/{dataset}_{k}k.csv', index=False)
+
+
+        
