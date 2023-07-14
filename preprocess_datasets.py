@@ -4,6 +4,8 @@ import pkgutil
 import numpy as np
 import pandas as pd
 
+from DisruptionPredictors import DisruptionPredictor
+
 DEFAULT_FEATURES = ['ip', 'Wmhd', 'n_e', 'kappa', 'li'] # Default features to use for training
 ALL_FEATURES = ['beta_n','beta_p','kappa','li','upper_gap','lower_gap','q0','qstar','q95','v_loop_efit','Wmhd','ssep','n_over_ncrit','R0','tritop','tribot','a_minor','chisq','dbetap_dt','dli_dt','dWmhd_dt','n_e','dn_dt','Greenwald_fraction','ip','dip_dt','dip_smoothed','ip_prog','dipprog_dt','ip_error','p_oh','v_loop']
 NOT_FEATURES = ['time', 'shot', 'time_until_disrupt'] # Columns that are not features
@@ -244,3 +246,27 @@ def load_dataset_grouped(device, dataset):
 
     # Return the grouped dataset
     return group_data
+
+def load_benchmark_data(predictor:DisruptionPredictor, device, dataset):
+    
+    # Get a list of all disruptive shots (disruption happens during flattop)
+    disruptive_shots = get_disruptive_shot_list(device, dataset)
+
+    # Load the data grouped by shot number
+    raw_data = load_dataset_grouped(device, dataset)
+    
+    data = []
+    for entry in raw_data:
+        # Replace the shot numbers with a boolean indicating if the shot is disruptive
+        shotnumber = entry[0]
+        disrupt = shotnumber in disruptive_shots
+
+        # Trim the raw data to only include the features used by the predictor
+        # and apply the transformer
+        raw_shot_data = entry[1]
+        shot_data = predictor.transformer.transform(raw_shot_data[predictor.features])
+        # Put the times back in
+        shot_data['time'] = raw_shot_data['time']
+        data.append((disrupt, shot_data))
+
+    return data

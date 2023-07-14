@@ -5,32 +5,8 @@ import pandas as pd
 
 from sklearn.metrics import roc_auc_score
 
-from preprocess_datasets import load_dataset_grouped, get_disruptive_shot_list
+from preprocess_datasets import load_benchmark_data
 from DisruptionPredictors import DisruptionPredictor
-
-def load_benchmark_data(predictor:DisruptionPredictor, device, dataset):
-    
-    # Get a list of all disruptive shots (disruption happens during flattop)
-    disruptive_shots = get_disruptive_shot_list(device, dataset)
-
-    # Load the data grouped by shot number
-    raw_data = load_dataset_grouped(device, dataset)
-    
-    data = []
-    for entry in raw_data:
-        # Replace the shot numbers with a boolean indicating if the shot is disruptive
-        shotnumber = entry[0]
-        disrupt = shotnumber in disruptive_shots
-
-        # Trim the raw data to only include the features used by the predictor
-        # and apply the transformer
-        raw_shot_data = entry[1]
-        shot_data = predictor.transformer.transform(raw_shot_data[predictor.features])
-        # Put the times back in
-        shot_data['time'] = raw_shot_data['time']
-        data.append((disrupt, shot_data))
-
-    return data
 
 def benchmark_au_roc(predictor:DisruptionPredictor, horizons, device, dataset):
     """
