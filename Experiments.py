@@ -46,6 +46,15 @@ class Experiment:
         """ Returns a list of all shots that disrupted in the dataset """
         return self.all_data[self.all_data['time_until_disrupt'] >= 0]['shot'].unique()
     
+    def get_time(self, shot):
+        """ Returns the times for a given shot """
+        shot_data = self.all_data[self.all_data['shot'] == shot]
+        return shot_data['time'].values
+
+    def get_risk(self, shot, horizon):
+        """ Returns the risk score for a shot at a given horizon """
+        shot_data = self.all_data[self.all_data['shot'] == shot]
+        return self.predictor.calculate_risk(shot_data, horizon)['risk'].values
 
     # ROC AUC methods
 

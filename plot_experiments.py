@@ -6,9 +6,11 @@ import matplotlib.pyplot as plt
 from Experiments import Experiment
 
 
+DEFAULT_HORIZONS = np.linspace(0.01, 0.4, 10)
+
 # Plots for 
 
-def plot_roc_auc_vs_horizon_macro(experiment_list:list[Experiment], horizons=np.linspace(0.01, 0.4, 9)):
+def plot_roc_auc_vs_horizon_macro(experiment_list:list[Experiment], horizons=DEFAULT_HORIZONS):
     """ Averaged over all shots
     
     """
@@ -37,7 +39,7 @@ def plot_roc_auc_vs_horizon_macro(experiment_list:list[Experiment], horizons=np.
     plt.show()
         
 
-def plot_roc_auc_vs_horizon_micro(experiment_list:list[Experiment], horizons=np.linspace(0.01, 0.4, 10)):
+def plot_roc_auc_vs_horizon_micro(experiment_list:list[Experiment], horizons=DEFAULT_HORIZONS):
     """ Averaged over a single shot
 
     """
@@ -96,9 +98,34 @@ def plot_warning_time_vs_precision():
 
 # Plots for comparing output of models to time series of individual shots
 
-def plot_risk():
+def plot_risk_compare_horizons(experiment:Experiment, shot, horizons=DEFAULT_HORIZONS):
     """ Compared with Ip or actual disruption time or something """
+
+    horizons_ms = horizons*1000
+
+    plt.figure()
+
+    # Invert horizons so the legend matches the order of the lines
+    horizons = horizons[::-1]
+
+    for horizon in horizons:
+        time = experiment.get_time(shot)
+        risk = experiment.get_risk(shot, horizon)
+        plt.plot(time, risk, label=f'{(horizon*1000):.0f} ms')
+
+    plt.xlim([time[0], time[-1]])
+    plt.ylim([0, 1])
+
+    plt.xlabel('Time [ms]')
+    plt.ylabel('Disruption Risk')
+
+    plt.title(f'{experiment.name} Disruption Risk vs. Time at various Horizons for Shot {shot}')
+
+    plt.legend()
+
+def plot_risk_compare_models(experiment_list:list[Experiment], shot, horizon):
+    pass
 
 def plot_expected_lifetime():
     """ NOT RIGOROUS """
-
+    pass
