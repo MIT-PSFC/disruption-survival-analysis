@@ -8,7 +8,7 @@ from Experiments import Experiment
 
 # Plots for 
 
-def plot_roc_auc_vs_horizon_macro(experiment_list:list[Experiment], horizons=np.linspace(0, 1, 100)):
+def plot_roc_auc_vs_horizon_macro(experiment_list:list[Experiment], horizons=np.linspace(0.01, 0.4, 10)):
     """ Averaged over all shots
     
     """
@@ -21,6 +21,9 @@ def plot_roc_auc_vs_horizon_macro(experiment_list:list[Experiment], horizons=np.
         #plt.plot(horizons, roc_auc, label=experiment.name)
         #plt.fill_between(horizons, roc_auc - roc_auc_std, roc_auc + roc_auc_std, alpha=0.2)
 
+    plt.xlim([horizons[0], horizons[-1]])
+    plt.ylim([0.5, 1])
+
     plt.xlabel('Horizon [s]')
     plt.ylabel('Macro Average Area Under ROC Curve')
 
@@ -30,10 +33,27 @@ def plot_roc_auc_vs_horizon_macro(experiment_list:list[Experiment], horizons=np.
     plt.show()
         
 
-def plot_roc_auc_vs_horizon_micro():
+def plot_roc_auc_vs_horizon_micro(experiment_list:list[Experiment], horizons=np.linspace(0.01, 0.4, 10)):
     """ Averaged over a single shot
 
     """
+
+    plt.figure()
+
+    for experiment in experiment_list:
+        roc_auc = experiment.roc_auc_micro_all(horizons)
+        plt.plot(horizons, roc_auc, label=experiment.name)
+
+    plt.xlim([horizons[0], horizons[-1]])
+    plt.ylim([0.5, 1])
+
+    plt.xlabel('Horizon [s]')
+    plt.ylabel('Micro Average Area Under ROC Curve')
+
+    plt.title('Micro Average ROC AUC vs. Horizon')
+
+    plt.legend()
+    plt.show()
 
 def plot_TPR_vs_threshold_macro():
     """ Averaged over all shots
