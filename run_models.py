@@ -30,14 +30,12 @@ def get_train_times(y_tr):
     except:
         return np.quantile(y_tr['time'], np.linspace(0.1, 0.9, 10)).tolist()
 
-
 def get_test_times(y_tr):
     """
     Get the test times for survival models
     """
     # TODO: this should be limited to under 500 ms
     return np.quantile(y_tr['time'][y_tr['event']==1], np.linspace(0.1, 0.9, 10)).tolist()
-
 
 def run_survival_model(model_string, x_tr, x_val, y_tr, y_val, selection='rough'):
     """
