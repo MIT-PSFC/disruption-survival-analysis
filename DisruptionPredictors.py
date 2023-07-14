@@ -198,27 +198,33 @@ class DisruptionPredictorTinguely(DisruptionPredictor):
 
         risk_time = data.copy()
 
+        # reindex the data to start at 0
+        risk_time.index = range(len(risk_time))
+
         # Iterate through the data and calculate the initial risk for each time slice
         risk_time['initial_risk'] = self.model.predict_proba(data[self.features])[:,1]
+
+        # Initialize risk column to all zeros
+        risk_time['risk'] = 0
 
         # This is a bit of a slow implementation, can speed up later if needed
 
         fit_times = []
         fit_points = []
 
-        fit_times.append(risk_time.iloc[0]['time'])
-        fit_points.append(risk_time.iloc[0]['initial_risk'])
+        fit_times.append(risk_time.at[0, 'time'])
+        fit_points.append(risk_time.at[0, 'initial_risk'])
 
         # Iterate through the data and calculate the slope for each time slice
         # Slope is calculated using a linear fit over the previous t_fit seconds
         for i in range(1, len(risk_time)):
 
             # Get the time for the new time slice
-            new_time = risk_time.iloc[i]['time']
+            new_time = risk_time.at[i, 'time']
 
             # Add the new time to the fit
             fit_times.append(new_time)
-            fit_points.append(risk_time.iloc[i]['initial_risk'])
+            fit_points.append(risk_time.at[i, 'initial_risk'])
 
             # If the new time is outside the time window, remove the oldest point
             if new_time - fit_times[0] > t_fit:
@@ -229,7 +235,7 @@ class DisruptionPredictorTinguely(DisruptionPredictor):
             slope = self.linear_slope(np.array(fit_times), np.array(fit_points))
 
             # Extrapolate the risk into the future using the slope
-            risk_time.at[i, 'risk'] = risk_time.iloc[i]['initial_risk'] + slope * horizon
+            risk_time.at[i, 'risk'] = risk_time.at[i, 'initial_risk'] + slope * horizon
 
         # Replace all NaNs with 0
         risk_time.fillna(0, inplace=True)
