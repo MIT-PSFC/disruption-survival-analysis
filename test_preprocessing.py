@@ -4,19 +4,25 @@ import unittest
 
 from preprocess_datasets import *
 
+TEST_DEVICE = 'cmod'
+TEST_DATASET = '5k_random_256_shots_60%_flattop'
+TEST_DATASET_TRAIN = TEST_DATASET + '_train'
+TEST_DATASET_TEST = TEST_DATASET + '_test'
+TEST_DATASET_VAL = TEST_DATASET + '_val'
+
 class TestLoadDataset(unittest.TestCase):
 
     def test_no_negative_time(self):
         """Ensure there is no negative time in the datasets
         """
 
-        self.data = load_dataset('cmod', 'random100_train')
+        self.data = load_dataset(TEST_DEVICE, TEST_DATASET_TRAIN)
         self.assertTrue((self.data['time'] >= 0).all())
 
-        self.data = load_dataset('cmod', 'random100_test')
+        self.data = load_dataset(TEST_DEVICE, TEST_DATASET_TEST)
         self.assertTrue((self.data['time'] >= 0).all())
 
-        self.data = load_dataset('cmod', 'random100_val')
+        self.data = load_dataset(TEST_DEVICE, TEST_DATASET_VAL)
         self.assertTrue((self.data['time'] >= 0).all())
 
     def test_no_negative_disruption_time(self):
@@ -24,7 +30,7 @@ class TestLoadDataset(unittest.TestCase):
         Ensure the time_until_disrupt is not negative
         """
 
-        for dataset in ['random100_train', 'random100_test', 'random100_val']:
+        for dataset in [TEST_DATASET_TRAIN, TEST_DATASET_TEST, TEST_DATASET_VAL]:
             self.data = load_dataset('cmod', dataset)
             # Remove NaN slices (don't care about that for this test)
             self.data = self.data[~self.data['time_until_disrupt'].isnull()]
@@ -72,6 +78,21 @@ class TestLoadFeaturesOutcomes(unittest.TestCase):
 
         _, self.outcomes = load_features_outcomes('cmod', 'random100_val')
         self.assertTrue((self.outcomes['time'] != 0).all())
+
+    def test_binary_outcomes(self):
+        """Ensure that the outcomes are binary and not all 1's or all 0's"""
+
+        _, self.outcomes = load_features_outcomes(TEST_DEVICE, TEST_DATASET_TRAIN)
+        self.assertTrue((self.outcomes['event'] == 0).any())
+        self.assertTrue((self.outcomes['event'] == 1).any())
+
+        _, self.outcomes = load_features_outcomes(TEST_DEVICE, TEST_DATASET_TEST)
+        self.assertTrue((self.outcomes['event'] == 0).any())
+        self.assertTrue((self.outcomes['event'] == 1).any())
+
+        _, self.outcomes = load_features_outcomes(TEST_DEVICE, TEST_DATASET_VAL)
+        self.assertTrue((self.outcomes['event'] == 0).any())
+        self.assertTrue((self.outcomes['event'] == 1).any())
 
 class TestShotLists(unittest.TestCase):
 
