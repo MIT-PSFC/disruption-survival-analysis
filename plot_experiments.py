@@ -8,7 +8,7 @@ from Experiments import Experiment
 
 DEFAULT_HORIZONS = np.linspace(0.01, 0.4, 10)
 
-# Plots for 
+# Plots for model performance tests (in terms of ROC AUC, TPR, FPR, Warning Time, etc.)
 
 def plot_roc_auc_vs_horizon_macro(experiment_list:list[Experiment], horizons=DEFAULT_HORIZONS):
     """ Averaged over all shots
@@ -85,10 +85,28 @@ def plot_TPR_vs_FPR_micro():
 
     """
 
-def plot_warning_time_vs_FPR():
+def plot_warning_time_vs_FPR(experiment_list:list[Experiment], horizon=DEFAULT_HORIZONS[0]):
     """ Averaged over all shots
-
     """
+
+    horizon_ms = horizon*1000
+
+    plt.figure()
+
+    for experiment in experiment_list:
+        fpr, warning_time_avg, warning_time_std = experiment.warning_vs_fpr(horizon)
+        plt.errorbar(fpr, warning_time_avg, yerr=warning_time_std, label=experiment.name, fmt='o-')
+
+    plt.xlim([0, 1])
+    plt.ylim([0, max(warning_time_avg) + max(warning_time_std)])
+
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('Warning Time [ms]')
+
+    plt.title(f'Warning Time vs. False Positive Rate at {horizon_ms:.0f} ms Horizon')
+
+    plt.legend()
+    plt.show()
 
 def plot_warning_time_vs_precision():
     """ Averaged over all shots

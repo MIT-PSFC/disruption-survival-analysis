@@ -5,13 +5,17 @@ import numpy as np
 
 from sklearn.metrics import roc_auc_score
 from preprocess_datasets import load_dataset
-from evaluate_performance import label_shot_data
+from evaluate_performance import label_shot_data, calc_tp_fp_times
 
 from DisruptionPredictors import DisruptionPredictor
 
 class Experiment:
 
-    def __init__(self, device, dataset, predictor:DisruptionPredictor, name=None):
+    warning_times = None
+    tpr = None
+    fpr = None
+
+    def __init__(self, device, dataset, predictor:DisruptionPredictor, name=None, thresholds=np.linspace(0,1,1000)):
 
         # feature_data: only what is fed to predictor
         # all_data: all data, including shot, time, time_until_disrupt, and features fed to predictor
@@ -37,6 +41,9 @@ class Experiment:
             self.name = device + '_' + dataset
         else:
             self.name = name
+
+        # Set the thresholds for usage in tpr/fpr calculations
+        self.thresholds = thresholds
 
     def get_shot_list(self):
         """ Returns a list of all shots in the dataset """
@@ -122,3 +129,87 @@ class Experiment:
             roc_auc_list.append(roc_auc_score(y_true, y_pred))
 
         return roc_auc_list
+    
+    # TPR/FPR methods
+
+    def calc_tp_fp_times(self, horizon):
+        # Create arrays to store the results
+        # Array is of shape (num_shots, num_thresholds)
+        true_positives = np.zeros((len(self.feature_data), len(self.thresholds)))
+        false_positives = np.zeros((len(self.feature_data), len(self.thresholds)))
+
+        # Get list of disruptive shots
+        disruptive_shots = self.get_disruptive_shot_list()
+        # Get list of all shots
+        shot_list = self.get_shot_list()
+
+        # Create list to store warning times
+        # This is a list of arrays of variable length,
+        # but the arrays will line up such that each index corresponds to the same threshold
+        warning_times = []
+
+        # Iterate through shots
+        for shot, i in enumerate(shot_list):
+            disrupt = shot in disruptive_shots
+            shot_data = self.feature_data[self.all_data['shot'] == shot]
+            # Calculate the disruption time predicted by the model
+            predicted_times = self.predictor.calculate_disruption_time(shot_data, self.thresholds, horizon)
+
+            # Fill in true and false positives
+            true_positives[i] = np.array([disrupt and (predicted_time is not None) for predicted_time in predicted_times])
+            false_positives[i] = np.array([(not disrupt) and (predicted_time is not None) for predicted_time in predicted_times])
+
+            # If shot is disruptive, can fill in Time to First True Detection
+            if disrupt:
+                # Find actual disruption time by looking at last time in shot
+                true_time = shot_data['time'].iloc[-1]
+
+                warning_times.append(np.array([true_time - predicted_time for predicted_time in predicted_times if predicted_time is not None]))
+
+        return true_positives, false_positives, warning_times
+
+    def warning_vs_fpr(self, horizon):
+        """ Get statistics on warning times vs FPR for a given horizon """
+
+        # TODO need to set this up as a dictionary, so that we can have multiple horizons
+        self.tpr, self.fpr, self.warning_times = self.calc_tp_fp_times(horizon)
+
+        mean_warning_times = []
+        std_warning_times = []
+
+        # TODO: Should really really vectorize this
+
+        # Calculate the average warning time for each false positive rate
+        fpr_times = []
+        for i in range(len(self.thresholds)):
+        
+            for warning_time in self.warning_times:
+                try:
+                    fpr_times.append(warning_time[i])
+                except IndexError:
+                    # This is a disruptive shot that didn't have a detection at this threshold
+                    # Warning time is 0
+                    fpr_times.append(0)
+            
+            # Clump the detection times that share a false positive rate together
+            # Or if we're at the end, we need to add the last one regardless
+            if i == len(self.thresholds) - 1 or (self.fpr[i] != self.tpr[i+1]):
+                if len(fpr_times) > 0:
+                    mean_warning_times.append(np.mean(fpr_times))
+                    std_warning_times.append(np.std(fpr_times))
+                    fpr_times = []
+                else:
+                    # If there are no detection times, that means false positive rate is 0. Detection time is 0.
+                    mean_warning_times.append(0)
+                    std_warning_times.append(0)
+                
+
+        # Eliminate duplicate false positive rates.
+        # However, this sorts the false positive rates, so we need to reverse the order afterwards
+        unique_false_positive_rates = np.unique(self.fpr)
+        # Reverse the order so that the false positive rates are increasing (to once again line up with the detection times)
+        unique_false_positive_rates = unique_false_positive_rates[::-1]
+
+        # Ignore zero false positve rate results
+        return unique_false_positive_rates[:-1], mean_warning_times[:-1], std_warning_times[:-1]
+
