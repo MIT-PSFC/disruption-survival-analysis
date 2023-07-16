@@ -289,16 +289,16 @@ def eval_model(model, x_te, y_tr, y_te):
     
     return results, times
 
-def save_model(model, transformer, model_name, device, dataset):
+def save_model(model, transformer, model_name, device, dataset, features):
     """Save model and transformer to file"""
     model_path = 'models/' + model_name + '_' + device + '_' + dataset + '.pkl'
-    dill.dump([model, transformer], open(model_path, 'wb'))
+    dill.dump([model, transformer, features], open(model_path, 'wb'))
     print('Saved model to ' + model_path)
 
 def load_model(model_name, device, dataset):
     """Load model and transformer from file"""
     model_path = 'models/' + model_name + '_' + device + '_' + dataset + '.pkl'
     with open(model_path, 'rb') as f:
-        model, transformer = dill.load(f)
+        model, transformer, features = dill.load(f)
     print('Loaded model from ' + model_path)
-    return model, transformer
+    return model, transformer, features

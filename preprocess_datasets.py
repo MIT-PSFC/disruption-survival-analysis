@@ -304,12 +304,30 @@ def make_stacked_sets(device, dataset, k):
             for i in range(k):
                 shot_stack[f'{feature}_{i}'] = shot_stack[feature].shift(k)
 
-        # Eliminate all rows with NaNs
-        shot_stack = shot_stack.dropna()
+        # Eliminate all rows with NaNs, EXCEPT in 'time_until_disrupt' column
+        shot_stack = shot_stack.dropna(subset=features)
 
         stacked_features = pd.concat([stacked_features, shot_stack], ignore_index=True)
 
-    stacked_features.to_csv(f'data/{device}/{dataset}_{k}k.csv', index=False)
+    stacked_features.to_csv(f'data/{device}/{k}k_{dataset}.csv', index=False)
 
+def load_features(device, dataset):
+    """
+    Get all feature names from the dataset
+    """
 
+    # Load the raw dataset
+    data = load_dataset(device, dataset)
+
+    # Get the features
+    feature_data = data.drop(columns=['shot', 'time', 'time_until_disrupt']).columns.values
+
+    # Convert the features to a list
+    features = feature_data.tolist()
+
+    # Remove anything that has v_surf in it
+    features = [feature for feature in features if 'v_surf' not in feature]
+
+    # Return the list of features
+    return features
         

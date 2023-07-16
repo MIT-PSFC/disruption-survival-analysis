@@ -8,7 +8,7 @@ import torch
 import sys
 sys.path.append('../')
 from plot_utils import *
-from preprocess_datasets import load_features_outcomes, load_features_labels, make_training_sets, get_disruptive_shot_list
+from preprocess_datasets import load_features_outcomes, load_features_labels, make_training_sets, load_features, get_disruptive_shot_list
 from run_models import run_survival_model, run_rf_model, eval_model
 from estimators_demo_utils import plot_performance_metrics
 
@@ -17,10 +17,12 @@ from estimators_demo_utils import plot_performance_metrics
 torch.set_num_threads(4)
 
 device = 'cmod'
-dataset = 'random_256_shots_60%_flattop'
+dataset = 'random_256_shots_60%_flattop_5k'
 #device='synthetic'
 #dataset='synthetic100'
-numeric_feats = ['beta_n','beta_p','kappa','li','upper_gap','lower_gap','q0','qstar','q95','v_loop_efit','Wmhd','ssep','n_over_ncrit','R0','tritop','tribot','a_minor','chisq','dbetap_dt','dli_dt','dWmhd_dt','n_e','dn_dt','Greenwald_fraction','ip','dip_dt','dip_smoothed','ip_prog','dipprog_dt','ip_error','p_oh','v_loop']
+#numeric_feats = ['beta_n','beta_p','kappa','li','upper_gap','lower_gap','q0','qstar','q95','v_loop_efit','Wmhd','ssep','n_over_ncrit','R0','tritop','tribot','a_minor','chisq','dbetap_dt','dli_dt','dWmhd_dt','n_e','dn_dt','Greenwald_fraction','ip','dip_dt','dip_smoothed','ip_prog','dipprog_dt','ip_error','p_oh','v_loop']
+numeric_feats = load_features(device, dataset+'_train')
+
 
 #make_training_sets(device, dataset)
 
