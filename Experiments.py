@@ -47,11 +47,11 @@ class Experiment:
 
     def get_shot_list(self):
         """ Returns a list of all shots in the dataset """
-        return self.all_data['shot'].unique()
+        return self.all_data['shot'].unique().astype(int)
     
     def get_disruptive_shot_list(self):
         """ Returns a list of all shots that disrupted in the dataset """
-        return self.all_data[self.all_data['time_until_disrupt'] >= 0]['shot'].unique()
+        return self.all_data[self.all_data['time_until_disrupt'] >= 0]['shot'].unique().astype(int)
     
     def get_time(self, shot):
         """ Returns the times for a given shot """
@@ -212,4 +212,7 @@ class Experiment:
 
         # Ignore zero false positve rate results
         return unique_false_positive_rates[:-1], mean_warning_times[:-1], std_warning_times[:-1]
+    
+
+    #def 
 
