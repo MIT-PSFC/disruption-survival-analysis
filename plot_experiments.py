@@ -65,7 +65,7 @@ def plot_roc_auc_vs_horizon_micro(experiment_list:list[Experiment], horizons=DEF
     plt.legend()
     plt.show()
 
-def plot_TPR_vs_threshold_macro(experiment_list:list[Experiment], horizon=DEFAULT_HORIZONS[0]):
+def plot_TPR_vs_threshold_macro(experiment_list:list[Experiment], thresholds, horizon=DEFAULT_HORIZONS[0]):
     """ Averaged over all shots
     
     """
@@ -73,8 +73,8 @@ def plot_TPR_vs_threshold_macro(experiment_list:list[Experiment], horizon=DEFAUL
     plt.figure()
 
     for experiment in experiment_list:
-        threshold, tpr_avg, tpr_std = experiment.tpr_vs_threshold(horizon)
-        plt.errorbar(threshold, tpr_avg, yerr=tpr_std, label=experiment.name, fmt='o-')
+        threshold, tpr = experiment.tpr_vs_threshold(horizon, thresholds=thresholds)
+        plt.plot(threshold, tpr, label=experiment.name)
 
     plt.xlim([0, 1])
     plt.ylim([0, 1])
@@ -91,6 +91,28 @@ def plot_TPR_vs_threshold_micro():
     """ Averaged over a single shot
 
     """
+
+def plot_FPR_vs_threshold_macro(experiment_list:list[Experiment], thresholds, horizon=DEFAULT_HORIZONS[0]):
+    """ Averaged over all shots
+    
+    """
+
+    plt.figure()
+
+    for experiment in experiment_list:
+        threshold, fpr = experiment.fpr_vs_threshold(horizon, thresholds=thresholds)
+        plt.plot(threshold, fpr, label=experiment.name)
+
+    plt.xlim([0, 1])
+    plt.ylim([0, 1])
+
+    plt.xlabel('Threshold')
+    plt.ylabel('False Positive Rate')
+
+    plt.title(f'False Positive Rate vs. Threshold at {horizon*1000:.0f} ms Horizon')
+
+    plt.legend()
+    plt.show()
 
 def plot_TPR_vs_FPR_macro():
     """ Averaged over all shots
