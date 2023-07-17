@@ -102,6 +102,32 @@ def plot_TPR_vs_FPR_micro():
 
     """
 
+def plot_warning_time_vs_threshold(experiment_list:list[Experiment], horizon=DEFAULT_HORIZONS[0]):
+    """ Averaged over all shots
+    """
+
+    horizon_ms = horizon*1000
+
+    plt.figure()
+
+    for experiment in experiment_list:
+        threshold, warning_time_avg, warning_time_std = experiment.warning_vs_threshold(horizon)
+        warning_time_avg_ms = [i * 1000 for i in warning_time_avg]
+        warning_time_std_ms = [i * 1000 for i in warning_time_std]
+        plt.errorbar(threshold, warning_time_avg_ms, yerr=warning_time_std_ms, label=experiment.name, fmt='o-')
+
+    plt.xlim([0, 1])
+    plt.ylim([0, max(warning_time_avg_ms) + max(warning_time_std_ms)])
+
+    plt.xlabel('Threshold')
+    plt.ylabel('Warning Time [ms]')
+
+    plt.title(f'Warning Time vs. Threshold at {horizon_ms:.0f} ms Horizon')
+
+    plt.legend()
+    plt.show()
+
+
 def plot_warning_time_vs_FPR(experiment_list:list[Experiment], horizon=DEFAULT_HORIZONS[0]):
     """ Averaged over all shots
     """
