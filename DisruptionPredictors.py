@@ -174,7 +174,7 @@ class DisruptionPredictorRF(DisruptionPredictor):
         return risk_time[['risk', 'time']]
     
 class DisruptionPredictorTinguely(DisruptionPredictor):
-    """Disruption predictor like Tungluely et al. 2019"""
+    """Disruption predictor like Tinguely et al. 2019"""
 
     def __init__(self, name, model:RandomForestClassifier, features, transformer: Preprocessor):
         super().__init__(name, model, features, transformer)
