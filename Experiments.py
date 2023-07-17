@@ -180,6 +180,34 @@ class Experiment:
                 warning_times.append(np.array([true_time - predicted_time for predicted_time in predicted_times if predicted_time is not None]))
 
         return true_positives, false_positives, warning_times
+    
+    def warning_vs_threshold(self, horizon):
+        """ Get statistics on warning times vs threshold for a given horizon 
+            This is inherently a macro statistic, since a single shot can have only one warning time
+        """
+
+        _, _, warning_times = self.calc_tp_fp_times(horizon)
+
+        mean_warning_times = []
+        std_warning_times = []
+
+        # Calculate the average warning time for each threshold
+        for i in range(len(self.thresholds)):
+
+            clump_warning_times = []
+
+            for warning_time in warning_times:
+                try:
+                    clump_warning_times.append(warning_time[i])
+                except IndexError:
+                    # This is a disruptive shot that didn't have a detection at this threshold
+                    # Warning time is 0
+                    clump_warning_times.append(0)
+
+            mean_warning_times.append(np.mean(clump_warning_times))
+            std_warning_times.append(np.std(clump_warning_times))
+
+        return self.thresholds, mean_warning_times, std_warning_times
 
     def warning_vs_fpr(self, horizon):
         """ Get statistics on warning times vs FPR for a given horizon 
