@@ -95,10 +95,12 @@ def plot_warning_time_vs_FPR(experiment_list:list[Experiment], horizon=DEFAULT_H
 
     for experiment in experiment_list:
         fpr, warning_time_avg, warning_time_std = experiment.warning_vs_fpr(horizon)
-        plt.errorbar(fpr, warning_time_avg, yerr=warning_time_std, label=experiment.name, fmt='o-')
+        warning_time_avg_ms = [i * 1000 for i in warning_time_avg]
+        warning_time_std_ms = [i * 1000 for i in warning_time_std]
+        plt.errorbar(fpr, warning_time_avg_ms, yerr=warning_time_std_ms, label=experiment.name, fmt='o-')
 
     plt.xlim([0, 1])
-    plt.ylim([0, max(warning_time_avg) + max(warning_time_std)])
+    plt.ylim([0, max(warning_time_avg_ms) + max(warning_time_std_ms)])
 
     plt.xlabel('False Positive Rate')
     plt.ylabel('Warning Time [ms]')
