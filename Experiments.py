@@ -17,7 +17,6 @@ class Experiment:
 
     def __init__(self, device, dataset, predictor:DisruptionPredictor, name=None, thresholds=np.linspace(0,1,1000)):
 
-        # feature_data: only what is fed to predictor
         # all_data: all data, including shot, time, time_until_disrupt, and features fed to predictor
 
         self.device = device
@@ -28,13 +27,13 @@ class Experiment:
         self.all_data = load_dataset(device, dataset)
         
         # Transform required features using the predictor's transformer, discard the rest
-        self.feature_data = predictor.transformer.transform(self.all_data[predictor.features])
+        feature_data = predictor.transformer.transform(self.all_data[predictor.features])
 
         # Remove the features that were not used, keep other important columns
         self.all_data = self.all_data[['shot', 'time', 'time_until_disrupt']]
 
         # Replace the old data with the transformed data
-        self.all_data[predictor.features] = self.feature_data
+        self.all_data[predictor.features] = feature_data
 
         # Set the name of the experiment
         if name is None:
@@ -47,11 +46,24 @@ class Experiment:
 
     def get_shot_list(self):
         """ Returns a list of all shots in the dataset """
-        return self.all_data['shot'].unique().astype(int)
+        # If shot list has already been calculated, return it
+        try:
+            return self.shot_list
+        except:
+            self.shot_list = self.all_data['shot'].unique().astype(int)
+            return self.shot_list
     
     def get_disruptive_shot_list(self):
         """ Returns a list of all shots that disrupted in the dataset """
         return self.all_data[self.all_data['time_until_disrupt'] >= 0]['shot'].unique().astype(int)
+    
+    def get_num_shots(self):
+        """ Returns the number of shots in the dataset """
+        return len(self.get_shot_list())
+    
+    def get_num_disruptive_shots(self):
+        """ Returns the number of disruptive shots in the dataset """
+        return len(self.get_disruptive_shot_list())
     
     def get_time(self, shot):
         """ Returns the times for a given shot """
@@ -133,15 +145,16 @@ class Experiment:
     # TPR/FPR methods
 
     def calc_tp_fp_times(self, horizon):
-        # Create arrays to store the results
-        # Array is of shape (num_shots, num_thresholds)
-        true_positives = np.zeros((len(self.feature_data), len(self.thresholds)))
-        false_positives = np.zeros((len(self.feature_data), len(self.thresholds)))
 
-        # Get list of disruptive shots
-        disruptive_shots = self.get_disruptive_shot_list()
         # Get list of all shots
         shot_list = self.get_shot_list()
+        # Get list of disruptive shots
+        disruptive_shots = self.get_disruptive_shot_list()
+        
+        # Create arrays to store the results
+        # Array is of shape (num_shots, num_thresholds)
+        true_positives = np.zeros((len(shot_list), len(self.thresholds)))
+        false_positives = np.zeros((len(shot_list), len(self.thresholds)))
 
         # Create list to store warning times
         # This is a list of arrays of variable length,
@@ -149,9 +162,9 @@ class Experiment:
         warning_times = []
 
         # Iterate through shots
-        for shot, i in enumerate(shot_list):
+        for i, shot in enumerate(shot_list):
             disrupt = shot in disruptive_shots
-            shot_data = self.feature_data[self.all_data['shot'] == shot]
+            shot_data = self.all_data[self.all_data['shot'] == shot]
             # Calculate the disruption time predicted by the model
             predicted_times = self.predictor.calculate_disruption_time(shot_data, self.thresholds, horizon)
 
@@ -172,10 +185,13 @@ class Experiment:
         """ Get statistics on warning times vs FPR for a given horizon """
 
         # TODO need to set this up as a dictionary, so that we can have multiple horizons
-        self.tpr, self.fpr, self.warning_times = self.calc_tp_fp_times(horizon)
+        _, false_positives, warning_times = self.calc_tp_fp_times(horizon)
 
         mean_warning_times = []
         std_warning_times = []
+
+        # Calculate the false positive rate at each threshold
+        false_positive_rates = np.sum(false_positives, axis=0) / (self.get_num_shots() - self.get_num_disruptive_shots())
 
         # TODO: Should really really vectorize this
 
@@ -183,7 +199,7 @@ class Experiment:
         fpr_times = []
         for i in range(len(self.thresholds)):
         
-            for warning_time in self.warning_times:
+            for warning_time in warning_times:
                 try:
                     fpr_times.append(warning_time[i])
                 except IndexError:
@@ -193,7 +209,7 @@ class Experiment:
             
             # Clump the detection times that share a false positive rate together
             # Or if we're at the end, we need to add the last one regardless
-            if i == len(self.thresholds) - 1 or (self.fpr[i] != self.tpr[i+1]):
+            if i == len(self.thresholds) - 1 or (false_positive_rates[i] != false_positive_rates[i+1]):
                 if len(fpr_times) > 0:
                     mean_warning_times.append(np.mean(fpr_times))
                     std_warning_times.append(np.std(fpr_times))
@@ -206,7 +222,7 @@ class Experiment:
 
         # Eliminate duplicate false positive rates.
         # However, this sorts the false positive rates, so we need to reverse the order afterwards
-        unique_false_positive_rates = np.unique(self.fpr)
+        unique_false_positive_rates = np.unique(false_positive_rates)
         # Reverse the order so that the false positive rates are increasing (to once again line up with the detection times)
         unique_false_positive_rates = unique_false_positive_rates[::-1]
 
