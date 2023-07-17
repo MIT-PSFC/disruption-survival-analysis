@@ -182,7 +182,9 @@ class Experiment:
         return true_positives, false_positives, warning_times
 
     def warning_vs_fpr(self, horizon):
-        """ Get statistics on warning times vs FPR for a given horizon """
+        """ Get statistics on warning times vs FPR for a given horizon 
+            This is inherently a macro statistic, since a single shot can have only one warning time
+        """
 
         # TODO need to set this up as a dictionary, so that we can have multiple horizons
         _, false_positives, warning_times = self.calc_tp_fp_times(horizon)
@@ -230,5 +232,47 @@ class Experiment:
         return unique_false_positive_rates[:-1], mean_warning_times[:-1], std_warning_times[:-1]
     
 
-    #def 
+    def warning_vs_precision(self, horizon):
+        """ Get statistics on warning times vs precision for a given horizon 
+            This is inherently a macro statistic, since a single shot can have only one warning time
+        """
 
+        # TODO need to set this up as a dictionary, so that we can have multiple horizons
+        true_positives, false_positives, warning_times = self.calc_tp_fp_times(horizon)
+
+        mean_warning_times = []
+        std_warning_times = []
+
+        # Calculate the precision at each threshold
+        threshold_precisions = np.sum(true_positives, axis=0) / (np.sum(true_positives, axis=0) + np.sum(false_positives, axis=0))
+
+        # Calculate the average warning time for each precision
+        # Each threshold has its own precision which is not necessarily unique
+        # Unlike FPR, precision is not is not monatonically decreasing with threshold
+        # Need to keep careful track of the indices while calculating this.
+
+        # Eliminate duplicate precision.
+        unique_precision = np.unique(threshold_precisions)
+
+        for precision in unique_precision:
+            precision_times = []
+
+            # Find the indices of the thresholds with this precision
+            precision_indices = np.where(threshold_precisions == precision)[0]
+
+            for i in precision_indices:
+                for warning_time in warning_times:
+                    try:
+                        precision_times.append(warning_time[i])
+                    except IndexError:
+                        # This is a disruptive shot that didn't have a detection at this threshold
+                        # Warning time is 0
+                        precision_times.append(0)
+
+            # Clump the detection times that share a precision together
+            # This list should line up with the unique_precision list
+            mean_warning_times.append(np.mean(precision_times))
+            std_warning_times.append(np.std(precision_times))
+
+        # TODO: ignore zero precision results?
+        return unique_precision[:], mean_warning_times[:], std_warning_times[:]

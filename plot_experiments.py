@@ -65,10 +65,27 @@ def plot_roc_auc_vs_horizon_micro(experiment_list:list[Experiment], horizons=DEF
     plt.legend()
     plt.show()
 
-def plot_TPR_vs_threshold_macro():
+def plot_TPR_vs_threshold_macro(experiment_list:list[Experiment], horizon=DEFAULT_HORIZONS[0]):
     """ Averaged over all shots
     
     """
+
+    plt.figure()
+
+    for experiment in experiment_list:
+        threshold, tpr_avg, tpr_std = experiment.tpr_vs_threshold(horizon)
+        plt.errorbar(threshold, tpr_avg, yerr=tpr_std, label=experiment.name, fmt='o-')
+
+    plt.xlim([0, 1])
+    plt.ylim([0, 1])
+
+    plt.xlabel('Threshold')
+    plt.ylabel('True Positive Rate')
+
+    plt.title(f'True Positive Rate vs. Threshold at {horizon*1000:.0f} ms Horizon')
+
+    plt.legend()
+    plt.show()
 
 def plot_TPR_vs_threshold_micro():
     """ Averaged over a single shot
@@ -110,11 +127,31 @@ def plot_warning_time_vs_FPR(experiment_list:list[Experiment], horizon=DEFAULT_H
     plt.legend()
     plt.show()
 
-def plot_warning_time_vs_precision():
+def plot_warning_time_vs_precision(experiment_list:list[Experiment], horizon=DEFAULT_HORIZONS[0]):
     """ Averaged over all shots
 
     """
 
+    horizon_ms = horizon*1000
+
+    plt.figure()
+
+    for experiment in experiment_list:
+        precision, warning_time_avg, warning_time_std = experiment.warning_vs_precision(horizon)
+        warning_time_avg_ms = [i * 1000 for i in warning_time_avg]
+        warning_time_std_ms = [i * 1000 for i in warning_time_std]
+        plt.errorbar(precision, warning_time_avg_ms, yerr=warning_time_std_ms, label=experiment.name, fmt='o-')
+
+    plt.xlim([0, 1])
+    plt.ylim([0, max(warning_time_avg_ms) + max(warning_time_std_ms)])
+
+    plt.xlabel('Precision (TPR/(TPR+FPR))')
+    plt.ylabel('Warning Time [ms]')
+
+    plt.title(f'Warning Time vs. Precision at {horizon_ms:.0f} ms Horizon')
+
+    plt.legend()
+    plt.show()
 
 # Plots for comparing output of models to time series of individual shots
 

@@ -17,12 +17,11 @@ class TestTimeToDetection(unittest.TestCase):
         # Specify testing parameters
         self.device = 'synthetic'
         self.dataset = 'synthetic100'
-        self.numeric_feats = ['ip', 'Wmhd', 'n_e', 'kappa', 'li']
         self.horizon = 0.2
         self.thresholds = np.linspace(0, 1, 100)
 
         # Load model
-        self.model, self.transformer = load_model('cph', self.device, self.dataset)
+        self.model, self.transformer, self.numeric_feats = load_model('cph', self.device, self.dataset)
         self.predictor = DisruptionPredictorSM("Cox Proportional Hazards", self.model, self.numeric_feats, self.transformer)
 
         # Load data
