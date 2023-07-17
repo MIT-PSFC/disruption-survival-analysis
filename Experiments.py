@@ -142,9 +142,12 @@ class Experiment:
 
         return roc_auc_list
     
-    # TPR/FPR methods
+    # TPR, FPR, Warning Time methods
 
-    def calc_tp_fp_times(self, horizon):
+    def calc_tp_fp_times(self, horizon, thresholds=None):
+
+        if thresholds == None:
+            thresholds = self.thresholds
 
         # Get list of all shots
         shot_list = self.get_shot_list()
@@ -153,8 +156,8 @@ class Experiment:
         
         # Create arrays to store the results
         # Array is of shape (num_shots, num_thresholds)
-        true_positives = np.zeros((len(shot_list), len(self.thresholds)))
-        false_positives = np.zeros((len(shot_list), len(self.thresholds)))
+        true_positives = np.zeros((len(shot_list), len(thresholds)))
+        false_positives = np.zeros((len(shot_list), len(thresholds)))
 
         # Create list to store warning times
         # This is a list of arrays of variable length,
@@ -166,7 +169,7 @@ class Experiment:
             disrupt = shot in disruptive_shots
             shot_data = self.all_data[self.all_data['shot'] == shot]
             # Calculate the disruption time predicted by the model
-            predicted_times = self.predictor.calculate_disruption_time(shot_data, self.thresholds, horizon)
+            predicted_times = self.predictor.calculate_disruption_time(shot_data, thresholds, horizon)
 
             # Fill in true and false positives
             true_positives[i] = np.array([disrupt and (predicted_time is not None) for predicted_time in predicted_times])
@@ -181,10 +184,32 @@ class Experiment:
 
         return true_positives, false_positives, warning_times
     
-    def warning_vs_threshold(self, horizon):
+    def tpr_vs_threshold(self, horizon, thresholds=None):
+        """ Get statistics on true positive rate vs threshold for a given horizon 
+            This is inherently a macro statistic, since a single shot can have only one true positive rate
+        """
+
+        if thresholds is None:
+            thresholds = self.thresholds
+
+        true_positives, false_positives, _ = self.calc_tp_fp_times(horizon)
+
+        tpr = np.sum(true_positives, axis=0) / np.sum(true_positives + false_positives, axis=0)
+
+        return thresholds, tpr
+    
+    def fpr_vs_threshold(self, horizon):
+        """ Get statistics on false positive rate vs threshold for a given horizon
+            This is inherently a macro statistic, since a single shot can have only one false positive rate
+        """
+    
+    def warning_vs_threshold(self, horizon, thresholds=None):
         """ Get statistics on warning times vs threshold for a given horizon 
             This is inherently a macro statistic, since a single shot can have only one warning time
         """
+
+        if thresholds is None:
+            thresholds = self.thresholds
 
         _, _, warning_times = self.calc_tp_fp_times(horizon)
 
@@ -192,7 +217,7 @@ class Experiment:
         std_warning_times = []
 
         # Calculate the average warning time for each threshold
-        for i in range(len(self.thresholds)):
+        for i in range(len(thresholds)):
 
             clump_warning_times = []
 
@@ -207,7 +232,7 @@ class Experiment:
             mean_warning_times.append(np.mean(clump_warning_times))
             std_warning_times.append(np.std(clump_warning_times))
 
-        return self.thresholds, mean_warning_times, std_warning_times
+        return thresholds, mean_warning_times, std_warning_times
 
     def warning_vs_fpr(self, horizon):
         """ Get statistics on warning times vs FPR for a given horizon 
