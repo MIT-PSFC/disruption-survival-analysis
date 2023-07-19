@@ -1,13 +1,12 @@
-# Functions for running all the models in Auton-Survival package
+# Functions for running and evaluating all the models in Auton-Survival package
 # [1] auton-survival: an Open-Source Package for Regression, Counterfactual Estimation, 
 # Evaluation and Phenotyping with Censored Time-to-Event Data. arXiv (2022)
 
 import dill
-
 import numpy as np
 
 # Auton-Survival models
-from auton_survival.estimators import SurvivalModel # CPH, DCPH, DSM, DCM, RSF, 
+from auton_survival.estimators import SurvivalModel # CPH, DCPH, DSM, DCM, RSF
 from auton_survival import DeepRecurrentCoxPH # DCPH with recurrent neural network
 from auton_survival.models.dsm import DeepRecurrentSurvivalMachines # DSM with recurrent neural network
 
@@ -19,7 +18,9 @@ from auton_survival.metrics import survival_regression_metric
 from sklearn.model_selection import ParameterGrid
 
 # Constants
-CUTOFF_TIME = 0.5 # Cutoff time for plotting
+CUTOFF_TIME = 0.5 # Cutoff time, maximum horizon we are interested in predicting
+
+# Methods for training models
 
 def get_train_times(y_tr):
     """
@@ -34,7 +35,7 @@ def get_test_times(y_tr):
     """
     Get the test times for survival models
     """
-    # TODO: this should be limited to under 500 ms
+    # TODO: should this should be limited to under the cutoff time?
     return np.quantile(y_tr['time'][y_tr['event']==1], np.linspace(0.1, 0.9, 10)).tolist()
 
 def run_survival_model(model_string, x_tr, x_val, y_tr, y_val, selection='rough'):
@@ -150,33 +151,38 @@ def run_survival_model(model_string, x_tr, x_val, y_tr, y_val, selection='rough'
     models = []
     for param in params:
         if model_string == 'cph':
-            model = SurvivalModel('cph', l2=param['l2'])
+            model = SurvivalModel('cph', 
+                                    l2=param['l2'])
         elif model_string == 'dcph':
-            model = SurvivalModel('dcph', bs=param['bs'], 
-                                  learning_rate=param['learning_rate'], 
-                                  layers=param['layers'],
-                                  epochs=param['epochs'])
+            model = SurvivalModel('dcph', 
+                                    bs=param['bs'], 
+                                    learning_rate=param['learning_rate'], 
+                                    layers=param['layers'],
+                                    epochs=param['epochs'])
         elif model_string == 'dsm':
-            model = SurvivalModel('dsm', layers=param['layers'], 
-                                  distribution=param['distribution'],
+            model = SurvivalModel('dsm',
+                                    layers=param['layers'], 
+                                    distribution=param['distribution'],
                                     temperature=param['temperature'],
                                     batch_size=param['batch_size'],
                                     learning_rate=param['learning_rate'],
                                     iters=param['epochs'], 
-                                  max_features=param['max_features'],
-                                  k=param['k'])
+                                    max_features=param['max_features'],
+                                    k=param['k'])
         elif model_string == 'dcm':
-            model = SurvivalModel('dcm', k=param['k'], 
+            model = SurvivalModel('dcm', 
+                                    k=param['k'], 
                                     batch_size=param['batch_size'],
                                     epochs=param['epochs'],
-                                  learning_rate=param['learning_rate'], 
-                                  layers=param['layers'],
-                                  smoothing_factor=param['smoothing_factor'],
-                                  gamma=param['gamma'])
+                                    learning_rate=param['learning_rate'], 
+                                    layers=param['layers'],
+                                    smoothing_factor=param['smoothing_factor'],
+                                    gamma=param['gamma'])
         elif model_string == 'rsf':
-            model = SurvivalModel('rsf', n_estimators=param['n_estimators'], 
-                                  max_depth=param['max_depth'], 
-                                  max_features=param['max_features'])
+            model = SurvivalModel('rsf', 
+                                    n_estimators=param['n_estimators'], 
+                                    max_depth=param['max_depth'], 
+                                    max_features=param['max_features'])
         else:
             raise ValueError(f"Invalid model string: {model_string}")
 
@@ -289,15 +295,17 @@ def eval_model(model, x_te, y_tr, y_te):
     
     return results, times
 
-def save_model(model, transformer, model_name, device, dataset, features):
+# Methods for saving and loading models
+
+def save_model(model, transformer, model_name, device, dataset_path, features):
     """Save model and transformer to file"""
-    model_path = 'models/' + model_name + '_' + device + '_' + dataset + '.pkl'
+    model_path = 'models/' + device + '/' + dataset_path + '/' + model_name + '.pkl'
     dill.dump([model, transformer, features], open(model_path, 'wb'))
     print('Saved model to ' + model_path)
 
-def load_model(model_name, device, dataset):
+def load_model(model_name, device, dataset_path):
     """Load model and transformer from file"""
-    model_path = 'models/' + model_name + '_' + device + '_' + dataset + '.pkl'
+    model_path = 'models/' + device + '/' + dataset_path + '/' + model_name + '.pkl'
     with open(model_path, 'rb') as f:
         model, transformer, features = dill.load(f)
     print('Loaded model from ' + model_path)

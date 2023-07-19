@@ -32,7 +32,7 @@ class DisruptionPredictor:
     # Methods for calculating the risk at each time slice for a given shot
     # using different models
 
-    def calculate_risk(self, data, horizon):
+    def calculate_risk_at_time(self, data, horizon):
         """
         Finds the risk of disruption for a given shot at each time slice
         when looking horizon seconds into the future
@@ -47,7 +47,7 @@ class DisruptionPredictor:
 
         Returns
         -------
-        risk_time : pandas.DataFrame
+        risk_at_time : pandas.DataFrame
             The risk of disruption for each time slice
         """
 
@@ -56,7 +56,7 @@ class DisruptionPredictor:
 
     # Methods for calculating the disruption time using different algorithms
 
-    def calculate_disruption_time(self, shot_data, threshold, horizon):
+    def calculate_disruption_time(self, shot_data, thresholds, horizon):
         """
         Calculates the disruption time(s) for a given shot with a simple threshold
 
@@ -66,39 +66,30 @@ class DisruptionPredictor:
             Data for a single shot
             Should be sorted by time
             Should be transformed by the predictor's transformer
-        threshold : float or list of float
-            The threshold(s) to use for determining if a disruption is imminent
-            If a list, will return a list of disruption times
+        thresholds : list of float
+            The thresholds to use for determining if a disruption is imminent
         horizon : float
             How far into the future the predictor is looking
 
         Returns
         -------
-        disruption_time : float or list of float
-            The time(s) of disruption
-            If a list, will return a list of disruption times
+        disruption_times : list of float
+            The times of disruption
             If no disruption is predicted, returns None in that position
         """
 
         # Calculate the risk for each time slice
-        risk_time = self.calculate_risk(shot_data, horizon)
-
-        # Only consider the times more than 'horizon' seconds before the end of the shot
-        # TODO double check this. nope, remove this
-        #risk_time = risk_time[risk_time['time'] < shot_data['time'].iloc[-1] - horizon]
+        risk_at_time = self.calculate_risk_at_time(shot_data, horizon)
         
-        # If a single threshold is given, make it a list
-        # If a list is given, make a copy of it to keep track of which thresholds have been used
-        if isinstance(threshold, np.ndarray):
-            avail_thresholds = threshold.tolist()
+        # Make a copy of the thresholds it to keep track of which have been used
+        if isinstance(thresholds, np.ndarray):
+            avail_thresholds = thresholds.tolist()
         else:
-            if not isinstance(threshold, list):
-                threshold = [threshold]
-            avail_thresholds = threshold.copy()
+            avail_thresholds = thresholds.copy()
 
         disruption_times = []
         # Go through the shot data and find the first time the risk exceeds each threshold
-        for i in range(len(risk_time)):
+        for i in range(len(risk_at_time)):
             # If there are no more thresholds, stop
             if len(avail_thresholds) == 0:
                 break
@@ -107,25 +98,21 @@ class DisruptionPredictor:
             # and remove the threshold from the list
             # Then keep going until the risk is below the next threshold
             # or there are no more thresholds
-            risk = risk_time.iloc[i]['risk']
+            risk = risk_at_time.iloc[i]['risk']
             while risk > avail_thresholds[0]:
-                disruption_times.append(risk_time.iloc[i]['time'])
+                disruption_times.append(risk_at_time.iloc[i]['time'])
                 avail_thresholds.pop(0)
                 if len(avail_thresholds) == 0:
                     break
         
         # If there is a mismatch between disruption times and thresholds,
         # fill in the rest of the disruption times with None
-        if len(disruption_times) < len(threshold):
-            for i in range(len(threshold) - len(disruption_times)):
+        if len(disruption_times) < len(thresholds):
+            for i in range(len(thresholds) - len(disruption_times)):
                 disruption_times.append(None)
 
-        # If there is only one threshold, return a single disruption time
-        if len(disruption_times) == 1:
-            return disruption_times[0]
-        # Otherwise, return a list of disruption times
-        else:
-            return disruption_times
+        # Return the disruption times
+        return disruption_times
 
     def calculate_disruption_time_hysterisis(self, shot_data, 
                                              upper_threshold, lower_threshold, window,
@@ -144,19 +131,19 @@ class DisruptionPredictorSM(DisruptionPredictor):
     def __init__(self, name, model:SurvivalModel, features, transformer:Preprocessor):
         super().__init__(name, model, features, transformer)
 
-    def calculate_risk(self, data, horizon):
+    def calculate_risk_at_time(self, data, horizon):
 
-        risk_time = data.copy()
+        risk_at_time = data.copy()
 
         # Iterate through the data and calculate the risk for each time slice
         try:
-            risk_time['risk'] = self.model.predict_risk(data[self.features], horizon)
+            risk_at_time['risk'] = self.model.predict_risk(data[self.features], horizon)
         except:
             # DSM expects horizons in a list
-            risk_time['risk'] = self.model.predict_risk(data[self.features], [horizon])
+            risk_at_time['risk'] = self.model.predict_risk(data[self.features], [horizon])
 
         # Trim the data to only include the risk and time columns
-        return risk_time[['risk', 'time']]
+        return risk_at_time[['risk', 'time']]
     
 
 class DisruptionPredictorRF(DisruptionPredictor):
@@ -165,17 +152,17 @@ class DisruptionPredictorRF(DisruptionPredictor):
     def __init__(self, name, model:RandomForestClassifier, features, transformer:Preprocessor):
         super().__init__(name, model, features, transformer)
 
-    def calculate_risk(self, data, horizon=None):
+    def calculate_risk_at_time(self, data, horizon=None):
 
-        risk_time = data.copy()
+        risk_at_time = data.copy()
 
         # Iterate through the data and calculate the risk for each time slice
-        risk_time['risk'] = self.model.predict_proba(data[self.features])[:,1]
+        risk_at_time['risk'] = self.model.predict_proba(data[self.features])[:,1]
 
-        return risk_time[['risk', 'time']]
+        return risk_at_time[['risk', 'time']]
     
-class DisruptionPredictorTinguely(DisruptionPredictor):
-    """Disruption predictor like Tinguely et al. 2019"""
+class DisruptionPredictorKM(DisruptionPredictor):
+    """Kaplan-Meier Disruption predictor like Tinguely et al. 2019"""
 
     def __init__(self, name, model:RandomForestClassifier, features, transformer: Preprocessor):
         super().__init__(name, model, features, transformer)
@@ -185,8 +172,6 @@ class DisruptionPredictorTinguely(DisruptionPredictor):
         # x and y should be numpy arrays
         return (len(x) * np.sum(x * y) - np.sum(x) * np.sum(y)) / (len(x) * np.sum(x**2) - np.sum(x)**2)
     
-
-
     def calculate_risk(self, data, horizon):
         # This disruption predictor takes present predicted disruption risk and a
         # linear least-square's fit over some previous time window to predict the
@@ -197,35 +182,35 @@ class DisruptionPredictorTinguely(DisruptionPredictor):
         # In paper, used 0.05, 0.1, 0.2
         t_fit = 0.1 
 
-        risk_time = data.copy()
+        risk_at_time = data.copy()
 
         # reindex the data to start at 0
-        risk_time.index = range(len(risk_time))
+        risk_at_time.index = range(len(risk_at_time))
 
         # Iterate through the data and calculate the initial risk for each time slice
-        risk_time['initial_risk'] = self.model.predict_proba(data[self.features])[:,1]
+        risk_at_time['initial_risk'] = self.model.predict_proba(data[self.features])[:,1]
 
         # Initialize risk column to all zeros
-        risk_time['risk'] = 0
+        risk_at_time['risk'] = 0
 
         # This is a bit of a slow implementation, can speed up later if needed
 
         fit_times = []
         fit_points = []
 
-        fit_times.append(risk_time.at[0, 'time'])
-        fit_points.append(risk_time.at[0, 'initial_risk'])
+        fit_times.append(risk_at_time.at[0, 'time'])
+        fit_points.append(risk_at_time.at[0, 'initial_risk'])
 
         # Iterate through the data and calculate the slope for each time slice
         # Slope is calculated using a linear fit over the previous t_fit seconds
-        for i in range(1, len(risk_time)):
+        for i in range(1, len(risk_at_time)):
 
             # Get the time for the new time slice
-            new_time = risk_time.at[i, 'time']
+            new_time = risk_at_time.at[i, 'time']
 
             # Add the new time to the fit
             fit_times.append(new_time)
-            fit_points.append(risk_time.at[i, 'initial_risk'])
+            fit_points.append(risk_at_time.at[i, 'initial_risk'])
 
             # If the new time is outside the time window, remove the oldest point
             if new_time - fit_times[0] > t_fit:
@@ -236,12 +221,13 @@ class DisruptionPredictorTinguely(DisruptionPredictor):
             slope = self.linear_slope(np.array(fit_times), np.array(fit_points))
 
             # Extrapolate the risk into the future using the slope
-            risk_time.at[i, 'risk'] = risk_time.at[i, 'initial_risk'] + slope * horizon
+            risk_at_time.at[i, 'risk'] = risk_at_time.at[i, 'initial_risk'] + slope * horizon
 
         # Replace all NaNs with 0
-        risk_time.fillna(0, inplace=True)
+        # TODO: this probably makes the micro average not a great metric for this model
+        risk_at_time.fillna(0, inplace=True)
 
-        return risk_time[['risk', 'time']]
+        return risk_at_time[['risk', 'time']]
 
             
 

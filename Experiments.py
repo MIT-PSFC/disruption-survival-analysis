@@ -5,7 +5,7 @@ import numpy as np
 
 from sklearn.metrics import roc_auc_score
 from manage_datasets import load_dataset
-from evaluate_performance import label_shot_data, calc_tp_fp_times
+from experiment_utils import label_shot_data
 
 from DisruptionPredictors import DisruptionPredictor
 
@@ -15,7 +15,7 @@ class Experiment:
     tpr = None
     fpr = None
 
-    def __init__(self, device, dataset_path, predictor:DisruptionPredictor, name=None, thresholds=np.linspace(0,1,1000)):
+    def __init__(self, device, dataset_path, predictor:DisruptionPredictor, name=None, thresholds=np.logspace(-3, 0, 1000)):
 
         # all_data: all data, including shot, time, time_until_disrupt, and features fed to predictor
 
