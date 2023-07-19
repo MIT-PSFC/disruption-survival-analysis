@@ -36,7 +36,6 @@ def load_dataset(device, dataset_path, dataset_category):
     data = data.sort_values(['shot','time'])
     return data
 
-
 def load_dataset_grouped(device, dataset_path, dataset_category):
     """
     Load dataset grouped by shot number
@@ -64,7 +63,6 @@ def load_dataset_grouped(device, dataset_path, dataset_category):
 
     # Return the grouped dataset
     return group_data
-
 
 def load_features_outcomes(device, dataset_path, dataset_category, features, epsilon=1e-6):
     """ Load the specified dataset from a device, and return the features and outcomes
@@ -109,7 +107,6 @@ def load_features_outcomes(device, dataset_path, dataset_category, features, eps
     # trim outcomes to only include event and time columns
     return data[features], outcomes[['event', 'time']]
 
-
 def load_features_events_indicators(device, dataset_path, dataset_category, features):
     """ Load the specified dataset from a device,
     and return the features and outcomes and event indicators,
@@ -134,7 +131,6 @@ def load_features_events_indicators(device, dataset_path, dataset_category, feat
 
     # TODO fill this out after get DPRF working
     return None
-
 
 def load_features_labels(device, dataset_path, dataset_category, disruptive_window, features):
     """Load the features from a dataset and label each timeslice based on some disruptive window.
@@ -172,8 +168,7 @@ def load_features_labels(device, dataset_path, dataset_category, disruptive_wind
     # trim data to only include features used for training
     return data[features], labels
 
-
-def load_features(device, dataset):
+def load_feature_list(device, dataset):
     """
     Get all feature names from the dataset
     """
@@ -189,7 +184,6 @@ def load_features(device, dataset):
 
     # Return the list of features
     return features
-
 
 def load_shot_list(device, dataset_path, dataset_category):
     """
@@ -219,7 +213,6 @@ def load_disruptive_shot_list(device, dataset_path, dataset_category):
     # Return the list of disruptive shots
     return disruptive_shots
 
-
 def load_non_disruptive_shot_list(device, dataset_path, dataset_category):
     """
     Get the list of non-disruptive shots from the dataset
@@ -238,7 +231,7 @@ def load_non_disruptive_shot_list(device, dataset_path, dataset_category):
 # Functions for making new datasets
 
 
-def make_training_sets(device, dataset_path, random_seed=0):
+def make_training_sets(device, dataset_path, random_seed=0, debug=False):
     """
     Split the raw data into training, test, and validation sets
     """
@@ -282,7 +275,6 @@ def make_training_sets(device, dataset_path, random_seed=0):
     print('Test shots: {}'.format(len(test_shots)))
     print('Validation shots: {}'.format(len(val_shots)))
 
-
 def make_stacked_sets(device, dataset_path, dataset_category, stack_size):
     """Given some dataset, stack the features so each timeslice includes itself and the stack_size previous timeslices
     NOTE: Only use this if the sampling rate of the dataset is constant
@@ -291,14 +283,14 @@ def make_stacked_sets(device, dataset_path, dataset_category, stack_size):
     data = load_dataset(device, dataset_path, dataset_category)
 
     # Get the columns to stack
-    features = load_features(device, dataset_path)
+    feature_list = load_feature_list(device, dataset_path)
 
-    extended_features = features.copy()
-    for feature in features:
+    extended_feature_list = feature_list.copy()
+    for feature in feature_list:
         for i in range(stack_size):
-            extended_features.append(f'{feature}_{i}')
+            extended_feature_list.append(f'{feature}_{i}')
 
-    stacked_features = pd.DataFrame(columns=extended_features)
+    stacked_features = pd.DataFrame(columns=extended_feature_list)
 
     # Get the shot numbers
     shot_numbers = data['shot'].unique()
@@ -309,7 +301,7 @@ def make_stacked_sets(device, dataset_path, dataset_category, stack_size):
 
         shot_stack = data[data['shot'] == shot].copy()
 
-        for feature in features:
+        for feature in feature_list:
             for i in range(stack_size):
                 shot_stack[f'{feature}_{i}'] = shot_stack[feature].shift(stack_size)
 

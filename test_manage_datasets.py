@@ -60,7 +60,7 @@ class TestLoadFeaturesOutcomes(unittest.TestCase):
         """Ensure that the time to event in outcomes is different from the regular input time 
         """
         for category in ['train', 'test', 'val']:
-            _, outcomes = load_features_outcomes(TEST_DEVICE, TEST_DATASET_PATH, category, features=load_features(TEST_DEVICE, TEST_DATASET_PATH))
+            _, outcomes = load_features_outcomes(TEST_DEVICE, TEST_DATASET_PATH, category, features=load_feature_list(TEST_DEVICE, TEST_DATASET_PATH))
 
             data = load_dataset(TEST_DEVICE, TEST_DATASET_PATH, category)
             
@@ -71,38 +71,29 @@ class TestLoadFeaturesOutcomes(unittest.TestCase):
         """
 
         for category in ['train', 'test', 'val']:
-            _, outcomes = load_features_outcomes(TEST_DEVICE, TEST_DATASET_PATH, category, features=load_features(TEST_DEVICE, TEST_DATASET_PATH))
+            _, outcomes = load_features_outcomes(TEST_DEVICE, TEST_DATASET_PATH, category, features=load_feature_list(TEST_DEVICE, TEST_DATASET_PATH))
             
             # Assert that there are no negative times
             self.assertTrue((outcomes['time'] >= 0).all())
 
-    def test_no_zero_outcome(self):
+    def test_no_zero_outcome_time(self):
         """Ensure there are no zero time to event in the outcomes"""
 
-        _, self.outcomes = load_features_outcomes('cmod', 'random100_train')
-        self.assertTrue((self.outcomes['time'] != 0).all())
-
-        _, self.outcomes = load_features_outcomes('cmod', 'random100_test')
-        self.assertTrue((self.outcomes['time'] != 0).all())
-
-        _, self.outcomes = load_features_outcomes('cmod', 'random100_val')
-        self.assertTrue((self.outcomes['time'] != 0).all())
-
+        for category in ['train', 'test', 'val']:
+            _, outcomes = load_features_outcomes(TEST_DEVICE, TEST_DATASET_PATH, category, features=load_feature_list(TEST_DEVICE, TEST_DATASET_PATH))
+            
+            # Assert that there are no zero times
+            self.assertTrue((outcomes['time'] != 0).all())
+        
     def test_binary_outcomes(self):
         """Ensure that the outcomes are binary and not all 1's or all 0's"""
 
-        _, self.outcomes = load_features_outcomes(TEST_DEVICE, TEST_DATASET_TRAIN)
-        self.assertTrue((self.outcomes['event'] == 0).any())
-        self.assertTrue((self.outcomes['event'] == 1).any())
-
-        _, self.outcomes = load_features_outcomes(TEST_DEVICE, TEST_DATASET_TEST)
-        self.assertTrue((self.outcomes['event'] == 0).any())
-        self.assertTrue((self.outcomes['event'] == 1).any())
-
-        _, self.outcomes = load_features_outcomes(TEST_DEVICE, TEST_DATASET_VAL)
-        self.assertTrue((self.outcomes['event'] == 0).any())
-        self.assertTrue((self.outcomes['event'] == 1).any())
-
+        for category in ['train', 'test', 'val']:
+            _, outcomes = load_features_outcomes(TEST_DEVICE, TEST_DATASET_PATH, category, features=load_feature_list(TEST_DEVICE, TEST_DATASET_PATH))
+            
+            # Assert that there are both 0's and 1's
+            self.assertTrue((outcomes['event'] == 0).any())
+            self.assertTrue((outcomes['event'] == 1).any())
 
 class TestShotLists(unittest.TestCase):
 
@@ -133,3 +124,26 @@ class TestShotLists(unittest.TestCase):
 
             for shot in disruptive_shot_list:
                 self.assertTrue(shot not in non_disruptive_shot_list)
+
+class TestCreatedTrainingSets(unittest.TestCase):
+
+    # Assumes that the training sets have already been created
+
+    def test_no_null_values(self):
+        """Ensure there are no null values in the training sets"""
+
+        for category in ['train', 'test', 'val']:
+            data = load_dataset(TEST_DEVICE, TEST_DATASET_PATH, category)
+            # Ignore the time_until_disrupt column, since it is allowed to be null
+            data = data.drop(columns=['time_until_disrupt'])
+
+            self.assertFalse(data.isnull().values.any())
+
+    def test_no_short_shots(self):
+        """Ensure there are no shots with less than 10 slices"""
+
+        for category in ['train', 'test', 'val']:
+            data = load_dataset(TEST_DEVICE, TEST_DATASET_PATH, category)
+            shots = data.groupby('shot').size()
+
+            self.assertTrue((shots >= 10).all())
