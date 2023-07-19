@@ -5,7 +5,7 @@ import pandas as pd
 
 from sklearn.metrics import roc_auc_score
 
-from preprocess_datasets import load_benchmark_data
+from manage_datasets import load_benchmark_data
 from DisruptionPredictors import DisruptionPredictor
 
 def benchmark_au_roc(predictor:DisruptionPredictor, horizons, device, dataset):

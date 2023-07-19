@@ -1,4 +1,4 @@
-from preprocess_datasets import load_dataset, load_features_outcomes, DEFAULT_FEATURES
+from manage_datasets import load_dataset, load_features_outcomes, DEFAULT_FEATURES
 import matplotlib.pyplot as plt
 import numpy as np
 
