@@ -1,40 +1,59 @@
-"""Test functions to ensure that the data preprocessing works as expected
+"""Test functions to ensure that the data management works as expected
 """
 import unittest
 
 from manage_datasets import *
 
 TEST_DEVICE = 'cmod'
-TEST_DATASET = '5k_random_256_shots_60%_flattop'
-TEST_DATASET_TRAIN = TEST_DATASET + '_train'
-TEST_DATASET_TEST = TEST_DATASET + '_test'
-TEST_DATASET_VAL = TEST_DATASET + '_val'
+TEST_DATASET_PATH = 'random_256_shots_60%_flattop'
 
 class TestLoadDataset(unittest.TestCase):
 
     def test_no_negative_time(self):
-        """Ensure there is no negative time in the datasets
+        """Ensure there is no negative time in the experiment datasets
         """
 
-        self.data = load_dataset(TEST_DEVICE, TEST_DATASET_TRAIN)
-        self.assertTrue((self.data['time'] >= 0).all())
-
-        self.data = load_dataset(TEST_DEVICE, TEST_DATASET_TEST)
-        self.assertTrue((self.data['time'] >= 0).all())
-
-        self.data = load_dataset(TEST_DEVICE, TEST_DATASET_VAL)
-        self.assertTrue((self.data['time'] >= 0).all())
+        for category in ['train', 'test', 'val']:
+            data = load_dataset(TEST_DEVICE, TEST_DATASET_PATH, category)
+            self.assertTrue((data['time'] >= 0).all())
 
     def test_no_negative_disruption_time(self):
         """
         Ensure the time_until_disrupt is not negative
         """
 
-        for dataset in [TEST_DATASET_TRAIN, TEST_DATASET_TEST, TEST_DATASET_VAL]:
-            self.data = load_dataset('cmod', dataset)
+        for category in ['train', 'test', 'val']:
+            data = load_dataset(TEST_DEVICE, TEST_DATASET_PATH, category)
             # Remove NaN slices (don't care about that for this test)
-            self.data = self.data[~self.data['time_until_disrupt'].isnull()]
-            self.assertTrue((self.data['time_until_disrupt'] >= 0).all())
+            data = data[~data['time_until_disrupt'].isnull()]
+            self.assertTrue((data['time_until_disrupt'] >= 0).all())
+
+    def test_sort_orders(self):
+        """Ensure that the data is sorted by shot number and time
+        """
+
+        for category in ['train', 'test', 'val']:
+            data = load_dataset(TEST_DEVICE, TEST_DATASET_PATH, category)
+
+            # Check that the data is sorted by shot number
+            # Get the difference between each shot number and the previous one
+            diff_shot = data['shot'].diff()
+            # The first shot will have a NaN difference, so we need to remove that
+            diff_shot = diff_shot.tail(-1)
+            # Check that the remaining differences are always positive
+            self.assertTrue((diff_shot >= 0).all())
+
+            # For each shot, check that the data is sorted by time
+            for shot in data['shot'].unique():
+                shot_data = data[data['shot'] == shot]
+                # Get the difference between each time and the previous one
+                diff_time = shot_data['time'].diff()
+                # The first time will have a NaN difference, so we need to remove that
+                diff_time = diff_time.tail(-1)
+                # Check that the remaining differences are always positive
+                self.assertTrue((diff_time >= 0).all())
+
+
 
 
 class TestLoadFeaturesOutcomes(unittest.TestCase):
