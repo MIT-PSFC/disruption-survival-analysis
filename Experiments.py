@@ -15,16 +15,16 @@ class Experiment:
     tpr = None
     fpr = None
 
-    def __init__(self, device, dataset, predictor:DisruptionPredictor, name=None, thresholds=np.linspace(0,1,1000)):
+    def __init__(self, device, dataset_path, predictor:DisruptionPredictor, name=None, thresholds=np.linspace(0,1,1000)):
 
         # all_data: all data, including shot, time, time_until_disrupt, and features fed to predictor
 
         self.device = device
-        self.dataset = dataset
+        self.dataset_path = dataset_path
         self.predictor = predictor
 
-        # Load data
-        self.all_data = load_dataset(device, dataset)
+        # Load test data
+        self.all_data = load_dataset(device, dataset_path, 'test')
         
         # Transform required features using the predictor's transformer, discard the rest
         feature_data = predictor.transformer.transform(self.all_data[predictor.features])
@@ -37,7 +37,7 @@ class Experiment:
 
         # Set the name of the experiment
         if name is None:
-            self.name = device + '_' + dataset
+            self.name = device + ' ' + dataset_path
         else:
             self.name = name
 
