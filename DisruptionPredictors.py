@@ -84,7 +84,8 @@ class DisruptionPredictor:
         risk_time = self.calculate_risk(shot_data, horizon)
 
         # Only consider the times more than 'horizon' seconds before the end of the shot
-        risk_time = risk_time[risk_time['time'] < shot_data['time'].iloc[-1] - horizon]
+        # TODO double check this. nope, remove this
+        #risk_time = risk_time[risk_time['time'] < shot_data['time'].iloc[-1] - horizon]
         
         # If a single threshold is given, make it a list
         # If a list is given, make a copy of it to keep track of which thresholds have been used
