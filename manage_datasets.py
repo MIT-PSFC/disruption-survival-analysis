@@ -100,14 +100,14 @@ def load_features_outcomes(device, dataset_path, dataset_category, features, eps
     # Outcomes 'event' is 1 if time_until_disrupt is not null (disruptive shot), and 0 otherwise (non-disruptive)
     outcomes['event'] = outcomes['time_until_disrupt'].notnull().astype(int)
     # Outcomes 'time' is time_until_disrupt if it is not null (disruptive shot), and time_to_last otherwise (non-disruptive)
-    outcomes['time'] = outcomes['time_until_disrupt'].fillna(data['time_to_last'])
+    outcomes['time'] = outcomes['time_until_disrupt'].fillna(outcomes['time_to_last'])
 
     # make outcomes the correct type for models
     outcomes = outcomes.astype({'event': 'int64', 'time': 'float64'})
 
     # trim data to only include features used for training
     # trim outcomes to only include event and time columns
-    return data[features], outcomes['event', 'time']
+    return data[features], outcomes[['event', 'time']]
 
 
 def load_features_events_indicators(device, dataset_path, dataset_category, features):
