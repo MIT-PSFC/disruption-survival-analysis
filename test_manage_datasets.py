@@ -54,39 +54,29 @@ class TestLoadDataset(unittest.TestCase):
                 self.assertTrue((diff_time >= 0).all())
 
 
-
-
 class TestLoadFeaturesOutcomes(unittest.TestCase):
 
-    def test_no_negative_outcome_time_synthetic(self):
+    def test_updated_time(self):
+        """Ensure that the time to event in outcomes is different from the regular input time 
+        """
+        for category in ['train', 'test', 'val']:
+            _, outcomes = load_features_outcomes(TEST_DEVICE, TEST_DATASET_PATH, category, features=load_features(TEST_DEVICE, TEST_DATASET_PATH))
+
+            data = load_dataset(TEST_DEVICE, TEST_DATASET_PATH, category)
+            
+            self.assertTrue((outcomes['time'] != data['time']).any())
+
+    def test_no_negative_outcome_time(self):
         """Ensure there are no negative time to event in the outcomes
-        with synthetic data
         """
 
-        self.features, self.outcomes = load_features_outcomes('synthetic', 'test', features=['ip','feat2'])
-        
-        # Assert that the times have actually been updated
-        data = load_dataset('synthetic', 'test')
-        self.assertTrue((self.outcomes['time'] != data['time']).any())
+        for category in ['train', 'test', 'val']:
+            _, outcomes = load_features_outcomes(TEST_DEVICE, TEST_DATASET_PATH, category, features=load_features(TEST_DEVICE, TEST_DATASET_PATH))
+            
+            # Assert that there are no negative times
+            self.assertTrue((outcomes['time'] >= 0).all())
 
-        # Assert that there are no negative times
-        self.assertTrue((self.outcomes['time'] >= 0).all())
-
-    def test_no_negative_outcome_time_real(self):
-        """Ensure there are no negative time to event in the outcomes
-        with real data
-        """
-
-        self.features, self.outcomes = load_features_outcomes('cmod', 'random100_train')
-        self.assertTrue((self.outcomes['time'] >= 0).all())
-
-        self.features, self.outcomes = load_features_outcomes('cmod', 'random100_test')
-        self.assertTrue((self.outcomes['time'] >= 0).all())
-
-        self.features, self.outcomes = load_features_outcomes('cmod', 'random100_val')
-        self.assertTrue((self.outcomes['time'] >= 0).all())
-
-    def test_no_zero_outcome_real(self):
+    def test_no_zero_outcome(self):
         """Ensure there are no zero time to event in the outcomes"""
 
         _, self.outcomes = load_features_outcomes('cmod', 'random100_train')
@@ -113,27 +103,33 @@ class TestLoadFeaturesOutcomes(unittest.TestCase):
         self.assertTrue((self.outcomes['event'] == 0).any())
         self.assertTrue((self.outcomes['event'] == 1).any())
 
+
 class TestShotLists(unittest.TestCase):
 
     def test_all_shots_covered(self):
-        """Ensure that all shots are covered by the disruptive and non-disruptive shot methods
+        """Ensure that all shots are covered by the disruptive and non-disruptive shot loading functions
         """
 
-        # Set the dataset
-        device = 'synthetic'
-        dataset = 'synthetic100_train'
+        for category in ['train', 'test', 'val']:
+            # Get the list of shots
+            shot_list = load_shot_list(TEST_DEVICE, TEST_DATASET_PATH, category)
 
-        # Get the list of shots
-        shots = get_shot_list(device, dataset)
+            # Get the lists of disruptive and non-disruptive shots
+            disruptive_shot_list = load_disruptive_shot_list(TEST_DEVICE, TEST_DATASET_PATH, category)
+            non_disruptive_shot_list = load_non_disruptive_shot_list(TEST_DEVICE, TEST_DATASET_PATH, category)
 
-        # Get the list of disruptive shots
-        disruptive_shots = get_disruptive_shot_list(device, dataset)
-        non_disruptive_shots = get_non_disruptive_shot_list(device, dataset)
+            # Ensure that all shots are covered
+            for shot in shot_list:
+                self.assertTrue(shot in disruptive_shot_list or shot in non_disruptive_shot_list)
 
-        # Ensure that all shots are covered
-        for shot in shots:
-            self.assertTrue(shot in disruptive_shots or shot in non_disruptive_shots)
 
-        # Ensure separation
-        for shot in disruptive_shots:
-            self.assertTrue(shot not in non_disruptive_shots)
+    def test_no_shot_overlap(self):
+        """Ensure that there is no overlap between the disruptive and non-disruptive shot lists
+        """
+
+        for category in ['train', 'test', 'val']:
+            disruptive_shot_list = load_disruptive_shot_list(TEST_DEVICE, TEST_DATASET_PATH, category)
+            non_disruptive_shot_list = load_non_disruptive_shot_list(TEST_DEVICE, TEST_DATASET_PATH, category)
+
+            for shot in disruptive_shot_list:
+                self.assertTrue(shot not in non_disruptive_shot_list)
