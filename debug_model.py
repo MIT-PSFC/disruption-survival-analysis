@@ -8,7 +8,7 @@ import torch
 import sys
 sys.path.append('../')
 from plot_utils import *
-from preprocess_datasets import load_features_outcomes, load_features_labels, make_training_sets, load_features, get_disruptive_shot_list
+from manage_datasets import load_features_outcomes, load_features_labels, make_training_sets, load_features, get_disruptive_shot_list
 from run_models import run_survival_model, run_rf_model, eval_model
 from estimators_demo_utils import plot_performance_metrics
 

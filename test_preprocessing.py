@@ -2,7 +2,7 @@
 """
 import unittest
 
-from preprocess_datasets import *
+from manage_datasets import *
 
 TEST_DEVICE = 'cmod'
 TEST_DATASET = '5k_random_256_shots_60%_flattop'
