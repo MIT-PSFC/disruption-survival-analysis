@@ -5,27 +5,12 @@ import numpy as np
 
 from sklearn.metrics import roc_auc_score
 from manage_datasets import load_dataset
-from experiment_utils import label_shot_data, calculate_disruption_time
+from experiment_utils import label_shot_data, calculate_disruption_times
 
 from DisruptionPredictors import DisruptionPredictor
 
 class Experiment:
     """ Class that holds onto data shared between multiple experiments """
-
-    # Data shared between experiments
-
-    # Dictionaries for true alarms, false alarms, and warning times for various horizons
-    # Key is the horizon in seconds
-    # Value is an array of values of shape (num_shots, num_thresholds)
-    # All values in these three arrays line up to correspond to the same shots and thresholds
-    true_alarms = {} 
-    false_alarms = {}
-    warning_times = {}
-
-    # 2D Dictionary of pandas arrays containing risks at each time for each shot
-    # First Key is the horizon in seconds
-    # Second Key is the shot number
-    risk_at_times = {}
 
     def __init__(self, device, dataset_path, predictor:DisruptionPredictor, name=None, thresholds=np.logspace(-3, 0, 1000)):
 
@@ -55,6 +40,21 @@ class Experiment:
 
         # Set the thresholds for usage in tpr/fpr calculations
         self.thresholds = thresholds
+
+            # Data shared between experiments
+
+        # Dictionaries for true alarms, false alarms, and warning times for various horizons
+        # Key is the horizon in seconds
+        # Value is an array of values of shape (num_shots, num_thresholds)
+        # All values in these three arrays line up to correspond to the same shots and thresholds
+        self.true_alarms = {} 
+        self.false_alarms = {}
+        self.warning_times = {}
+
+        # 2D Dictionary of pandas arrays containing risks at each time for each shot
+        # First Key is the horizon in seconds
+        # Second Key is the shot number
+        self.risk_at_times = {}
 
     def get_shot_list(self):
         """ Returns a list of all shots in the dataset """
@@ -202,7 +202,7 @@ class Experiment:
 
             # Get the disruption time predicted by the model
             risk_at_time = self.get_risk(shot, horizon)
-            predicted_times = calculate_disruption_time(risk_at_time, self.thresholds)
+            predicted_times = calculate_disruption_times(risk_at_time, self.thresholds)
 
             # Fill in true and false positives
             true_positives[i] = np.array([disrupt and (predicted_time is not None) for predicted_time in predicted_times])

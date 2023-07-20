@@ -1,45 +1,134 @@
 """Test functions to ensure that the data preprocessing works as expected
 """
 import unittest
+import numpy as np
+import pandas as pd
 
-from run_models import load_model
-from manage_datasets import get_disruptive_shot_list
-
+from Experiments import Experiment
 from DisruptionPredictors import DisruptionPredictorSM
 
-class TestTimeToDetection(unittest.TestCase):
+from run_models import load_model
+from experiment_utils import label_shot_data, calculate_disruption_times
+from manage_datasets import load_dataset, load_disruptive_shot_list, load_non_disruptive_shot_list
+
+TEST_DEVICE = 'cmod'
+TEST_DATASET_PATH = 'random_256_shots_60%_flattop'
+
+class TestSimpleFunctions(unittest.TestCase):
 
     def setUp(self):
         """Set up the test case
         """
         
         # Specify testing parameters
-        self.device = 'synthetic'
-        self.dataset = 'synthetic100'
         self.horizon = 0.2
-        self.thresholds = np.linspace(0, 1, 100)
 
-        # Load model
-        self.model, self.transformer, self.numeric_feats = load_model('cph', self.device, self.dataset)
+        # Load simple CPH model
+        self.model, self.transformer, self.numeric_feats = load_model('cph', TEST_DEVICE, TEST_DATASET_PATH)
         self.predictor = DisruptionPredictorSM("Cox Proportional Hazards", self.model, self.numeric_feats, self.transformer)
+        self.experiment = Experiment(TEST_DEVICE, TEST_DATASET_PATH, self.predictor, name='CPH')
 
-        # Load data
-        self.data = load_benchmark_data(self.predictor, self.device, self.dataset+'_test')
-
-    
-    def test_calc_num_disrupt(self):
+    def test_get_num_disrupt(self):
         """Test that the number of disruptions is calculated correctly
         """
+
         # Get the number of disruptions in the test set
-        true_count = len(get_disruptive_shot_list(self.device, self.dataset+'_test'))
+        true_disruptive_shot_count = len(load_disruptive_shot_list(TEST_DEVICE, TEST_DATASET_PATH, 'test'))
 
         # Calculate the number of disruptions in the test set
-        calc_num_disrupt_result = calc_num_disrupt(self.data)
+        get_num_disruptive_shots_result = self.experiment.get_num_disruptive_shots()
 
-        self.assertEqual(true_count, calc_num_disrupt_result)
+        self.assertEqual(true_disruptive_shot_count, get_num_disruptive_shots_result)
 
-    def test_detection_times(self):
-        """Ensure distance between detection time and disruption time is always decreasing or None"""
+
+class TestExperimentUtils(unittest.TestCase):
+
+    def test_label_shot_data_disruptive(self):
+        """Ensure that the label_shot_data function labels disruptive shots correctly
+        """
+
+        # Create a Pandas dataframe of shot data with a single shot and only the 'time' column
+        shot_data = pd.DataFrame({'time': [0.1, 0.2, 0.3, 0.4, 0.5]})
+
+        # Call the label_shot_data function as a disruptive shot
+        labels = label_shot_data(shot_data, True, 0.2)
+
+        # Check that the returned data is the same length as the input data
+        self.assertEqual(len(labels), 5)
+
+        # Check that the first three labels are 0 and the last two are 1
+        self.assertEqual(labels[0:3].sum(), 0)
+        self.assertEqual(labels[3:].sum(), 2)
+
+    def test_label_shot_data_non_disruptive(self):
+        """Ensure that the label_shot_data function labels non-disruptive shots correctly
+        """
+
+        # Create a Pandas dataframe of shot data with a single shot and only the 'time' column
+        shot_data = pd.DataFrame({'time': [0.1, 0.2, 0.3, 0.4, 0.5]})
+
+        # Call the label_shot_data function as a non-disruptive shot
+        labels = label_shot_data(shot_data, False, 0)
+
+        # Check that the returned data is the same length as the input data
+        self.assertEqual(len(labels), 5)
+
+        # Check that the sum of the labels is 0
+        self.assertEqual(labels.sum(), 0)
+
+    def test_calculate_disruption_times_exact(self):
+        """Ensure that the calculate_disruption_times function returns the correct times
+        This function tests the case where the risk exceeds the threshold exactly
+        """
+
+        # Create a Pandas dataframe of risks at different times
+        risk_at_time = pd.DataFrame({'time': [0.0, 0.1, 0.2, 0.3, 0.4, 0.5], 'risk': [0.01, 0.11, 0.71, 0.21, 0.81, 0.41]})
+
+        # Calculate the disruption times
+        disruption_times = calculate_disruption_times(risk_at_time, [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1])
+
+        # Check that the disruption times are correct
+        self.assertEqual(disruption_times[0], 0)
+        self.assertEqual(disruption_times[1], 0.1)
+        self.assertEqual(disruption_times[2], 0.2)
+        self.assertEqual(disruption_times[3], 0.2)
+        self.assertEqual(disruption_times[4], 0.2)
+        self.assertEqual(disruption_times[5], 0.2)
+        self.assertEqual(disruption_times[6], 0.2)
+        self.assertEqual(disruption_times[7], 0.2)
+        self.assertEqual(disruption_times[8], 0.4)
+        self.assertEqual(disruption_times[9], None)
+        self.assertEqual(disruption_times[10], None)
+
+
+class TestExperimentsAlarms(unittest.TestCase):
+
+    def setUp(self):
+        """Set up the test case
+        """
+        
+        # Specify testing parameters
+        self.horizon = 0.2
+
+        # Load simple CPH model
+        self.model, self.transformer, self.numeric_feats = load_model('cph', TEST_DEVICE, TEST_DATASET_PATH)
+        self.predictor = DisruptionPredictorSM("Cox Proportional Hazards", self.model, self.numeric_feats, self.transformer)
+        self.experiment = Experiment(TEST_DEVICE, TEST_DATASET_PATH, self.predictor, name='CPH')
+
+
+    def test_warning_times_shape(self):
+        """Ensure that the warning times array has the correct shape"""
+
+        # Get the warning times
+        _, _, warning_times = self.experiment.get_alarms_times(self.horizon)
+
+        # Check that the warning times array has the correct shape
+        self.assertEqual(warning_times.shape, (len(self.experiment.get_shot_list()),len(self.experiment.thresholds)))
+
+    def test_warning_times_ordering(self):
+        """Ensure that the individual warning times are always decreasing
+        As threshold increases, there should be less time between detection and disruption
+        """
 
         _, _, detection_times_array = calc_tp_fp_times(self.predictor, self.horizon, self.data, self.thresholds)
 
@@ -51,24 +140,6 @@ class TestTimeToDetection(unittest.TestCase):
                     break
                 else:
                     self.assertLessEqual(detection_times[i+1], detection_times[i])
-
-
-    def test_false_positive_rates(self):
-        """Test that the false positive rates are always decreasing
-        As threshold increases, false positive rate should decrease
-        """
-        
-        # Get false positives
-        _, false_positives, _ = calc_tp_fp_times(self.predictor, self.horizon, self.data, self.thresholds)
-
-        # Get number of disruptions
-        num_disrupt = calc_num_disrupt(self.data)
-
-        # Check that the false positive rates are always decreasing
-        false_positive_rates = np.sum(false_positives, axis=0)/num_disrupt
-
-        for i in range(len(false_positive_rates)-1):
-            self.assertLessEqual(false_positive_rates[i+1], false_positive_rates[i])
 
     def test_individual_warning_time_ordering(self):
         """Ensure that the individual warning times are always decreasing
@@ -101,3 +172,24 @@ class TestTimeToDetection(unittest.TestCase):
 
         self.assertEqual(len(false_positive_rates), len(mean_warning_times))
         self.assertEqual(len(false_positive_rates), len(std_warning_times))
+
+
+    def test_calculate_disruption_times_increasing(self):
+        """Ensure that the disruption times are always increasing"""
+        
+        # Pick some shot number
+        shot = self.experiment.get_shot_list()[0]
+
+        # Calculate the risk at time using some horizon
+        risk_at_time = self.experiment.get_risk(shot, self.horizon)
+
+        # Calculate the disruption times
+        disruption_times = calculate_disruption_times(risk_at_time, np.linspace(0, 1, 100))
+
+        # Check that the disruption times are always increasing until they are none, then all none
+        for i in range(len(disruption_times)-1):
+            if disruption_times[i] is None:
+                self.assertTrue(all([x is None for x in disruption_times[i:]]))
+                break
+            else:
+                self.assertLessEqual(disruption_times[i], disruption_times[i+1])
