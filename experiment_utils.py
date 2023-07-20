@@ -97,5 +97,3 @@ def calculate_alarm_time_hysterisis(self, shot_data,
     is predicted
     """
     raise NotImplementedError("Hysterisis method not yet implemented")
-
-def calculate_warning_times(alarm_times, disrupt_time):

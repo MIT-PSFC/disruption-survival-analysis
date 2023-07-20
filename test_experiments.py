@@ -143,40 +143,35 @@ class TestExperimentsAlarms(unittest.TestCase):
         true_alarms, false_alarms, alarm_times = self.experiment.get_alarms_times(self.horizon)
 
         # Check that the arrays have the correct shapes
-        # Should be the same length as the number of disruptive shots
+        # Should be the same length as the number of shots
         # and the second dimension is the number of thresholds
-        self.assertEqual(true_alarms.shape, (self.experiment.get_num_disruptive_shots(), len(self.experiment.thresholds)))
-        self.assertEqual(false_alarms.shape, (self.experiment.get_num_disruptive_shots(), len(self.experiment.thresholds)))
-        self.assertEqual(alarm_times.shape, (self.experiment.get_num_disruptive_shots(), len(self.experiment.thresholds)))
+        self.assertEqual(true_alarms.shape, (self.experiment.get_num_shots(), len(self.experiment.thresholds)))
+        self.assertEqual(false_alarms.shape, (self.experiment.get_num_shots(), len(self.experiment.thresholds)))
+        self.assertEqual(alarm_times.shape, (self.experiment.get_num_shots(), len(self.experiment.thresholds)))
         
 
-    def test_warning_times_length(self):
+    def test_warning_times_list_length(self):
         """Ensure that the warning times array has the correct length"""
 
-        # Get the warning times
-        _, _, warning_times = self.experiment.get_warning_times(self.horizon)
-
+        # Get the warning times list
+        warning_times_list = self.experiment.get_warning_times_list(self.horizon)
 
         # Check that the warning times list has the correct length
         # Should be the same length as the number of disruptive shots
         # as the second dimension is the number of thresholds
-        self.assertEqual(len(warning_times), self.experiment.get_num_disruptive_shots())
+        self.assertEqual(len(warning_times_list), self.experiment.get_num_disruptive_shots())
 
     def test_warning_times_ordering(self):
         """Ensure that the individual warning times are always decreasing
         As threshold increases, there should be less time between detection and disruption
         """
 
-        _, _, warning_times = self.experiment.get_alarms_times(self.horizon)
+        warning_times_list = self.experiment.get_warning_times_list(self.horizon)
 
-        # Check that the warning times are always decreasing until they are None
-        for detection_times in detection_times_array:
-            for i in range(len(detection_times)-1):
-                if detection_times[i] is None:
-                    self.assertTrue(all([x is None for x in detection_times[i:]]))
-                    break
-                else:
-                    self.assertLessEqual(detection_times[i+1], detection_times[i])
+        # Check that the warning times are always decreasing until there aren't any more
+        for warning_times in warning_times_list:
+            for i in range(len(warning_times)-1):
+                self.assertLessEqual(warning_times[i+1], warning_times[i])
 
     def test_individual_warning_time_ordering(self):
         """Ensure that the individual warning times are always decreasing
