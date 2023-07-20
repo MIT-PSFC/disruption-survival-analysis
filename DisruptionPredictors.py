@@ -7,6 +7,8 @@ from sklearn.ensemble import RandomForestClassifier
 class DisruptionPredictor:
     """Analog to how a machine learning model would be seen by the plasma control system
     Data goes in, disruption time comes out
+    This class does NOT store actual data, it only stores the model and the transformer
+    As such, 
     """
 
     def __init__(self, name, model, features, transformer:Preprocessor):
@@ -115,8 +117,8 @@ class DisruptionPredictor:
         return disruption_times
 
     def calculate_disruption_time_hysterisis(self, shot_data, 
-                                             upper_threshold, lower_threshold, window,
-                                             horizon):
+                                             upper_threshold, lower_threshold, 
+                                             window, horizon):
         """
         Calculates the disruption time(s) for a given shot with hysterisis method
         If the 'disruptivity' output of the model goes above the upper threshold
