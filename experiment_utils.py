@@ -32,9 +32,9 @@ def label_shot_data(shot_data, disrupt, horizon):
 
     return labeled_data
 
-def calculate_disruption_times(risk_at_time, thresholds):
+def calculate_alarm_times(risk_at_time, thresholds):
     """
-    Calculates the disruption times for a given shot with a simple threshold
+    Calculates the alarm times for a given shot with a simple threshold
 
     Parameters
     ----------
@@ -49,8 +49,8 @@ def calculate_disruption_times(risk_at_time, thresholds):
 
     Returns
     -------
-    disruption_times : list of float
-        The times of disruption
+    alarm_times : list of float
+        The times of alarm (predicted disruption)
         If no disruption is predicted, returns None in that position
     """
     
@@ -60,7 +60,7 @@ def calculate_disruption_times(risk_at_time, thresholds):
     else:
         avail_thresholds = thresholds.copy()
 
-    disruption_times = []
+    alarm_times = []
     # Go through the shot data and find the first time the risk exceeds each threshold
     for i in range(len(risk_at_time)):
         # If there are no more thresholds, stop
@@ -73,27 +73,29 @@ def calculate_disruption_times(risk_at_time, thresholds):
         # or there are no more thresholds
         risk = risk_at_time.iloc[i]['risk']
         while risk > avail_thresholds[0]:
-            disruption_times.append(risk_at_time.iloc[i]['time'])
+            alarm_times.append(risk_at_time.iloc[i]['time'])
             avail_thresholds.pop(0)
             if len(avail_thresholds) == 0:
                 break
     
-    # If there is a mismatch between disruption times and thresholds,
-    # fill in the rest of the disruption times with None
-    if len(disruption_times) < len(thresholds):
-        for i in range(len(thresholds) - len(disruption_times)):
-            disruption_times.append(None)
+    # If there is a mismatch between alarm times and thresholds,
+    # fill in the rest of the alarm times with None
+    if len(alarm_times) < len(thresholds):
+        for i in range(len(thresholds) - len(alarm_times)):
+            alarm_times.append(None)
 
-    # Return the disruption times
-    return disruption_times
+    # Return the alarm times
+    return alarm_times
 
-def calculate_disruption_time_hysterisis(self, shot_data, 
+def calculate_alarm_time_hysterisis(self, shot_data, 
                                             upper_threshold, lower_threshold, 
-                                            window, horizon):
+                                            window, horizons):
     """
-    Calculates the disruption time(s) for a given shot with hysterisis method
+    Calculates the alarm times for a given shot with hysterisis method
     If the 'disruptivity' output of the model goes above the upper threshold
     and remains above the lower threshold for the window length, a disruption
     is predicted
     """
     raise NotImplementedError("Hysterisis method not yet implemented")
+
+def calculate_warning_times(alarm_times, disrupt_time):
