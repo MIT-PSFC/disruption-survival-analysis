@@ -97,3 +97,11 @@ def calculate_alarm_time_hysterisis(self, shot_data,
     is predicted
     """
     raise NotImplementedError("Hysterisis method not yet implemented")
+
+def clump_many_to_one(warning_times, true_positive_rate):
+    """
+    This function 
+
+    Returns
+    
+    """

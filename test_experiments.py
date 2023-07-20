@@ -162,7 +162,7 @@ class TestExperimentsAlarms(unittest.TestCase):
         self.assertEqual(len(warning_times_list), self.experiment.get_num_disruptive_shots())
 
     def test_warning_times_ordering(self):
-        """Ensure that the individual warning times are always decreasing
+        """Ensure that the warning times for a given shot are always decreasing
         As threshold increases, there should be less time between detection and disruption
         """
 
@@ -173,19 +173,7 @@ class TestExperimentsAlarms(unittest.TestCase):
             for i in range(len(warning_times)-1):
                 self.assertLessEqual(warning_times[i+1], warning_times[i])
 
-    def test_individual_warning_time_ordering(self):
-        """Ensure that the individual warning times are always decreasing
-        As threshold increases, there should be less time between detection and disruption
-        """
-
-        _, _, warning_times_array = calc_tp_fp_times(self.predictor, self.horizon, self.data, self.thresholds)
-
-        # Check that the mean warning times are always decreasing
-        for warning_times in warning_times_array:
-            for i in range(len(warning_times)-1):
-                self.assertLessEqual(warning_times[i+1], warning_times[i])
-
-    def test_mean_warning_time_ordering(self):
+    def test_mean_warning_time_vs_threshold_ordering(self):
         """Ensure that the mean warning times are always decreasing
         As threshold increases, there should be less time between detection and disruption
         """

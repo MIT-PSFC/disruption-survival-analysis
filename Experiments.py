@@ -12,7 +12,7 @@ from DisruptionPredictors import DisruptionPredictor
 class Experiment:
     """ Class that holds onto data shared between multiple experiments """
 
-    def __init__(self, device, dataset_path, predictor:DisruptionPredictor, name=None, thresholds=np.logspace(-3, 0, 1000)):
+    def __init__(self, device, dataset_path, predictor:DisruptionPredictor, name=None, thresholds=np.logspace(-3, 0, 500)):
 
         # all_data: all data, including shot, time, time_until_disrupt, and features fed to predictor
 
@@ -218,12 +218,35 @@ class Experiment:
 
         return true_alarms, false_alarms, alarm_times
     
+    def true_alarm_rate_vs_threshold(self, horizon):
+        """ Get statistics on true alarm rate vs threshold for a given horizon 
+            This is inherently a macro statistic, since a single shot can have only one alarm at a given threshold
+        """
+
+        true_alarms, _, _ = self.get_alarms_times(horizon)
+
+        true_alarm_rates = np.sum(true_alarms, axis=0) / self.get_num_disruptive_shots()
+
+        return self.thresholds, true_alarm_rates
+    
+    def false_alarm_rate_vs_threshold(self, horizon):
+        """ Get statistics on false alarm rate vs threshold for a given horizon
+            This is inherently a macro statistic, since a single shot can have only one alarm at a given threshold
+        """
+
+        _, false_alarms, _ = self.get_alarms_times(horizon)
+
+        false_alarm_rates = np.sum(false_alarms, axis=0) / (self.get_num_shots() - self.get_num_disruptive_shots())
+
+        return self.thresholds, false_alarm_rates
      
+    # Warning Times Methods
+
     def get_warning_times_list(self, horizon):
-        """Get a list of warning times for each disruptive shot at a given horizon
+        """Get a list of warning times for each disruptive shot at a given horizon.
         This is a list of arrays of variable length,
-        but the arrays will line up such that each index corresponds to the same threshold
-        The list is ordered to be consistent with the list of disruptive shots
+        but the arrays will line up such that each index corresponds to the same threshold.
+        The list is ordered to be consistent with the list of disruptive shots.
         """
         
         # Get list of all shots
@@ -246,36 +269,19 @@ class Experiment:
             shot_alarm_times = alarm_times[shot_index]
 
             # Calculate the warning times for this shot
-            warning_times = np.array([disrupt_time - alarm_time for alarm_time in shot_alarm_times if alarm_time is not None])
+            warning_times = np.array([disrupt_time - alarm_time for alarm_time in shot_alarm_times])
+
+            # The only way a NaN will show up in the warning times is if the alarm time was None or Nan
+            # If alarm time was None, that means no alarm was raised for this disruptive shot
+            # Replace with zero to indicate that there was no warning of disruption
+            warning_times = np.array([0 if (warning_time is None) or (np.isnan(warning_time)) else warning_time for warning_time in warning_times])
 
             warning_times_list.append(warning_times)
 
         return warning_times_list
 
-    def tpr_vs_threshold(self, horizon):
-        """ Get statistics on true positive rate vs threshold for a given horizon 
-            This is inherently a macro statistic, since a single shot can have only one true positive rate
-        """
-
-        true_positives, _, _ = self.get_alarms_times(horizon)
-
-        true_positive_rates = np.sum(true_positives, axis=0) / self.get_num_disruptive_shots()
-
-        return self.thresholds, true_positive_rates
-    
-    def fpr_vs_threshold(self, horizon):
-        """ Get statistics on false positive rate vs threshold for a given horizon
-            This is inherently a macro statistic, since a single shot can have only one false positive rate
-        """
-
-        _, false_positives, _ = self.get_alarms_times(horizon)
-
-        false_positive_rates = np.sum(false_positives, axis=0) / (self.get_num_shots() - self.get_num_disruptive_shots())
-
-        return self.thresholds, false_positive_rates
-    
-    def warning_vs_threshold(self, horizon):
-        """ Get statistics on warning times vs threshold for a given horizon 
+    def warning_time_vs_threshold(self, horizon):
+        """ Get statistics on warning time vs threshold for a given horizon 
             This is inherently a macro statistic, since a single shot can have only one warning time
         """
 
@@ -396,3 +402,5 @@ class Experiment:
 
         # TODO: ignore zero precision results?
         return unique_precision[:], mean_warning_times[:], std_warning_times[:]
+
+
