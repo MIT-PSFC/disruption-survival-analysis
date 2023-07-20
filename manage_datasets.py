@@ -64,7 +64,7 @@ def load_dataset_grouped(device, dataset_path, dataset_category):
     # Return the grouped dataset
     return group_data
 
-def load_features_outcomes(device, dataset_path, dataset_category, features, epsilon=1e-6):
+def load_features_outcomes(device, dataset_path, dataset_category, features, epsilon=1e-4):
     """ Load the specified dataset from a device, and return the features and outcomes
     For usage in SurvivalModel
 
@@ -239,6 +239,8 @@ def make_training_sets(device, dataset_path, random_seed=0, debug=False):
     # Load the raw dataset
     data = load_dataset(device, dataset_path, 'raw')
 
+    # Eliminate dropped features columns
+    data = data.drop(columns=DROPPED_FEATURES)
     # Eliminate timeslices with null values in any feature except time_until_disrupt
     data = data.dropna(subset=[col for col in data.columns if col not in ['time_until_disrupt']])
     # Eliminate timeslices with negative values in time

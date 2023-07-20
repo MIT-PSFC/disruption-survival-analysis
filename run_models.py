@@ -2,6 +2,7 @@
 # [1] auton-survival: an Open-Source Package for Regression, Counterfactual Estimation, 
 # Evaluation and Phenotyping with Censored Time-to-Event Data. arXiv (2022)
 
+import os
 import dill
 import numpy as np
 
@@ -38,7 +39,7 @@ def get_test_times(y_tr):
     # TODO: should this should be limited to under the cutoff time?
     return np.quantile(y_tr['time'][y_tr['event']==1], np.linspace(0.1, 0.9, 10)).tolist()
 
-def run_survival_model(model_string, x_tr, x_val, y_tr, y_val, selection='rough'):
+def run_survival_model(model_string, x_tr, x_val, y_tr, y_val):
     """
     Train and tune a SurvivalModel from auton-survival package
     
@@ -57,7 +58,7 @@ def run_survival_model(model_string, x_tr, x_val, y_tr, y_val, selection='rough'
     # bs is batch size. int. default 100
     # epochs is number of complete passes through training data. int default 50
     # distribution is distribution of survival times. str. default 'Weibull', can also be 'LogNormal'
-
+    """
     if selection == 'fine':
         # Define hyperparameter grids for all models to use while tuning
         l2_grid = np.logspace(-5,-2,10)
@@ -89,20 +90,20 @@ def run_survival_model(model_string, x_tr, x_val, y_tr, y_val, selection='rough'
         smoothing_factor_grid = np.logspace(-5,-2,3)
         gamma_grid = [10]
     else:
-        l2_grid = [1e-3, 1e-4]
-        n_estimators_grid = [100, 300]
-        max_depth_grid = [3,5]
-        max_features_grid = ['sqrt', 'log2']
-        learning_rate_grid = [1e-3, 1e-4]
-        layers_grid = [[100], [100, 100]]
-        bs_grid = [50, 100]
-        epochs = 50
-        distribution_grid = ['Weibull', 'LogNormal']
-        temperature_grid = [1.0]
-        k_grid = [2, 3]
-        smoothing_factor_grid = [1e-3, 1e-4]
-        gamma_grid = [10]
-
+    """
+    l2_grid = [1e-3, 1e-4]
+    n_estimators_grid = [100, 300]
+    max_depth_grid = [3,5]
+    max_features_grid = ['sqrt', 'log2']
+    learning_rate_grid = [1e-3, 1e-4]
+    layers_grid = [[100], [100, 100]]
+    bs_grid = [50, 100]
+    epochs = 50
+    distribution_grid = ['Weibull', 'LogNormal']
+    temperature_grid = [1.0]
+    k_grid = [2, 3]
+    smoothing_factor_grid = [1e-3, 1e-4]
+    gamma_grid = [10]
 
 
     # Define the hyperparameter grid for hyperparameter tuning
@@ -299,14 +300,19 @@ def eval_model(model, x_te, y_tr, y_te):
 
 def save_model(model, transformer, model_name, device, dataset_path, features):
     """Save model and transformer to file"""
-    model_path = 'models/' + device + '/' + dataset_path + '/' + model_name + '.pkl'
-    dill.dump([model, transformer, features], open(model_path, 'wb'))
-    print('Saved model to ' + model_path)
+    model_path = 'models/' + device + '/' + dataset_path
+    try:
+        os.makedirs(model_path)
+    except:
+        pass
+    model_file = model_path + '/' + model_name + '.pkl'
+    dill.dump([model, transformer, features], open(model_file, 'wb'))
+    print('Saved model to ' + model_file)
 
 def load_model(model_name, device, dataset_path):
     """Load model and transformer from file"""
-    model_path = 'models/' + device + '/' + dataset_path + '/' + model_name + '.pkl'
-    with open(model_path, 'rb') as f:
+    model_file = 'models/' + device + '/' + dataset_path + '/' + model_name + '.pkl'
+    with open(model_file, 'rb') as f:
         model, transformer, features = dill.load(f)
-    print('Loaded model from ' + model_path)
+    print('Loaded model from ' + model_file)
     return model, transformer, features
