@@ -4,7 +4,6 @@ import unittest
 
 from run_models import load_model
 from manage_datasets import get_disruptive_shot_list
-from evaluate_performance import *
 
 from DisruptionPredictors import DisruptionPredictorSM
 
