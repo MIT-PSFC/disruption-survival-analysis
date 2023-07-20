@@ -98,10 +98,41 @@ def calculate_alarm_time_hysterisis(self, shot_data,
     """
     raise NotImplementedError("Hysterisis method not yet implemented")
 
-def clump_many_to_one(warning_times, true_positive_rate):
+def clump_many_to_one_statistics(warning_times_list, true_alarm_rates):
     """
-    This function 
+    The way this is calculated, the warning times and true alarm rates and false alarm rates are all given by particular thresholds
+    As such, we can easily compare them to the thresholds, since each value corresponds to one threshold
+    However, when comparing them to eachother, this becomes difficult because there is not necessarily a one-to-one correspondence
+    For instance, we could have a true alarm rate of 0.5 for both a threshold of 0.1 and 0.2, but the warning times could be different
+    This function clumps the warning times together for each unique true alarm rate
+    TODO: refactor to be the clumper vs the clumpee or something like that
 
     Returns
+    -------
+    mean_warning_times : numpy.ndarray
+        The mean warning times for each unique true alarm rate
+    std_warning_times : numpy.ndarray
+        The standard deviation of the warning times for each unique true alarm rate
     
     """
+
+    # Get the unique true alarm rates
+    unique_true_alarm_rates = np.unique(true_alarm_rates)
+
+    # Initialize the mean and standard deviation arrays
+    mean_warning_times = np.zeros(len(unique_true_alarm_rates))
+    std_warning_times = np.zeros(len(unique_true_alarm_rates))
+
+    # Go through each unique true alarm rate and find the warning times that correspond to it
+    for i, true_alarm_rate in enumerate(unique_true_alarm_rates):
+        # Find the indices of the warning times that correspond to this true alarm rate
+        indices = np.where(true_alarm_rates == true_alarm_rate)
+
+        # Get the warning times that correspond to this true alarm rate
+        warning_times = warning_times_list[indices]
+
+        # Calculate the mean and standard deviation of the warning times
+        mean_warning_times[i] = np.mean(warning_times)
+        std_warning_times[i] = np.std(warning_times)
+
+    return unique_true_alarm_rates, mean_warning_times, std_warning_times

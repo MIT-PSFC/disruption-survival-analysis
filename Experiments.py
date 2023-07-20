@@ -5,7 +5,7 @@ import numpy as np
 
 from sklearn.metrics import roc_auc_score
 from manage_datasets import load_dataset
-from experiment_utils import label_shot_data, calculate_alarm_times
+from experiment_utils import label_shot_data, calculate_alarm_times, clump_many_to_one_statistics
 
 from DisruptionPredictors import DisruptionPredictor
 
@@ -285,78 +285,36 @@ class Experiment:
             This is inherently a macro statistic, since a single shot can have only one warning time
         """
 
-        _, _, warning_times = self.get_alarms_times(horizon)
+        warning_times_list = self.get_warning_times_list(horizon)
 
-        mean_warning_times = []
-        std_warning_times = []
+        unique_thresholds, mean_warning_times, std_warning_times = clump_many_to_one_statistics(warning_times_list, self.thresholds)
 
-        # Calculate the average warning time for each threshold
-        for i in range(len(self.thresholds)):
+        return unique_thresholds, mean_warning_times, std_warning_times
 
-            clump_warning_times = []
-
-            for warning_time in warning_times:
-                try:
-                    clump_warning_times.append(warning_time[i])
-                except IndexError:
-                    # This is a disruptive shot that didn't have a detection at this threshold
-                    # Warning time is 0
-                    clump_warning_times.append(0)
-
-            mean_warning_times.append(np.mean(clump_warning_times))
-            std_warning_times.append(np.std(clump_warning_times))
-
-        return self.thresholds, mean_warning_times, std_warning_times
-
-    def warning_vs_fpr(self, horizon):
-        """ Get statistics on warning times vs FPR for a given horizon 
+    def warning_time_vs_true_alarm_rate(self, horizon):
+        """ Get statistics on warning time vs true alarm rate for a given horizon 
             This is inherently a macro statistic, since a single shot can have only one warning time
         """
 
-        # TODO need to set this up as a dictionary, so that we can have multiple horizons
-        _, false_positives, warning_times = self.get_alarms_times(horizon)
+        warning_times_list = self.get_warning_times_list(horizon)
+        _, true_alarm_rates = self.true_alarm_rate_vs_threshold(horizon)
 
-        mean_warning_times = []
-        std_warning_times = []
+        unique_true_alarm_rates, mean_warning_times, std_warning_times = clump_many_to_one_statistics(warning_times_list, true_alarm_rates)
 
-        # Calculate the false positive rate at each threshold
-        false_positive_rates = np.sum(false_positives, axis=0) / (self.get_num_shots() - self.get_num_disruptive_shots())
+        return unique_true_alarm_rates, mean_warning_times, std_warning_times
 
-        # TODO: Should really really vectorize this
+    def warning_time_vs_false_alarm_rate(self, horizon):
+        """ Get statistics on warning time vs false alarm rate for a given horizon 
+            This is inherently a macro statistic, since a single shot can have only one warning time
+        """
 
-        # Calculate the average warning time for each false positive rate
-        fpr_times = []
-        for i in range(len(self.thresholds)):
-        
-            for warning_time in warning_times:
-                try:
-                    fpr_times.append(warning_time[i])
-                except IndexError:
-                    # This is a disruptive shot that didn't have a detection at this threshold
-                    # Warning time is 0
-                    fpr_times.append(0)
-            
-            # Clump the detection times that share a false positive rate together
-            # Or if we're at the end, we need to add the last one regardless
-            if i == len(self.thresholds) - 1 or (false_positive_rates[i] != false_positive_rates[i+1]):
-                if len(fpr_times) > 0:
-                    mean_warning_times.append(np.mean(fpr_times))
-                    std_warning_times.append(np.std(fpr_times))
-                    fpr_times = []
-                else:
-                    # If there are no detection times, that means false positive rate is 0. Detection time is 0.
-                    mean_warning_times.append(0)
-                    std_warning_times.append(0)
-                
+        warning_times_list = self.get_warning_times_list(horizon)
+        _, false_alarm_rates = self.false_alarm_rate_vs_threshold(horizon)
 
-        # Eliminate duplicate false positive rates.
-        # However, this sorts the false positive rates, so we need to reverse the order afterwards
-        unique_false_positive_rates = np.unique(false_positive_rates)
-        # Reverse the order so that the false positive rates are increasing (to once again line up with the detection times)
-        unique_false_positive_rates = unique_false_positive_rates[::-1]
+        unique_false_alarm_rates, mean_warning_times, std_warning_times = clump_many_to_one_statistics(warning_times_list, false_alarm_rates)
 
-        # Ignore zero false positve rate results
-        return unique_false_positive_rates[:-1], mean_warning_times[:-1], std_warning_times[:-1]
+        # TODO: Ignore zero false positve rate results???
+        return unique_false_alarm_rates, mean_warning_times, std_warning_times
     
     def warning_vs_precision(self, horizon):
         """ Get statistics on warning times vs precision for a given horizon 
@@ -364,43 +322,14 @@ class Experiment:
         """
 
         # TODO need to set this up as a dictionary, so that we can have multiple horizons
-        true_positives, false_positives, warning_times = self.get_alarms_times(horizon)
+        true_alarms, false_alarms, _ = self.get_alarms_times(horizon)
 
-        mean_warning_times = []
-        std_warning_times = []
+        warning_times_list = self.get_warning_times_list(horizon)
 
         # Calculate the precision at each threshold
-        threshold_precisions = np.sum(true_positives, axis=0) / (np.sum(true_positives, axis=0) + np.sum(false_positives, axis=0))
+        threshold_precisions = np.sum(true_alarms, axis=0) / (np.sum(true_alarms, axis=0) + np.sum(false_alarms, axis=0))
 
-        # Calculate the average warning time for each precision
-        # Each threshold has its own precision which is not necessarily unique
-        # Unlike FPR, precision is not is not monatonically decreasing with threshold
-        # Need to keep careful track of the indices while calculating this.
-
-        # Eliminate duplicate precision.
-        unique_precision = np.unique(threshold_precisions)
-
-        for precision in unique_precision:
-            precision_times = []
-
-            # Find the indices of the thresholds with this precision
-            precision_indices = np.where(threshold_precisions == precision)[0]
-
-            for i in precision_indices:
-                for warning_time in warning_times:
-                    try:
-                        precision_times.append(warning_time[i])
-                    except IndexError:
-                        # This is a disruptive shot that didn't have a detection at this threshold
-                        # Warning time is 0
-                        precision_times.append(0)
-
-            # Clump the detection times that share a precision together
-            # This list should line up with the unique_precision list
-            mean_warning_times.append(np.mean(precision_times))
-            std_warning_times.append(np.std(precision_times))
+        unique_precision, mean_warning_times, std_warning_times = clump_many_to_one_statistics(warning_times_list, threshold_precisions)
 
         # TODO: ignore zero precision results?
         return unique_precision[:], mean_warning_times[:], std_warning_times[:]
-
-
