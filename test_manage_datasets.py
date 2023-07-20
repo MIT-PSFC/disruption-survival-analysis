@@ -147,3 +147,12 @@ class TestCreatedTrainingSets(unittest.TestCase):
             shots = data.groupby('shot').size()
 
             self.assertTrue((shots >= 10).all())
+
+    def test_no_dropped_features(self):
+        """Ensure that the dropped features are actually gone"""
+
+        for category in ['train', 'test', 'val']:
+            data = load_dataset(TEST_DEVICE, TEST_DATASET_PATH, category)
+            # Ensure that the dropped features are not in the data
+            for feature in DROPPED_FEATURES:
+                self.assertTrue(feature not in data.columns)
