@@ -5,15 +5,27 @@ import numpy as np
 
 from sklearn.metrics import roc_auc_score
 from manage_datasets import load_dataset
-from experiment_utils import label_shot_data
+from experiment_utils import label_shot_data, calculate_disruption_time
 
 from DisruptionPredictors import DisruptionPredictor
 
 class Experiment:
+    """ Class that holds onto data shared between multiple experiments """
 
+    # Data shared between experiments
+
+    # Dictionaries for true alarms, false alarms, and warning times for various horizons
+    # Key is the horizon in seconds
+    # Value is an array of values of shape (num_shots, num_thresholds)
+    # All values in these three arrays line up to correspond to the same shots and thresholds
+    true_alarms = {} 
+    false_alarms = {}
     warning_times = {}
-    true_positives = {}
-    false_positives = {}
+
+    # 2D Dictionary of pandas arrays containing risks at each time for each shot
+    # First Key is the horizon in seconds
+    # Second Key is the shot number
+    risk_at_times = {}
 
     def __init__(self, device, dataset_path, predictor:DisruptionPredictor, name=None, thresholds=np.logspace(-3, 0, 1000)):
 
@@ -72,9 +84,19 @@ class Experiment:
 
     def get_risk(self, shot, horizon):
         """ Returns the risk score for a shot at a given horizon """
+        try:
+            return self.risk_at_times[horizon][shot]
+        except KeyError:
+            if horizon not in self.risk_at_times:
+                self.risk_at_times[horizon] = {}   
+            self.risk_at_times[horizon][shot] = self.calc_risk(shot, horizon)
+            return self.risk_at_times[horizon][shot]
+    
+    def calc_risk(self, shot, horizon):
+        """ Calculates the risk score for a shot at a given horizon"""
         shot_data = self.all_data[self.all_data['shot'] == shot]
         return self.predictor.calculate_risk_at_time(shot_data, horizon)['risk'].values
-
+    
     # ROC AUC methods
 
     def roc_auc_single(self, horizons, shot):
@@ -144,18 +166,18 @@ class Experiment:
     
     # TPR, FPR, Warning Time methods
 
-    def get_tp_fp_times(self, horizon):
-        """Attempt to get the true positives, false positives, and warning times arrays for a given horizon.
+    def get_alarms_times(self, horizon):
+        """Attempt to get the true alarms, false alarms, and warning times arrays for a given horizon.
         If they have already been calculated, return them. Otherwise, calculate them and return them.
         """
         try:
-            return self.true_positives[horizon], self.false_positives[horizon], self.warning_times[horizon]
+            return self.true_alarms[horizon], self.false_alarms[horizon], self.warning_times[horizon]
         except KeyError:
-            self.true_positives[horizon], self.false_positives[horizon], self.warning_times[horizon] = self.calc_tp_fp_times(horizon)
-            return self.true_positives[horizon], self.false_positives[horizon], self.warning_times[horizon]
+            self.true_alarms[horizon], self.false_alarms[horizon], self.warning_times[horizon] = self.calc_alarms_times(horizon)
+            return self.true_alarms[horizon], self.false_alarms[horizon], self.warning_times[horizon]
 
-    def calc_tp_fp_times(self, horizon):
-        """Calculate the true positives, false positives, and warning times arrays for a given horizon.
+    def calc_alarms_times(self, horizon):
+        """Calculate the true alarms, false alarms, and warning times arrays for a given horizon.
         Where the arrays are of shape (num_shots, num_thresholds)"""
 
         # Get list of all shots
@@ -177,8 +199,10 @@ class Experiment:
         for i, shot in enumerate(shot_list):
             disrupt = shot in disruptive_shots
             shot_data = self.all_data[self.all_data['shot'] == shot]
-            # Calculate the disruption time predicted by the model
-            predicted_times = self.predictor.calculate_disruption_time(shot_data, self.thresholds, horizon)
+
+            # Get the disruption time predicted by the model
+            risk_at_time = self.get_risk(shot, horizon)
+            predicted_times = calculate_disruption_time(risk_at_time, self.thresholds)
 
             # Fill in true and false positives
             true_positives[i] = np.array([disrupt and (predicted_time is not None) for predicted_time in predicted_times])
@@ -198,7 +222,7 @@ class Experiment:
             This is inherently a macro statistic, since a single shot can have only one true positive rate
         """
 
-        true_positives, _, _ = self.get_tp_fp_times(horizon)
+        true_positives, _, _ = self.get_alarms_times(horizon)
 
         true_positive_rates = np.sum(true_positives, axis=0) / self.get_num_disruptive_shots()
 
@@ -209,7 +233,7 @@ class Experiment:
             This is inherently a macro statistic, since a single shot can have only one false positive rate
         """
 
-        _, false_positives, _ = self.get_tp_fp_times(horizon)
+        _, false_positives, _ = self.get_alarms_times(horizon)
 
         false_positive_rates = np.sum(false_positives, axis=0) / (self.get_num_shots() - self.get_num_disruptive_shots())
 
@@ -220,7 +244,7 @@ class Experiment:
             This is inherently a macro statistic, since a single shot can have only one warning time
         """
 
-        _, _, warning_times = self.get_tp_fp_times(horizon)
+        _, _, warning_times = self.get_alarms_times(horizon)
 
         mean_warning_times = []
         std_warning_times = []
@@ -249,7 +273,7 @@ class Experiment:
         """
 
         # TODO need to set this up as a dictionary, so that we can have multiple horizons
-        _, false_positives, warning_times = self.get_tp_fp_times(horizon)
+        _, false_positives, warning_times = self.get_alarms_times(horizon)
 
         mean_warning_times = []
         std_warning_times = []
@@ -299,7 +323,7 @@ class Experiment:
         """
 
         # TODO need to set this up as a dictionary, so that we can have multiple horizons
-        true_positives, false_positives, warning_times = self.get_tp_fp_times(horizon)
+        true_positives, false_positives, warning_times = self.get_alarms_times(horizon)
 
         mean_warning_times = []
         std_warning_times = []
