@@ -32,9 +32,9 @@ def label_shot_data(shot_data, disrupt, horizon):
 
     return labeled_data
 
-def calculate_disruption_time(risk_at_time, thresholds):
+def calculate_disruption_times(risk_at_time, thresholds):
     """
-    Calculates the disruption time(s) for a given shot with a simple threshold
+    Calculates the disruption times for a given shot with a simple threshold
 
     Parameters
     ----------
@@ -44,6 +44,8 @@ def calculate_disruption_time(risk_at_time, thresholds):
         Should be transformed by the predictor's transformer
     thresholds : list of float
         The thresholds to use for determining if a disruption is imminent
+        Expects a list of floats between 0 and 1, sorted from lowest to highest
+        Disruption is predicted when the risk exceeds a threshold
 
     Returns
     -------
