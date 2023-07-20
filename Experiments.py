@@ -41,7 +41,7 @@ class Experiment:
         # Set the thresholds for usage in tpr/fpr calculations
         self.thresholds = thresholds
 
-            # Data shared between experiments
+        # Data shared between experiments
 
         # Dictionaries for true alarms, false alarms, and alarm times for various horizons
         # Key is the horizon in seconds
@@ -174,7 +174,7 @@ class Experiment:
 
         return roc_auc_list
     
-    # TPR, FPR, Warning Time methods
+    # True Alarms, False Alarms methods
 
     def get_alarms_times(self, horizon):
         """Attempt to get the true alarms, false alarms, and warning times arrays for a given horizon.
@@ -199,36 +199,59 @@ class Experiment:
         # Array is of shape (num_shots, num_thresholds)
         true_alarms = np.zeros((len(shot_list), len(self.thresholds)))
         false_alarms = np.zeros((len(shot_list), len(self.thresholds)))
-
-        # Create list to store warning times
-        # This is a list of arrays of variable length,
-        # but the arrays will line up such that each index corresponds to the same threshold
-        warning_times = []
+        alarm_times = np.zeros((len(shot_list), len(self.thresholds)))
 
         # Iterate through shots
         for i, shot in enumerate(shot_list):
             disrupt = shot in disruptive_shots
-            shot_data = self.all_data[self.all_data['shot'] == shot]
 
             # Get the alarm times given by the model
             risk_at_time = self.get_risk_at_time(shot, horizon)
-            alarm_times = calculate_alarm_times(risk_at_time, self.thresholds)
+            alarm_times_calced = calculate_alarm_times(risk_at_time, self.thresholds)
 
-            # Fill in true and false positives
-            true_positives[i] = np.array([disrupt and (alarm_time is not None) for predicted_time in predicted_times])
-            false_positives[i] = np.array([(not disrupt) and (predicted_time is not None) for predicted_time in predicted_times])
+            # Fill in true and false alarms
+            true_alarms[i] = np.array([disrupt and (alarm_time is not None) for alarm_time in alarm_times_calced])
+            false_alarms[i] = np.array([(not disrupt) and (alarm_time is not None) for alarm_time in alarm_times_calced])
 
-            # If shot is disruptive, can fill in Time to First True Detection
-            if disrupt:
-                # Find actual disruption time by looking at last time in shot
-                true_time = shot_data['time'].iloc[-1]
+            # Save the alarm times
+            alarm_times[i,:] = alarm_times_calced
 
-                warning_times.append(np.array([true_time - predicted_time for predicted_time in predicted_times if predicted_time is not None]))
-
-        return true_positives, false_positives, warning_times
+        return true_alarms, false_alarms, alarm_times
     
-    def calc_warning_times(self, horizon):
-    
+     
+    def get_warning_times_list(self, horizon):
+        """Get a list of warning times for each disruptive shot at a given horizon
+        This is a list of arrays of variable length,
+        but the arrays will line up such that each index corresponds to the same threshold
+        The list is ordered to be consistent with the list of disruptive shots
+        """
+        
+        # Get list of all shots
+        shot_list = self.get_shot_list()
+        # Get list of disruptive shots
+        disruptive_shots = self.get_disruptive_shot_list()
+
+        # Get array of alarm times for this horizon
+        _, _, alarm_times = self.get_alarms_times(horizon)
+
+        # Create list to store warning times
+        warning_times_list = []
+        for disruptive_shot in disruptive_shots:
+            # Get the time of disruption for this shot
+            shot_data = self.all_data[self.all_data['shot'] == disruptive_shot]
+            disrupt_time = shot_data['time'].iloc[-1]
+            # Find the index of the shot in the shot list
+            shot_index = np.where(shot_list == disruptive_shot)[0][0]
+            # Get the alarm times for this shot
+            shot_alarm_times = alarm_times[shot_index]
+
+            # Calculate the warning times for this shot
+            warning_times = np.array([disrupt_time - alarm_time for alarm_time in shot_alarm_times if alarm_time is not None])
+
+            warning_times_list.append(warning_times)
+
+        return warning_times_list
+
     def tpr_vs_threshold(self, horizon):
         """ Get statistics on true positive rate vs threshold for a given horizon 
             This is inherently a macro statistic, since a single shot can have only one true positive rate
