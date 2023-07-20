@@ -5,7 +5,7 @@ import numpy as np
 
 from sklearn.metrics import roc_auc_score
 from manage_datasets import load_dataset
-from experiment_utils import label_shot_data, calculate_disruption_times
+from experiment_utils import label_shot_data, calculate_alarm_times
 
 from DisruptionPredictors import DisruptionPredictor
 
@@ -43,13 +43,13 @@ class Experiment:
 
             # Data shared between experiments
 
-        # Dictionaries for true alarms, false alarms, and warning times for various horizons
+        # Dictionaries for true alarms, false alarms, and alarm times for various horizons
         # Key is the horizon in seconds
         # Value is an array of values of shape (num_shots, num_thresholds)
         # All values in these three arrays line up to correspond to the same shots and thresholds
         self.true_alarms = {} 
         self.false_alarms = {}
-        self.warning_times = {}
+        self.alarm_times = {}
 
         # 2D Dictionary of pandas arrays containing risks at each time for each shot
         # First Key is the horizon in seconds
@@ -69,6 +69,11 @@ class Experiment:
         """ Returns a list of all shots that disrupted in the dataset """
         return self.all_data[self.all_data['time_until_disrupt'] >= 0]['shot'].unique().astype(int)
     
+    def get_non_disruptive_shot_list(self):
+        """ Returns a list of all shots that did not disrupt in the dataset """
+        # Get list of shots where 'time_until_disrupt' column has all null values
+        return self.all_data[self.all_data['time_until_disrupt'].isnull()]['shot'].unique().astype(int)
+
     def get_num_shots(self):
         """ Returns the number of shots in the dataset """
         return len(self.get_shot_list())
@@ -84,18 +89,23 @@ class Experiment:
 
     def get_risk(self, shot, horizon):
         """ Returns the risk score for a shot at a given horizon """
+        risk_at_time = self.get_risk_at_time(shot, horizon)
+        return risk_at_time['risk'].values
+
+    def get_risk_at_time(self, shot, horizon):
+        """Returns a pandas dataframe containing the risk at each time for a given shot and horizon"""
         try:
             return self.risk_at_times[horizon][shot]
         except KeyError:
             if horizon not in self.risk_at_times:
                 self.risk_at_times[horizon] = {}   
-            self.risk_at_times[horizon][shot] = self.calc_risk(shot, horizon)
+            self.risk_at_times[horizon][shot] = self.calc_risk_at_time(shot, horizon)
             return self.risk_at_times[horizon][shot]
-    
-    def calc_risk(self, shot, horizon):
+
+    def calc_risk_at_time(self, shot, horizon):
         """ Calculates the risk score for a shot at a given horizon"""
         shot_data = self.all_data[self.all_data['shot'] == shot]
-        return self.predictor.calculate_risk_at_time(shot_data, horizon)['risk'].values
+        return self.predictor.calculate_risk_at_time(shot_data, horizon)
     
     # ROC AUC methods
 
@@ -171,10 +181,10 @@ class Experiment:
         If they have already been calculated, return them. Otherwise, calculate them and return them.
         """
         try:
-            return self.true_alarms[horizon], self.false_alarms[horizon], self.warning_times[horizon]
+            return self.true_alarms[horizon], self.false_alarms[horizon], self.alarm_times[horizon]
         except KeyError:
-            self.true_alarms[horizon], self.false_alarms[horizon], self.warning_times[horizon] = self.calc_alarms_times(horizon)
-            return self.true_alarms[horizon], self.false_alarms[horizon], self.warning_times[horizon]
+            self.true_alarms[horizon], self.false_alarms[horizon], self.alarm_times[horizon] = self.calc_alarms_times(horizon)
+            return self.true_alarms[horizon], self.false_alarms[horizon], self.alarm_times[horizon]
 
     def calc_alarms_times(self, horizon):
         """Calculate the true alarms, false alarms, and warning times arrays for a given horizon.
@@ -187,8 +197,8 @@ class Experiment:
         
         # Create arrays to store the results
         # Array is of shape (num_shots, num_thresholds)
-        true_positives = np.zeros((len(shot_list), len(self.thresholds)))
-        false_positives = np.zeros((len(shot_list), len(self.thresholds)))
+        true_alarms = np.zeros((len(shot_list), len(self.thresholds)))
+        false_alarms = np.zeros((len(shot_list), len(self.thresholds)))
 
         # Create list to store warning times
         # This is a list of arrays of variable length,
@@ -200,12 +210,12 @@ class Experiment:
             disrupt = shot in disruptive_shots
             shot_data = self.all_data[self.all_data['shot'] == shot]
 
-            # Get the disruption time predicted by the model
-            risk_at_time = self.get_risk(shot, horizon)
-            predicted_times = calculate_disruption_times(risk_at_time, self.thresholds)
+            # Get the alarm times given by the model
+            risk_at_time = self.get_risk_at_time(shot, horizon)
+            alarm_times = calculate_alarm_times(risk_at_time, self.thresholds)
 
             # Fill in true and false positives
-            true_positives[i] = np.array([disrupt and (predicted_time is not None) for predicted_time in predicted_times])
+            true_positives[i] = np.array([disrupt and (alarm_time is not None) for predicted_time in predicted_times])
             false_positives[i] = np.array([(not disrupt) and (predicted_time is not None) for predicted_time in predicted_times])
 
             # If shot is disruptive, can fill in Time to First True Detection
@@ -216,6 +226,8 @@ class Experiment:
                 warning_times.append(np.array([true_time - predicted_time for predicted_time in predicted_times if predicted_time is not None]))
 
         return true_positives, false_positives, warning_times
+    
+    def calc_warning_times(self, horizon):
     
     def tpr_vs_threshold(self, horizon):
         """ Get statistics on true positive rate vs threshold for a given horizon 
