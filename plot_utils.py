@@ -1,4 +1,4 @@
-from preprocess_datasets import load_dataset, load_features_outcomes, DEFAULT_FEATURES
+from manage_datasets import load_dataset, load_features_outcomes
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -156,11 +156,11 @@ def plot_survival(device, dataset, shot_number, survival_time, models, names, tr
     
 
 
-def plot_risk(device, dataset, shot_number, survival_time, models, names, transformer):
+def plot_risk(device, dataset, shot_number, survival_time, models, names, transformer, features=DEFAULT_FEATURES):
     """ Given a database and a trained model, plot the predicted survival probability
     over a certain time horizon against the actual ip"""
     
-    shot, times, disruptive = get_transformed_shot(device, dataset, shot_number, transformer)
+    shot, times, disruptive = get_transformed_shot(device, dataset, shot_number, transformer, features=features)
 
     raw_data = load_dataset(device, dataset)
     raw_shot = raw_data[raw_data['shot'] == shot_number]
@@ -203,3 +203,30 @@ def plot_risk(device, dataset, shot_number, survival_time, models, names, transf
         fig.suptitle(f"Risk of Shot {shot_number} from {dataset} dataset on {device} (not disrupted)")
     fig.show()
     
+def plot_horizon(device, dataset, shot_number, transformer):
+    """
+    Plot the shot and several horizons before disruption if it is disrupted
+    """
+    
+    shot, times, disruptive = get_transformed_shot(device, dataset, shot_number, transformer)
+
+    horizons = [0.01, 0.05, 0.1, 0.5]
+
+    fig, ax = plt.subplots()
+    # Make a subplot for each feature in the shot
+    for i, feature in enumerate(shot.columns):
+        ax = plt.subplot(len(shot.columns), 1, i+1)
+        ax.plot(times, shot[feature])
+        ax.set_ylabel(feature)
+
+        # Add a vertical line for each horizon if disrupted
+        if disruptive:
+            # Get last time
+            last_time = times[-1]
+            for horizon in horizons:
+                ax.axvline(x=last_time-horizon, color='red', linestyle='--')
+
+        if i == 0:
+            ax.set_title(f"Shot {shot_number} from {dataset} dataset on {device}, Disrupted: {disruptive}")
+
+    ax.set_xlabel('time')

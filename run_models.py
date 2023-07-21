@@ -1,13 +1,13 @@
-# Functions for running all the models in Auton-Survival package
+# Functions for running and evaluating all the models in Auton-Survival package
 # [1] auton-survival: an Open-Source Package for Regression, Counterfactual Estimation, 
 # Evaluation and Phenotyping with Censored Time-to-Event Data. arXiv (2022)
 
+import os
 import dill
-
 import numpy as np
 
 # Auton-Survival models
-from auton_survival.estimators import SurvivalModel # CPH, DCPH, DSM, DCM, RSF, 
+from auton_survival.estimators import SurvivalModel # CPH, DCPH, DSM, DCM, RSF
 from auton_survival import DeepRecurrentCoxPH # DCPH with recurrent neural network
 from auton_survival.models.dsm import DeepRecurrentSurvivalMachines # DSM with recurrent neural network
 
@@ -19,7 +19,9 @@ from auton_survival.metrics import survival_regression_metric
 from sklearn.model_selection import ParameterGrid
 
 # Constants
-CUTOFF_TIME = 0.5 # Cutoff time for plotting
+CUTOFF_TIME = 0.5 # Cutoff time, maximum horizon we are interested in predicting
+
+# Methods for training models
 
 def get_train_times(y_tr):
     """
@@ -30,14 +32,12 @@ def get_train_times(y_tr):
     except:
         return np.quantile(y_tr['time'], np.linspace(0.1, 0.9, 10)).tolist()
 
-
 def get_test_times(y_tr):
     """
     Get the test times for survival models
     """
-    # TODO: this should be limited to under 500 ms
+    # TODO: should this should be limited to under the cutoff time?
     return np.quantile(y_tr['time'][y_tr['event']==1], np.linspace(0.1, 0.9, 10)).tolist()
-
 
 def run_survival_model(model_string, x_tr, x_val, y_tr, y_val):
     """
@@ -45,29 +45,99 @@ def run_survival_model(model_string, x_tr, x_val, y_tr, y_val):
     
     Taken from example script in auton-survival package
     Survival Regression with Auton-Survival.ipynb
+
+    'rough', 'coarse', '1:1', 'fine', 'very fine'
     """
+
+    # l2 is penalizer. float. default 1e-3
+    # n_estimators is number of trees. int. default 50
+    # max_depth is max depth of tree. int. default 5
+    # max_features is max number of features to consider when splitting. str. default is 'sqrt', can also be 'log2'
+    # layers is list of hidden layer sizes. list of ints. default [100]
+    # learning rate is learning rate for optimizer. float. default 1e-3
+    # bs is batch size. int. default 100
+    # epochs is number of complete passes through training data. int default 50
+    # distribution is distribution of survival times. str. default 'Weibull', can also be 'LogNormal'
+    """
+    if selection == 'fine':
+        # Define hyperparameter grids for all models to use while tuning
+        l2_grid = np.logspace(-5,-2,10)
+        n_estimators_grid = np.linspace(50, 500, 10).astype(int)
+        max_depth_grid = np.linspace(2, 10, 5).astype(int)
+        max_features_grid = ['sqrt', 'log2']
+        layers_grid = [[100], [100, 100], [200]]
+        learning_rate_grid = np.logspace(-5,-2,10)
+        bs_grid = np.linspace(50, 500, 10).astype(int)
+        epochs = 200
+        distribution_grid = ['Weibull', 'LogNormal']
+        temperature_grid = np.linspace(0.5,1.5,10)
+        k_grid = [2, 3, 4, 5, 6]
+        smoothing_factor_grid = np.logspace(-5,-2,10)
+        gamma_grid = np.linspace(1, 21, 10).astype(int)
+    elif selection == '1:1':
+        # Define hyperparameter grids for all models to use while tuning
+        l2_grid = np.logspace(-5,-2,5)
+        n_estimators_grid = np.linspace(50, 500, 5).astype(int)
+        max_depth_grid = np.linspace(2, 10, 5).astype(int)
+        max_features_grid = ['sqrt', 'log2']
+        layers_grid = [[100], [100, 100], [200]]
+        learning_rate_grid = np.logspace(-5,-2,5)
+        bs_grid = np.linspace(50, 500, 5).astype(int)
+        epochs = 50
+        distribution_grid = ['Weibull', 'LogNormal']
+        temperature_grid = [1.0]
+        k_grid = [3]
+        smoothing_factor_grid = np.logspace(-5,-2,3)
+        gamma_grid = [10]
+    else:
+    """
+    l2_grid = [1e-3, 1e-4]
+    n_estimators_grid = [100, 300]
+    max_depth_grid = [3,5]
+    max_features_grid = ['sqrt', 'log2']
+    learning_rate_grid = [1e-3, 1e-4]
+    layers_grid = [[100], [100, 100]]
+    bs_grid = [50, 100]
+    epochs = 50
+    distribution_grid = ['Weibull', 'LogNormal']
+    temperature_grid = [1.0]
+    k_grid = [2, 3]
+    smoothing_factor_grid = [1e-3, 1e-4]
+    gamma_grid = [10]
+
 
     # Define the hyperparameter grid for hyperparameter tuning
     if model_string == 'cph':
-        param_grid = {'l2' : [1e-3, 1e-4]}
+        # l2, 
+        param_grid = {'l2' : l2_grid}
     elif model_string == 'dcph':
-        param_grid = {'bs' : [100, 200],
-                'learning_rate' : [ 1e-4, 1e-3],
-                'layers' : [ [100], [100, 100] ]
+        param_grid = {'bs' : bs_grid,
+                'learning_rate' : learning_rate_grid,
+                'layers' : layers_grid,
+                'epochs' : [epochs]
                 }
     elif model_string == 'dsm':
-        param_grid = {'layers' : [[100], [100, 100], [200]],
-              'distribution' : ['Weibull', 'LogNormal'],
-              'max_features' : ['sqrt', 'log2']
+        param_grid = {'layers' : layers_grid,
+              'distribution' : distribution_grid,
+              'temperature' : temperature_grid,
+              'batch_size' : bs_grid,
+              'learning_rate' : learning_rate_grid,
+              'epochs' : [epochs],
+              'max_features' : max_features_grid,
+              'k' : k_grid
              }
     elif model_string == 'dcm':
-        param_grid = {'k' : [2, 3],
-              'learning_rate' : [1e-3, 1e-4],
-              'layers' : [[100], [100, 100]]
+        param_grid = {'k' : k_grid,
+                'layers' : layers_grid,
+                'batch_size' : bs_grid,
+              'learning_rate' : learning_rate_grid,
+                'epochs' : [epochs],
+                'smoothing_factor' : smoothing_factor_grid,
+                'gamma' : gamma_grid
              }
     elif model_string == 'rsf':
-        param_grid = {'n_estimators' : [100, 300],
-              'max_depth' : [3, 5],
+        param_grid = {'n_estimators' : n_estimators_grid,
+              'max_depth' : max_depth_grid,
               'max_features' : ['sqrt', 'log2']
              }
     else:
@@ -82,23 +152,38 @@ def run_survival_model(model_string, x_tr, x_val, y_tr, y_val):
     models = []
     for param in params:
         if model_string == 'cph':
-            model = SurvivalModel('cph', l2=param['l2'])
+            model = SurvivalModel('cph', 
+                                    l2=param['l2'])
         elif model_string == 'dcph':
-            model = SurvivalModel('dcph', bs=param['bs'], 
-                                  learning_rate=param['learning_rate'], 
-                                  layers=param['layers'])
+            model = SurvivalModel('dcph', 
+                                    bs=param['bs'], 
+                                    learning_rate=param['learning_rate'], 
+                                    layers=param['layers'],
+                                    epochs=param['epochs'])
         elif model_string == 'dsm':
-            model = SurvivalModel('dsm', layers=param['layers'], 
-                                  distribution=param['distribution'], 
-                                  max_features=param['max_features'])
+            model = SurvivalModel('dsm',
+                                    layers=param['layers'], 
+                                    distribution=param['distribution'],
+                                    temperature=param['temperature'],
+                                    batch_size=param['batch_size'],
+                                    learning_rate=param['learning_rate'],
+                                    iters=param['epochs'], 
+                                    max_features=param['max_features'],
+                                    k=param['k'])
         elif model_string == 'dcm':
-            model = SurvivalModel('dcm', k=param['k'], 
-                                  learning_rate=param['learning_rate'], 
-                                  layers=param['layers'])
+            model = SurvivalModel('dcm', 
+                                    k=param['k'], 
+                                    batch_size=param['batch_size'],
+                                    epochs=param['epochs'],
+                                    learning_rate=param['learning_rate'], 
+                                    layers=param['layers'],
+                                    smoothing_factor=param['smoothing_factor'],
+                                    gamma=param['gamma'])
         elif model_string == 'rsf':
-            model = SurvivalModel('rsf', n_estimators=param['n_estimators'], 
-                                  max_depth=param['max_depth'], 
-                                  max_features=param['max_features'])
+            model = SurvivalModel('rsf', 
+                                    n_estimators=param['n_estimators'], 
+                                    max_depth=param['max_depth'], 
+                                    max_features=param['max_features'])
         else:
             raise ValueError(f"Invalid model string: {model_string}")
 
@@ -211,16 +296,23 @@ def eval_model(model, x_te, y_tr, y_te):
     
     return results, times
 
-def save_model(model, transformer, model_name, device, dataset):
-    """Save model and transformer to file"""
-    model_path = 'models/' + model_name + '_' + device + '_' + dataset + '.pkl'
-    dill.dump([model, transformer], open(model_path, 'wb'))
-    print('Saved model to ' + model_path)
+# Methods for saving and loading models
 
-def load_model(model_name, device, dataset):
+def save_model(model, transformer, model_name, device, dataset_path, features):
+    """Save model and transformer to file"""
+    model_path = 'models/' + device + '/' + dataset_path
+    try:
+        os.makedirs(model_path)
+    except:
+        pass
+    model_file = model_path + '/' + model_name + '.pkl'
+    dill.dump([model, transformer, features], open(model_file, 'wb'))
+    print('Saved model to ' + model_file)
+
+def load_model(model_name, device, dataset_path):
     """Load model and transformer from file"""
-    model_path = 'models/' + model_name + '_' + device + '_' + dataset + '.pkl'
-    with open(model_path, 'rb') as f:
-        model, transformer = dill.load(f)
-    print('Loaded model from ' + model_path)
-    return model, transformer
+    model_file = 'models/' + device + '/' + dataset_path + '/' + model_name + '.pkl'
+    with open(model_file, 'rb') as f:
+        model, transformer, features = dill.load(f)
+    print('Loaded model from ' + model_file)
+    return model, transformer, features
