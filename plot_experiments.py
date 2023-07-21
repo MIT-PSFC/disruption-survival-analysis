@@ -25,7 +25,7 @@ def plot_roc_auc_vs_horizon_macro(experiment_list:list[Experiment], horizons=DEF
     
     for experiment in experiment_list:
         roc_auc, roc_auc_std = experiment.roc_auc_macro(horizons)
-        plt.errorbar(horizons_ms, roc_auc, yerr=roc_auc_std, label=experiment.name, fmt='o-')
+        plt.errorbar(horizons_ms, roc_auc, yerr=roc_auc_std, label=experiment.name, fmt='o-', capsize=5)
         #plt.plot(horizons, roc_auc, label=experiment.name)
         #plt.fill_between(horizons, roc_auc - roc_auc_std, roc_auc + roc_auc_std, alpha=0.2)
 
