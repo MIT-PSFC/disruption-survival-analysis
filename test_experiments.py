@@ -8,7 +8,7 @@ from Experiments import Experiment
 from DisruptionPredictors import DisruptionPredictorSM
 
 from run_models import load_model
-from experiment_utils import label_shot_data, calculate_alarm_times
+from experiment_utils import label_shot_data, calculate_alarm_times, clump_many_to_one_statistics
 from manage_datasets import load_dataset, load_disruptive_shot_list, load_non_disruptive_shot_list
 
 TEST_DEVICE = 'cmod'
@@ -121,6 +121,37 @@ class TestExperimentUtils(unittest.TestCase):
         self.assertEqual(alarm_times[9], None)
         self.assertEqual(alarm_times[10], None)
 
+    def test_clump_many_to_one_statistics(self):
+        
+        # Create numpy arrays of the warning times
+        array_1 = np.array([0.1, 0.2, 0.3])
+        array_2 = np.array([0.4, 0.5, 0.6])
+        array_3 = np.array([0.7, 0.8, 0.9])
+
+        warning_times_list = [array_1, array_2, array_3]
+        # Turn warning times into a list of numpy arrays
+        warning_times_list = [np.array(warning_times) for warning_times in warning_times_list]
+
+        true_alarm_rates = [0.1, 0.5, 0.1]
+
+        unique_true_alarm_rates, mean_warning_times, std_warning_times = clump_many_to_one_statistics(warning_times_list, true_alarm_rates)
+
+        self.assertEqual(len(unique_true_alarm_rates), 2)
+        self.assertEqual(len(mean_warning_times), 2)
+        self.assertEqual(len(std_warning_times), 2)
+
+        self.assertEqual(unique_true_alarm_rates[0], 0.1)
+        self.assertEqual(unique_true_alarm_rates[1], 0.5)
+
+        first_warns = [0.1, 0.3, 0.4, 0.6, 0.7, 0.9]
+        second_warns = [0.2, 0.5, 0.8]
+
+        self.assertEqual(mean_warning_times[0], np.mean(first_warns))
+        self.assertEqual(mean_warning_times[1], np.mean(second_warns))
+
+        self.assertEqual(std_warning_times[0], np.std(first_warns))
+        self.assertEqual(std_warning_times[1], np.std(second_warns))
+
 
 class TestExperimentsAlarms(unittest.TestCase):
 
@@ -149,7 +180,6 @@ class TestExperimentsAlarms(unittest.TestCase):
         self.assertEqual(false_alarms.shape, (self.experiment.get_num_shots(), len(self.experiment.thresholds)))
         self.assertEqual(alarm_times.shape, (self.experiment.get_num_shots(), len(self.experiment.thresholds)))
         
-
     def test_warning_times_list_length(self):
         """Ensure that the warning times array has the correct length"""
 
@@ -178,38 +208,24 @@ class TestExperimentsAlarms(unittest.TestCase):
         As threshold increases, there should be less time between detection and disruption
         """
 
-        _, mean_warning_times, _ = benchmark_warning_time(self.predictor, self.horizon, self.device, self.dataset+'_test')
+        # Get the mean warning times
+        _, mean_warning_times, _ = self.experiment.warning_time_vs_threshold(self.horizon)
 
         # Check that the mean detection times are always decreasing
         for i in range(len(mean_warning_times)-1):
             self.assertLessEqual(mean_warning_times[i+1], mean_warning_times[i])
 
-
-    def test_warning_time_sizes(self):
-        """Ensure all arrays returned by benchmark_warning_time are the same size"""
-
-        false_positive_rates, mean_warning_times, std_warning_times = benchmark_warning_time(self.predictor, self.horizon, self.device, self.dataset+'_test')
-
-        self.assertEqual(len(false_positive_rates), len(mean_warning_times))
-        self.assertEqual(len(false_positive_rates), len(std_warning_times))
-
-
-    def test_calculate_disruption_times_increasing(self):
-        """Ensure that the disruption times are always increasing"""
+    def test_alarm_times_increasing(self):
+        """Ensure that the alarm times are always increasing"""
         
-        # Pick some shot number
-        shot = self.experiment.get_shot_list()[0]
+        # Get the alarm times for that shot
+        _, _, alarm_times = self.experiment.get_alarms_times(self.horizon)
 
-        # Calculate the risk at time using some horizon
-        risk_at_time = self.experiment.get_risk(shot, self.horizon)
-
-        # Calculate the disruption times
-        disruption_times = calculate_disruption_times(risk_at_time, np.linspace(0, 1, 100))
-
-        # Check that the disruption times are always increasing until they are none, then all none
-        for i in range(len(disruption_times)-1):
-            if disruption_times[i] is None:
-                self.assertTrue(all([x is None for x in disruption_times[i:]]))
-                break
-            else:
-                self.assertLessEqual(disruption_times[i], disruption_times[i+1])
+        # Check that the alarm times are always increasing until they are Nan, then all Nan
+        for shot_index in range(len(alarm_times)):
+            for i in range(len(alarm_times[shot_index])-1):
+                if np.isnan(alarm_times[shot_index][i]):
+                    self.assertTrue(np.isnan(alarm_times[shot_index][i+1]))
+                else:
+                    if not np.isnan(alarm_times[shot_index][i+1]):
+                        self.assertLessEqual(alarm_times[shot_index][i], alarm_times[shot_index][i+1])
