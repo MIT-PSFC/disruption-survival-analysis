@@ -5,10 +5,10 @@ import matplotlib.pyplot as plt
 
 from Experiments import Experiment
 
-
 DEFAULT_HORIZONS = np.linspace(0.01, 0.4, 10)
+MAX_WARNING_TIME_MS = 1000
 
-# Plots for model performance tests (in terms of ROC AUC, TPR, FPR, Warning Time, etc.)
+# Plots for model performance tests (in terms of ROC AUC, TAR, FAR, Warning Time, etc.)
 
 def plot_roc_auc_vs_horizon_macro(experiment_list:list[Experiment], horizons=DEFAULT_HORIZONS):
     """ Averaged over all shots
@@ -65,7 +65,7 @@ def plot_roc_auc_vs_horizon_micro(experiment_list:list[Experiment], horizons=DEF
     plt.legend()
     plt.show()
 
-def plot_TPR_vs_threshold_macro(experiment_list:list[Experiment], thresholds, horizon=DEFAULT_HORIZONS[0]):
+def plot_TAR_vs_threshold(experiment_list:list[Experiment], horizon=DEFAULT_HORIZONS[0]):
     """ Averaged over all shots
     
     """
@@ -73,26 +73,22 @@ def plot_TPR_vs_threshold_macro(experiment_list:list[Experiment], thresholds, ho
     plt.figure()
 
     for experiment in experiment_list:
-        threshold, tpr = experiment.tpr_vs_threshold(horizon, thresholds=thresholds)
-        plt.plot(threshold, tpr, label=experiment.name)
+        thresholds, true_alarm_rates = experiment.true_alarm_rate_vs_threshold(horizon)
+        # Plot false alarm rate vs threshold, where threshold is on a log scale
+        plt.semilogx(thresholds, true_alarm_rates, label=experiment.name)
 
-    plt.xlim([0, 1])
+    plt.xlim([min(thresholds), 1])
     plt.ylim([0, 1])
 
     plt.xlabel('Threshold')
-    plt.ylabel('True Positive Rate')
+    plt.ylabel('True Alarm Rate')
 
-    plt.title(f'True Positive Rate vs. Threshold at {horizon*1000:.0f} ms Horizon')
+    plt.title(f'True Alarm Rate vs. Threshold at {horizon*1000:.0f} ms Horizon')
 
     plt.legend()
     plt.show()
 
-def plot_TPR_vs_threshold_micro():
-    """ Averaged over a single shot
-
-    """
-
-def plot_FPR_vs_threshold_macro(experiment_list:list[Experiment], thresholds, horizon=DEFAULT_HORIZONS[0]):
+def plot_FAR_vs_threshold(experiment_list:list[Experiment], horizon=DEFAULT_HORIZONS[0]):
     """ Averaged over all shots
     
     """
@@ -100,31 +96,22 @@ def plot_FPR_vs_threshold_macro(experiment_list:list[Experiment], thresholds, ho
     plt.figure()
 
     for experiment in experiment_list:
-        threshold, fpr = experiment.fpr_vs_threshold(horizon, thresholds=thresholds)
-        plt.plot(threshold, fpr, label=experiment.name)
+        thresholds, false_alarm_rates = experiment.false_alarm_rate_vs_threshold(horizon)
+        # Plot false alarm rate vs threshold, where threshold is on a log scale
+        plt.semilogx(thresholds, false_alarm_rates, label=experiment.name)
 
-    plt.xlim([0, 1])
+    plt.xlim([min(thresholds), 1])
     plt.ylim([0, 1])
 
     plt.xlabel('Threshold')
-    plt.ylabel('False Positive Rate')
+    plt.ylabel('False Alarm Rate')
 
-    plt.title(f'False Positive Rate vs. Threshold at {horizon*1000:.0f} ms Horizon')
+    plt.title(f'False Alarm Rate vs. Threshold at {horizon*1000:.0f} ms Horizon')
 
     plt.legend()
     plt.show()
 
-def plot_TPR_vs_FPR_macro():
-    """ Averaged over all shots
-    
-    """
-
-def plot_TPR_vs_FPR_micro():
-    """ Averaged over a single shot
-
-    """
-
-def plot_warning_time_vs_threshold(experiment_list:list[Experiment], thresholds, horizon=DEFAULT_HORIZONS[0]):
+def plot_warning_time_vs_threshold(experiment_list:list[Experiment], horizon=DEFAULT_HORIZONS[0]):
     """ Averaged over all shots
     """
 
@@ -133,13 +120,14 @@ def plot_warning_time_vs_threshold(experiment_list:list[Experiment], thresholds,
     plt.figure()
 
     for experiment in experiment_list:
-        threshold, warning_time_avg, warning_time_std = experiment.warning_vs_threshold(horizon, thresholds=thresholds)
+        thresholds, warning_time_avg, warning_time_std = experiment.warning_time_vs_threshold(horizon)
         warning_time_avg_ms = [i * 1000 for i in warning_time_avg]
         warning_time_std_ms = [i * 1000 for i in warning_time_std]
-        plt.errorbar(threshold, warning_time_avg_ms, yerr=warning_time_std_ms, label=experiment.name, fmt='o-')
+        # TODO: reintroduce error bars
+        plt.semilogx(thresholds, warning_time_avg_ms, label=experiment.name)
 
-    plt.xlim([0, 1])
-    plt.ylim([0, max(warning_time_avg_ms) + max(warning_time_std_ms)])
+    plt.xlim([min(thresholds), max(thresholds)])
+    plt.ylim([0, MAX_WARNING_TIME_MS])
 
     plt.xlabel('Threshold')
     plt.ylabel('Warning Time [ms]')
@@ -149,8 +137,7 @@ def plot_warning_time_vs_threshold(experiment_list:list[Experiment], thresholds,
     plt.legend()
     plt.show()
 
-
-def plot_warning_time_vs_FPR(experiment_list:list[Experiment], horizon=DEFAULT_HORIZONS[0]):
+def plot_warning_time_vs_TAR(experiment_list:list[Experiment], horizon=DEFAULT_HORIZONS[0]):
     """ Averaged over all shots
     """
 
@@ -159,18 +146,45 @@ def plot_warning_time_vs_FPR(experiment_list:list[Experiment], horizon=DEFAULT_H
     plt.figure()
 
     for experiment in experiment_list:
-        fpr, warning_time_avg, warning_time_std = experiment.warning_vs_fpr(horizon)
+        true_alarm_rates, warning_time_avg, warning_time_std = experiment.warning_time_vs_true_alarm_rate(horizon)
         warning_time_avg_ms = [i * 1000 for i in warning_time_avg]
         warning_time_std_ms = [i * 1000 for i in warning_time_std]
-        plt.errorbar(fpr, warning_time_avg_ms, yerr=warning_time_std_ms, label=experiment.name, fmt='o-')
+        # TODO: reintroduce error bars
+        plt.plot(true_alarm_rates, warning_time_avg_ms, label=experiment.name)
 
-    plt.xlim([0, 1])
-    plt.ylim([0, max(warning_time_avg_ms) + max(warning_time_std_ms)])
+    plt.xlim([min(true_alarm_rates), max(true_alarm_rates)])
+    plt.ylim([0, MAX_WARNING_TIME_MS])
 
-    plt.xlabel('False Positive Rate')
+    plt.xlabel('True Alarm Rate')
     plt.ylabel('Warning Time [ms]')
 
-    plt.title(f'Warning Time vs. False Positive Rate at {horizon_ms:.0f} ms Horizon')
+    plt.title(f'Warning Time vs. True Alarm Rate at {horizon_ms:.0f} ms Horizon')
+
+    plt.legend()
+    plt.show()
+
+def plot_warning_time_vs_FAR(experiment_list:list[Experiment], horizon=DEFAULT_HORIZONS[0]):
+    """ Averaged over all shots
+    """
+
+    horizon_ms = horizon*1000
+
+    plt.figure()
+
+    for experiment in experiment_list:
+        false_alarm_rates, warning_time_avg, warning_time_std = experiment.warning_time_vs_false_alarm_rate(horizon)
+        warning_time_avg_ms = [i * 1000 for i in warning_time_avg]
+        warning_time_std_ms = [i * 1000 for i in warning_time_std]
+        # TODO: reintroduce error bars
+        plt.semilogx(false_alarm_rates, warning_time_avg_ms, label=experiment.name)
+
+    plt.xlim([min(false_alarm_rates), max(false_alarm_rates)])
+    plt.ylim([0, MAX_WARNING_TIME_MS])
+
+    plt.xlabel('False Alarm Rate')
+    plt.ylabel('Warning Time [ms]')
+
+    plt.title(f'Warning Time vs. False Alarm Rate at {horizon_ms:.0f} ms Horizon')
 
     plt.legend()
     plt.show()
@@ -188,12 +202,13 @@ def plot_warning_time_vs_precision(experiment_list:list[Experiment], horizon=DEF
         precision, warning_time_avg, warning_time_std = experiment.warning_vs_precision(horizon)
         warning_time_avg_ms = [i * 1000 for i in warning_time_avg]
         warning_time_std_ms = [i * 1000 for i in warning_time_std]
-        plt.errorbar(precision, warning_time_avg_ms, yerr=warning_time_std_ms, label=experiment.name, fmt='o-')
+        # TODO: reintroduce error bars
+        plt.plot(precision, warning_time_avg_ms, label=experiment.name)
 
-    plt.xlim([0, 1])
-    plt.ylim([0, max(warning_time_avg_ms) + max(warning_time_std_ms)])
+    plt.xlim([min(precision), max(precision)])
+    plt.ylim([0, MAX_WARNING_TIME_MS])
 
-    plt.xlabel('Precision (TPR/(TPR+FPR))')
+    plt.xlabel('Precision (True Alarms/(Total Alarms))')
     plt.ylabel('Warning Time [ms]')
 
     plt.title(f'Warning Time vs. Precision at {horizon_ms:.0f} ms Horizon')
