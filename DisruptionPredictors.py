@@ -102,7 +102,7 @@ class DisruptionPredictorKM(DisruptionPredictor):
         # x and y should be numpy arrays
         return (len(x) * np.sum(x * y) - np.sum(x) * np.sum(y)) / (len(x) * np.sum(x**2) - np.sum(x)**2)
     
-    def calculate_risk(self, data, horizon):
+    def calculate_risk_at_time(self, data, horizon):
         # This disruption predictor takes present predicted disruption risk and a
         # linear least-square's fit over some previous time window to predict the
         # disruption risk at some future time
@@ -152,10 +152,9 @@ class DisruptionPredictorKM(DisruptionPredictor):
 
             # Extrapolate the risk into the future using the slope
             risk_at_time.at[i, 'risk'] = risk_at_time.at[i, 'initial_risk'] + slope * horizon
-
-        # Replace all NaNs with 0
-        # TODO: this probably makes the micro average not a great metric for this model
-        risk_at_time.fillna(0, inplace=True)
+        
+        # Replace all NaNs with the initial risk
+        risk_at_time.fillna(risk_at_time['initial_risk'], inplace=True)
 
         return risk_at_time[['risk', 'time']]
 
