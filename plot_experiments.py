@@ -5,7 +5,12 @@ import matplotlib.pyplot as plt
 
 from Experiments import Experiment
 
-DEFAULT_HORIZONS = np.linspace(0.01, 0.4, 10)
+DEFAULT_HORIZONS = np.linspace(0.001, 0.4, 6)
+# TODO fix horizons
+DEFAULT_HORIZONS[1] = 0.01
+DEFAULT_HORIZONS[2] = 0.05
+DEFAULT_HORIZONS[3] = 0.1
+DEFAULT_HORIZONS[4] = 0.2
 MAX_WARNING_TIME_MS = 1000
 
 # Plots for model performance tests (in terms of ROC AUC, TAR, FAR, Warning Time, etc.)
@@ -34,6 +39,28 @@ def plot_roc_auc_vs_horizon_macro(experiment_list:list[Experiment], horizons=DEF
     plt.ylabel('Macro Average Area Under ROC Curve')
 
     plt.title('Macro Average ROC AUC vs. Horizon')
+
+    plt.legend()
+    plt.show()
+
+def plot_TAR_vs_FAR(experiment_list:list[Experiment], horizon=DEFAULT_HORIZONS[0]):
+    """ Averaged over all shots
+    
+    """
+
+    plt.figure()
+
+    for experiment in experiment_list:
+        false_alarm_rates, true_alarm_rates = experiment.true_alarm_rate_vs_false_alarm_rate(horizon)
+        plt.plot(false_alarm_rates, true_alarm_rates, label=experiment.name)
+
+    plt.xlim([0, 1])
+    plt.ylim([0, 1])
+
+    plt.xlabel('False Alarm Rate')
+    plt.ylabel('True Alarm Rate')
+
+    plt.title(f"True Alarm Rate vs. False Alarm Rate at {horizon*1000} ms Horizon")
 
     plt.legend()
     plt.show()

@@ -152,6 +152,17 @@ class TestExperimentUtils(unittest.TestCase):
         self.assertEqual(std_warning_times[0], np.std(first_warns))
         self.assertEqual(std_warning_times[1], np.std(second_warns))
 
+    def test_clump_many_to_one_statistics_TAR_vs_FAR(self):
+
+        # Load simple CPH model
+        self.model, self.transformer, self.numeric_feats = load_model('cph', TEST_DEVICE, TEST_DATASET_PATH)
+        self.predictor = DisruptionPredictorSM("Cox Proportional Hazards", self.model, self.numeric_feats, self.transformer)
+        self.experiment = Experiment(TEST_DEVICE, TEST_DATASET_PATH, self.predictor, name='CPH')
+
+        try:
+            false_alarm_rates, true_alarm_rates = self.experiment.true_alarm_rate_vs_false_alarm_rate(0.05)
+        except:
+            self.fail("true_alarm_rate_vs_false_alarm_rate raised an exception unexpectedly!")
 
 class TestExperimentsAlarms(unittest.TestCase):
 
