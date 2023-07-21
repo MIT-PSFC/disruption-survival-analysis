@@ -8,7 +8,7 @@ import torch
 import sys
 sys.path.append('../')
 from plot_utils import *
-from preprocess_datasets import load_features_outcomes, load_features_labels, make_training_sets, get_disruptive_shot_list
+from manage_datasets import load_features_outcomes, load_features_labels, make_training_sets, load_features, get_disruptive_shot_list
 from run_models import run_survival_model, run_rf_model, eval_model
 from estimators_demo_utils import plot_performance_metrics
 
@@ -17,21 +17,25 @@ from estimators_demo_utils import plot_performance_metrics
 torch.set_num_threads(4)
 
 device = 'cmod'
-dataset = 'random100'
-numeric_feats = ['ip','Wmhd','n_e','kappa','li']
+dataset = 'random_256_shots_60%_flattop_5k'
+#device='synthetic'
+#dataset='synthetic100'
+#numeric_feats = ['beta_n','beta_p','kappa','li','upper_gap','lower_gap','q0','qstar','q95','v_loop_efit','Wmhd','ssep','n_over_ncrit','R0','tritop','tribot','a_minor','chisq','dbetap_dt','dli_dt','dWmhd_dt','n_e','dn_dt','Greenwald_fraction','ip','dip_dt','dip_smoothed','ip_prog','dipprog_dt','ip_error','p_oh','v_loop']
+numeric_feats = load_features(device, dataset+'_train')
+
 
 #make_training_sets(device, dataset)
 
 from auton_survival.preprocessing import Preprocessor
 # Load and preprocess training, test, validation sets
-features_train, outcomes_train = load_features_outcomes(device, dataset+'_train')
-features_test, outcomes_test = load_features_outcomes(device, dataset+'_test')
-features_val, outcomes_val = load_features_outcomes(device, dataset+'_val')
+features_train, outcomes_train = load_features_outcomes(device, dataset+'_train', features=numeric_feats)
+features_test, outcomes_test = load_features_outcomes(device, dataset+'_test', features=numeric_feats)
+features_val, outcomes_val = load_features_outcomes(device, dataset+'_val', features=numeric_feats)
 
 # The features should match the above
-_, labels_train = load_features_labels(device, dataset+'_train', 0.15)
-_, labels_test = load_features_labels(device, dataset+'_test', 0.15)
-_, labels_val = load_features_labels(device, dataset+'_val', 0.15)
+_, labels_train = load_features_labels(device, dataset+'_train', 0.15, features=numeric_feats)
+_, labels_test = load_features_labels(device, dataset+'_test', 0.15, features=numeric_feats)
+_, labels_val = load_features_labels(device, dataset+'_val', 0.15, features=numeric_feats)
 
 # Fit the imputer and scaler to the training data and transform the training, test, and validation data
 preprocessor = Preprocessor(cat_feat_strat='ignore', num_feat_strat='mean')
@@ -41,7 +45,7 @@ x_train = transformer.transform(features_train)
 x_test = transformer.transform(features_test)
 x_val = transformer.transform(features_val)
 
-survival_model_str = 'rsf'
+survival_model_str = 'cph'
 
 # Run the survival model
 survival_model = run_survival_model(survival_model_str, x_train, x_val, outcomes_train, outcomes_val)
@@ -60,7 +64,7 @@ survival_model = run_survival_model(survival_model_str, x_train, x_val, outcomes
 
 disruptive_shot = get_disruptive_shot_list(device, dataset+'_test')[0]
 
-plot_risk(device, dataset+'_test', disruptive_shot, 0.15, [survival_model], [survival_model_str], transformer)
+plot_risk(device, dataset+'_test', disruptive_shot, 0.5, [survival_model], [survival_model_str], transformer, features=numeric_feats)
 
 """
 
