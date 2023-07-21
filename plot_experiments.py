@@ -5,12 +5,11 @@ import matplotlib.pyplot as plt
 
 from Experiments import Experiment
 
-DEFAULT_HORIZONS = np.linspace(0.001, 0.4, 6)
+DEFAULT_HORIZONS = np.linspace(0.01, 0.4, 5)
 # TODO fix horizons
-DEFAULT_HORIZONS[1] = 0.01
-DEFAULT_HORIZONS[2] = 0.05
-DEFAULT_HORIZONS[3] = 0.1
-DEFAULT_HORIZONS[4] = 0.2
+DEFAULT_HORIZONS[1] = 0.05
+DEFAULT_HORIZONS[2] = 0.1
+DEFAULT_HORIZONS[3] = 0.2
 MAX_WARNING_TIME_MS = 1000
 
 # Plots for model performance tests (in terms of ROC AUC, TAR, FAR, Warning Time, etc.)
