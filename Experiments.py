@@ -239,6 +239,17 @@ class Experiment:
         false_alarm_rates = np.sum(false_alarms, axis=0) / (self.get_num_shots() - self.get_num_disruptive_shots())
 
         return self.thresholds, false_alarm_rates
+    
+    def true_alarm_rate_vs_false_alarm_rate(self, horizon):
+
+        true_alarms, false_alarms, _ = self.get_alarms_times(horizon)
+
+        true_alarm_rates = np.sum(true_alarms, axis=0) / self.get_num_disruptive_shots()
+        false_alarm_rates = np.sum(false_alarms, axis=0) / (self.get_num_shots() - self.get_num_disruptive_shots())
+
+        unique_false_alarms, mean_true_alarm_rates, std_true_alarm_rates = clump_many_to_one_statistics(true_alarm_rates, false_alarm_rates)
+
+        return unique_false_alarms, mean_true_alarm_rates#, std_true_alarm_rates
      
     # Warning Times Methods
 
