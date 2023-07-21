@@ -133,12 +133,12 @@ def clump_many_to_one_statistics(warning_times_list, true_alarm_rates, epsilon=0
 
         # Get the warning times that correspond to this true alarm rate
         # TODO: polish up this list comprehension to be more readable
-        if np.shape(warning_times_list)[0] == len(true_alarm_rates):
-            warning_times_clumped_1D = [warning_times_list[j] for j in indices]
-        else:
+        try:
             warning_times_clumped_2D = [warning_times_list[k][j] for k in range(len(warning_times_list)) for j in indices]
             # Flatten the list
             warning_times_clumped_1D = [item for sublist in warning_times_clumped_2D for item in sublist]
+        except:
+            warning_times_clumped_1D = [warning_times_list[j] for j in indices]
 
         # Calculate the mean and standard deviation of the warning times
         mean_warning_times[i] = np.mean(warning_times_clumped_1D)

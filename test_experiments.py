@@ -121,7 +121,36 @@ class TestExperimentUtils(unittest.TestCase):
         self.assertEqual(alarm_times[9], None)
         self.assertEqual(alarm_times[10], None)
 
-    def test_clump_many_to_one_statistics(self):
+    def test_clump_many_to_one_statistics_single_array(self):
+
+        # Create numpy array of the warning times
+        warning_times = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
+
+        true_alarm_rates = [0.1, 0.1, 0.1, 0.2, 0.2, 0.2, 0.3, 0.3, 0.4]
+
+        unique_true_alarm_rates, mean_warning_times, std_warning_times = clump_many_to_one_statistics(warning_times, true_alarm_rates)
+
+        self.assertEqual(len(unique_true_alarm_rates), 4)
+        self.assertEqual(len(mean_warning_times), 4)
+        self.assertEqual(len(std_warning_times), 4)
+
+        self.assertEqual(unique_true_alarm_rates[0], 0.1)
+        self.assertEqual(unique_true_alarm_rates[1], 0.2)
+        self.assertEqual(unique_true_alarm_rates[2], 0.3)
+        self.assertEqual(unique_true_alarm_rates[3], 0.4)
+
+        self.assertEqual(mean_warning_times[0], np.mean([0.1, 0.2, 0.3]))
+        self.assertEqual(mean_warning_times[1], np.mean([0.4, 0.5, 0.6]))
+        self.assertEqual(mean_warning_times[2], np.mean([0.7, 0.8]))
+        self.assertEqual(mean_warning_times[3], 0.9)
+
+        self.assertEqual(std_warning_times[0], np.std([0.1, 0.2, 0.3]))
+        self.assertEqual(std_warning_times[1], np.std([0.4, 0.5, 0.6]))
+        self.assertEqual(std_warning_times[2], np.std([0.7, 0.8]))
+        self.assertEqual(std_warning_times[3], 0)
+
+
+    def test_clump_many_to_one_statistics_double_array(self):
         
         # Create numpy arrays of the warning times
         array_1 = np.array([0.1, 0.2, 0.3])
