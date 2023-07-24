@@ -1,4 +1,5 @@
 import io
+import os
 import pkgutil
 
 import numpy as np
@@ -173,7 +174,7 @@ def load_feature_list(device, dataset):
     Get all feature names from the dataset
     """
 
-    # Load the raw dataset
+    # Load the training dataset
     data = load_dataset(device, dataset, 'train')
 
     # Get the features (ignoring non-feature columns)
@@ -307,13 +308,19 @@ def make_stacked_sets(device, dataset_path, dataset_category, stack_size):
             for i in range(stack_size):
                 shot_stack[f'{feature}_{i}'] = shot_stack[feature].shift(stack_size)
 
-        # TODO: replace new NaN's with -1's and let the model learn how to deal with it
-        #shot_stack = shot_stack.dropna(subset=features)
+        # Replace all feature NaN's with 0's
+        shot_stack[extended_feature_list] = shot_stack[extended_feature_list].fillna(0)
 
         stacked_features = pd.concat([stacked_features, shot_stack], ignore_index=True)
-
+    
     # Save stacked features under new name
-    stacked_features.to_csv(f'data/{device}/{dataset_path}/{stack_size}_stack/{dataset_category}.csv', index=False)
+    new_dataset_path = f'data/{device}/{dataset_path}/stack_{stack_size}'
+
+    # If directory does not exist, create it
+    if not os.path.exists(new_dataset_path):
+        os.makedirs(new_dataset_path)
+
+    stacked_features.to_csv(new_dataset_path + f'/{dataset_category}.csv', index=False)
 
 
 
