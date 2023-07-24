@@ -150,7 +150,7 @@ def clump_many_to_one_statistics(unique_values_raw, clumping_values, epsilon=0.0
         except:
             clumping_values_1D = [clumping_values[j] for j in indices]
 
-        # Calculate the average and standard deviation of the warning times
+        # Calculate the average and standard deviation of the clumped values
         avg_clump_values[i] = np.mean(clumping_values_1D)
         std_clump_values[i] = np.std(clumping_values_1D)
 

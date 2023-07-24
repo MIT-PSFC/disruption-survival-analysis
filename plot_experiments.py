@@ -138,6 +138,31 @@ def plot_FAR_vs_threshold(experiment_list:list[Experiment], horizon=DEFAULT_HORI
     plt.legend()
     plt.show()
 
+def plot_missed_alarm_rate_vs_false_alarm_rate(experiment_list:list[Experiment], horizon=DEFAULT_HORIZONS[0]):
+    """ Averaged over all shots
+    
+    """
+
+    plt.figure()
+
+    for experiment in experiment_list:
+        false_alarm_rates, missed_alarm_rates = experiment.missed_alarm_rate_vs_false_alarm_rate(horizon)
+        plt.semilogy(false_alarm_rates, missed_alarm_rates, label=experiment.name)
+
+    plt.xlim([0, 1])
+    plt.ylim([1e-3, 1])
+
+    plt.xlabel('False Alarm Rate')
+    plt.ylabel('Missed Alarm Rate')
+
+    plt.title(f'Missed Alarm Rate vs. False Alarm Rate at {horizon*1000:.0f} ms Horizon')
+
+    plt.legend()
+    plt.show()
+
+
+# Warning time plots (maybe not the greatest metric due to the threshold sweeping from 0)
+
 def plot_warning_time_vs_threshold(experiment_list:list[Experiment], horizon=DEFAULT_HORIZONS[0]):
     """ Averaged over all shots
     """
@@ -363,23 +388,29 @@ def plot_disruptive_vs_non_disruptive_shot_durations(experiment:Experiment):
     plt.legend()
     plt.show()
 
-def plot_warning_time_vs_shot_duration(experiment:Experiment, horizon):
+"""
+
+This plot does not make sense because there are many warning times for each shot
+(one for each threshold)
+
+def plot_shot_duration_vs_warning_time(experiment:Experiment, horizon):
 
     disruptive_shot_duration_ms = experiment.get_disruptive_shot_durations()*1000
     warning_time_ms = experiment.get_warning_times_list(horizon)*1000
 
-    unique_disruptive_shot_duration, mean_warning_time, _ = clump_many_to_one_statistics(warning_time_ms, disruptive_shot_duration_ms)
+    unique_warning_time, avg_shot_duration, _ = clump_many_to_one_statistics(warning_time_ms, disruptive_shot_duration_ms)
 
     plt.figure()
 
-    plt.plot(unique_disruptive_shot_duration, mean_warning_time)
+    plt.plot(unique_warning_time, avg_shot_duration)
 
-    plt.xlim([0, max(unique_disruptive_shot_duration)])
-    plt.ylim([0, max(mean_warning_time)])
+    plt.xlim([0, max(unique_warning_time)])
+    plt.ylim([0, max(avg_shot_duration)])
+    
 
-    plt.xlabel('Shot Duration [ms]')
-    plt.ylabel('Mean Warning Time [ms]')
-    plt.title(f'Mean Warning Time vs. Shot Duration for {experiment.dataset_path} at {horizon*1000:.0f} ms Horizon')
+    plt.xlabel('Warning Time [ms]')
+    plt.ylabel('Avg Shot Duration [ms]')
+    plt.title(f'Shot Duration vs Warning Time for {experiment.dataset_path} at {horizon*1000:.0f} ms Horizon')
 
     plt.show()
-
+"""

@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 NOT_FEATURES = ['time', 'shot', 'time_until_disrupt'] # Columns that are not features
-DROPPED_FEATURES = ['v_surf'] # Additional features to drop from the raw dataset (should not wind up in the training datasets)
+DROPPED_FEATURES = ['v_surf', 'dbetap_dt', 'dli_dt', 'dWmhd_dt', 'dn_dt', 'dip_dt', 'dip_smoothed', 'dipprog_dt', 'ip_prog'] # Additional features to drop from the raw dataset (should not wind up in the training datasets)
 
 # Functions for loading datasets or other information directly from saved .csv files
 

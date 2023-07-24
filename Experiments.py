@@ -279,6 +279,18 @@ class Experiment:
 
         return unique_false_alarms, avg_true_alarm_rates#, std_true_alarm_rates
      
+    def missed_alarm_rate_vs_false_alarm_rate(self, horizon):
+
+        true_alarms, false_alarms, _ = self.get_alarms_times(horizon)
+
+        missed_alarm_rates = 1 - np.sum(true_alarms, axis=0) / self.get_num_disruptive_shots()
+        false_alarm_rates = np.sum(false_alarms, axis=0) / (self.get_num_shots() - self.get_num_disruptive_shots())
+
+        unique_false_alarms, avg_missed_alarm_rates, std_missed_alarm_rates = clump_many_to_one_statistics(false_alarm_rates, missed_alarm_rates)
+
+        return unique_false_alarms, avg_missed_alarm_rates
+
+
     # Warning Times Methods
 
     def get_warning_times_list(self, horizon):
