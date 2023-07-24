@@ -98,59 +98,60 @@ def calculate_alarm_time_hysterisis(self, shot_data,
     """
     raise NotImplementedError("Hysterisis method not yet implemented")
 
-def clump_many_to_one_statistics(warning_times_list, true_alarm_rates, epsilon=0.01):
+def clump_many_to_one_statistics(unique_values_raw, clumping_values, epsilon=0.01):
     """
-    The way this is calculated, the warning times and true alarm rates and false alarm rates are all given by particular thresholds
+    For example, The way this is calculated, the warning times and true alarm rates and false alarm rates are all given by particular thresholds
     As such, we can easily compare them to the thresholds, since each value corresponds to one threshold
     However, when comparing them to eachother, this becomes difficult because there is not necessarily a one-to-one correspondence
     For instance, we could have a true alarm rate of 0.5 for both a threshold of 0.1 and 0.2, but the warning times could be different
-    This function clumps the warning times together for each unique true alarm rate
-    TODO: refactor to be the clumper vs the clumpee or something like that
+    This function clumps values together for each unique value
 
     Parameters
     ----------
-    warning_times_list : numpy.ndarray
-        Warning times for each threshold (clumped values)
-    true_alarm_rates : numpy.ndarray
-        The true alarm rates for each threshold (unique values)
+    unique_values_raw : numpy.ndarray
+        The unique values which dictate the clumping. Not necessarily unique at this point.
+    clumping_values : numpy.ndarray
+        The values to be clumped. Must be the same length as unique_values.
+    epsilon : float
+        The maximum difference between two unique values to be considered the same
 
     Returns
     -------
     unique_true_alarm_rates : numpy.ndarray
         The unique true alarm rates
-    mean_warning_times : numpy.ndarray
-        The mean warning times for each unique true alarm rate
+    avg_warning_times : numpy.ndarray
+        The average clumped value for each unique value
     std_warning_times : numpy.ndarray
-        The standard deviation of the warning times for each unique true alarm rate
+        The standard deviation of the clumped values for each unique value
     
     """
 
-    # Get the unique true alarm rates
-    unique_true_alarm_rates = np.unique(true_alarm_rates)
+    # Within these unique values, if they are within epsilon of eachother, eliminate one
+    # TODO
 
-    # Within these unique values, if they are within epsilon of eachother, clump them together
-    
+    # Actually trim down to the unique values
+    unique_values = np.unique(unique_values_raw)
 
-    # Initialize the mean and standard deviation arrays
-    mean_warning_times = np.zeros(len(unique_true_alarm_rates))
-    std_warning_times = np.zeros(len(unique_true_alarm_rates))
+    # Initialize the average and standard deviation arrays
+    avg_clump_values = np.zeros(len(unique_values))
+    std_clump_values = np.zeros(len(unique_values))
 
-    # Go through each unique true alarm rate and find the warning times that correspond to it
-    for i, true_alarm_rate in enumerate(unique_true_alarm_rates):
-        # Find the indices of the warning times that correspond to this true alarm rate
-        indices = np.where(true_alarm_rates == true_alarm_rate)
+    # Go through each unique value and find the clumping values which correspond to it
+    for i, unique_value in enumerate(unique_values):
+        # Find the indices of the raw unqiue values that correspond to this particular unique value
+        indices = np.where(unique_values_raw == unique_value)
 
-        # Get the warning times that correspond to this true alarm rate
+        # Get the clumping values that correspond to this unique value
         # TODO: polish up this list comprehension to be more readable
         try:
-            warning_times_clumped_2D = [warning_times_list[k][j] for k in range(len(warning_times_list)) for j in indices]
+            clumping_values_2D = [clumping_values[k][j] for k in range(len(clumping_values)) for j in indices]
             # Flatten the list
-            warning_times_clumped_1D = [item for sublist in warning_times_clumped_2D for item in sublist]
+            clumping_values_1D = [item for sublist in clumping_values_2D for item in sublist]
         except:
-            warning_times_clumped_1D = [warning_times_list[j] for j in indices]
+            clumping_values_1D = [clumping_values[j] for j in indices]
 
-        # Calculate the mean and standard deviation of the warning times
-        mean_warning_times[i] = np.mean(warning_times_clumped_1D)
-        std_warning_times[i] = np.std(warning_times_clumped_1D)
+        # Calculate the average and standard deviation of the warning times
+        avg_clump_values[i] = np.mean(clumping_values_1D)
+        std_clump_values[i] = np.std(clumping_values_1D)
 
-    return unique_true_alarm_rates, mean_warning_times, std_warning_times
+    return unique_values, avg_clump_values, std_clump_values

@@ -128,10 +128,10 @@ class TestExperimentUtils(unittest.TestCase):
 
         true_alarm_rates = [0.1, 0.1, 0.1, 0.2, 0.2, 0.2, 0.3, 0.3, 0.4]
 
-        unique_true_alarm_rates, mean_warning_times, std_warning_times = clump_many_to_one_statistics(warning_times, true_alarm_rates)
+        unique_true_alarm_rates, avg_warning_times, std_warning_times = clump_many_to_one_statistics(true_alarm_rates, warning_times)
 
         self.assertEqual(len(unique_true_alarm_rates), 4)
-        self.assertEqual(len(mean_warning_times), 4)
+        self.assertEqual(len(avg_warning_times), 4)
         self.assertEqual(len(std_warning_times), 4)
 
         self.assertEqual(unique_true_alarm_rates[0], 0.1)
@@ -139,10 +139,10 @@ class TestExperimentUtils(unittest.TestCase):
         self.assertEqual(unique_true_alarm_rates[2], 0.3)
         self.assertEqual(unique_true_alarm_rates[3], 0.4)
 
-        self.assertEqual(mean_warning_times[0], np.mean([0.1, 0.2, 0.3]))
-        self.assertEqual(mean_warning_times[1], np.mean([0.4, 0.5, 0.6]))
-        self.assertEqual(mean_warning_times[2], np.mean([0.7, 0.8]))
-        self.assertEqual(mean_warning_times[3], 0.9)
+        self.assertEqual(avg_warning_times[0], np.mean([0.1, 0.2, 0.3]))
+        self.assertEqual(avg_warning_times[1], np.mean([0.4, 0.5, 0.6]))
+        self.assertEqual(avg_warning_times[2], np.mean([0.7, 0.8]))
+        self.assertEqual(avg_warning_times[3], 0.9)
 
         self.assertEqual(std_warning_times[0], np.std([0.1, 0.2, 0.3]))
         self.assertEqual(std_warning_times[1], np.std([0.4, 0.5, 0.6]))
@@ -163,10 +163,10 @@ class TestExperimentUtils(unittest.TestCase):
 
         true_alarm_rates = [0.1, 0.5, 0.1]
 
-        unique_true_alarm_rates, mean_warning_times, std_warning_times = clump_many_to_one_statistics(warning_times_list, true_alarm_rates)
+        unique_true_alarm_rates, avg_warning_times, std_warning_times = clump_many_to_one_statistics(true_alarm_rates, warning_times_list)
 
         self.assertEqual(len(unique_true_alarm_rates), 2)
-        self.assertEqual(len(mean_warning_times), 2)
+        self.assertEqual(len(avg_warning_times), 2)
         self.assertEqual(len(std_warning_times), 2)
 
         self.assertEqual(unique_true_alarm_rates[0], 0.1)
@@ -175,8 +175,8 @@ class TestExperimentUtils(unittest.TestCase):
         first_warns = [0.1, 0.3, 0.4, 0.6, 0.7, 0.9]
         second_warns = [0.2, 0.5, 0.8]
 
-        self.assertEqual(mean_warning_times[0], np.mean(first_warns))
-        self.assertEqual(mean_warning_times[1], np.mean(second_warns))
+        self.assertEqual(avg_warning_times[0], np.mean(first_warns))
+        self.assertEqual(avg_warning_times[1], np.mean(second_warns))
 
         self.assertEqual(std_warning_times[0], np.std(first_warns))
         self.assertEqual(std_warning_times[1], np.std(second_warns))
@@ -243,17 +243,17 @@ class TestExperimentsAlarms(unittest.TestCase):
             for i in range(len(warning_times)-1):
                 self.assertLessEqual(warning_times[i+1], warning_times[i])
 
-    def test_mean_warning_time_vs_threshold_ordering(self):
-        """Ensure that the mean warning times are always decreasing
+    def test_avg_warning_time_vs_threshold_ordering(self):
+        """Ensure that the avg warning times are always decreasing
         As threshold increases, there should be less time between detection and disruption
         """
 
-        # Get the mean warning times
-        _, mean_warning_times, _ = self.experiment.warning_time_vs_threshold(self.horizon)
+        # Get the avg warning times
+        _, avg_warning_times, _ = self.experiment.warning_time_vs_threshold(self.horizon)
 
-        # Check that the mean detection times are always decreasing
-        for i in range(len(mean_warning_times)-1):
-            self.assertLessEqual(mean_warning_times[i+1], mean_warning_times[i])
+        # Check that the avg detection times are always decreasing
+        for i in range(len(avg_warning_times)-1):
+            self.assertLessEqual(avg_warning_times[i+1], avg_warning_times[i])
 
     def test_alarm_times_increasing(self):
         """Ensure that the alarm times are always increasing"""

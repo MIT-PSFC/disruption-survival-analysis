@@ -275,9 +275,9 @@ class Experiment:
         true_alarm_rates = np.sum(true_alarms, axis=0) / self.get_num_disruptive_shots()
         false_alarm_rates = np.sum(false_alarms, axis=0) / (self.get_num_shots() - self.get_num_disruptive_shots())
 
-        unique_false_alarms, mean_true_alarm_rates, std_true_alarm_rates = clump_many_to_one_statistics(true_alarm_rates, false_alarm_rates)
+        unique_false_alarms, avg_true_alarm_rates, std_true_alarm_rates = clump_many_to_one_statistics(false_alarm_rates, true_alarm_rates)
 
-        return unique_false_alarms, mean_true_alarm_rates#, std_true_alarm_rates
+        return unique_false_alarms, avg_true_alarm_rates#, std_true_alarm_rates
      
     # Warning Times Methods
 
@@ -326,9 +326,9 @@ class Experiment:
 
         warning_times_list = self.get_warning_times_list(horizon)
 
-        unique_thresholds, mean_warning_times, std_warning_times = clump_many_to_one_statistics(warning_times_list, self.thresholds)
+        unique_thresholds, avg_warning_times, std_warning_times = clump_many_to_one_statistics(self.thresholds, warning_times_list)
 
-        return unique_thresholds, mean_warning_times, std_warning_times
+        return unique_thresholds, avg_warning_times, std_warning_times
 
     def warning_time_vs_true_alarm_rate(self, horizon):
         """ Get statistics on warning time vs true alarm rate for a given horizon 
@@ -338,9 +338,9 @@ class Experiment:
         warning_times_list = self.get_warning_times_list(horizon)
         _, true_alarm_rates = self.true_alarm_rate_vs_threshold(horizon)
 
-        unique_true_alarm_rates, mean_warning_times, std_warning_times = clump_many_to_one_statistics(warning_times_list, true_alarm_rates)
+        unique_true_alarm_rates, avg_warning_times, std_warning_times = clump_many_to_one_statistics(true_alarm_rates, warning_times_list)
 
-        return unique_true_alarm_rates, mean_warning_times, std_warning_times
+        return unique_true_alarm_rates, avg_warning_times, std_warning_times
 
     def warning_time_vs_false_alarm_rate(self, horizon):
         """ Get statistics on warning time vs false alarm rate for a given horizon 
@@ -350,10 +350,10 @@ class Experiment:
         warning_times_list = self.get_warning_times_list(horizon)
         _, false_alarm_rates = self.false_alarm_rate_vs_threshold(horizon)
 
-        unique_false_alarm_rates, mean_warning_times, std_warning_times = clump_many_to_one_statistics(warning_times_list, false_alarm_rates)
+        unique_false_alarm_rates, avg_warning_times, std_warning_times = clump_many_to_one_statistics(false_alarm_rates, warning_times_list)
 
         # TODO: Ignore zero false positve rate results???
-        return unique_false_alarm_rates, mean_warning_times, std_warning_times
+        return unique_false_alarm_rates, avg_warning_times, std_warning_times
     
     def warning_time_vs_missed_alarm_rate(self, horizon):
         """ Get statistics on warning time vs false negative rate for a given horizon 
@@ -364,9 +364,9 @@ class Experiment:
         _, true_alarm_rates = self.true_alarm_rate_vs_threshold(horizon)
         missed_alarm_rates = 1 - true_alarm_rates
 
-        unique_missed_alarm_rates, mean_warning_times, std_warning_times = clump_many_to_one_statistics(warning_times_list, missed_alarm_rates)
+        unique_missed_alarm_rates, avg_warning_times, std_warning_times = clump_many_to_one_statistics(missed_alarm_rates, warning_times_list)
 
-        return unique_missed_alarm_rates, mean_warning_times, std_warning_times
+        return unique_missed_alarm_rates, avg_warning_times, std_warning_times
     
     def warning_vs_precision(self, horizon, scaled=False):
         """ Get statistics on warning times vs precision for a given horizon 
@@ -385,7 +385,7 @@ class Experiment:
         # Calculate the precision at each threshold
         threshold_precisions = np.sum(true_alarms, axis=0) / (np.sum(true_alarms, axis=0) + np.sum(false_alarms, axis=0))
 
-        unique_precision, mean_warning_times, std_warning_times = clump_many_to_one_statistics(warning_times_list, threshold_precisions)
+        unique_precision, avg_warning_times, std_warning_times = clump_many_to_one_statistics(threshold_precisions, warning_times_list)
 
         # TODO: ignore zero precision results?
-        return unique_precision[:], mean_warning_times[:], std_warning_times[:]
+        return unique_precision[:], avg_warning_times[:], std_warning_times[:]
