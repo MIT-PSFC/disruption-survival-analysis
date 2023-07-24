@@ -86,6 +86,32 @@ class Experiment:
         """ Returns the times for a given shot """
         shot_data = self.all_data[self.all_data['shot'] == shot]
         return shot_data['time'].values
+    
+    def get_shot_duration(self, shot):
+        """ Returns the duration of a given shot """
+        shot_data = self.all_data[self.all_data['shot'] == shot]
+        return shot_data['time'].max() - shot_data['time'].min()
+
+    def get_all_shot_durations(self):
+        """ Returns the duration of each shot in the dataset """
+        shot_durations = []
+        for shot in self.get_shot_list():
+            shot_durations.append(self.get_shot_duration(shot))
+        return np.array(shot_durations)
+    
+    def get_disruptive_shot_durations(self):
+        """ Returns the duration of each disruptive shot in the dataset """
+        shot_durations = []
+        for shot in self.get_disruptive_shot_list():
+            shot_durations.append(self.get_shot_duration(shot))
+        return np.array(shot_durations)
+    
+    def get_non_disruptive_shot_durations(self):
+        """ Returns the duration of each non-disruptive shot in the dataset """
+        shot_durations = []
+        for shot in self.get_non_disruptive_shot_list():
+            shot_durations.append(self.get_shot_duration(shot))
+        return np.array(shot_durations)
 
     def get_risk(self, shot, horizon):
         """ Returns the risk score for a shot at a given horizon """
@@ -106,6 +132,8 @@ class Experiment:
         """ Calculates the risk score for a shot at a given horizon"""
         shot_data = self.all_data[self.all_data['shot'] == shot]
         return self.predictor.calculate_risk_at_time(shot_data, horizon)
+    
+    
     
     # ROC AUC methods
 
@@ -327,7 +355,20 @@ class Experiment:
         # TODO: Ignore zero false positve rate results???
         return unique_false_alarm_rates, mean_warning_times, std_warning_times
     
-    def warning_vs_precision(self, horizon):
+    def warning_time_vs_missed_alarm_rate(self, horizon):
+        """ Get statistics on warning time vs false negative rate for a given horizon 
+            This is inherently a macro statistic, since a single shot can have only one warning time
+        """
+
+        warning_times_list = self.get_warning_times_list(horizon)
+        _, true_alarm_rates = self.true_alarm_rate_vs_threshold(horizon)
+        missed_alarm_rates = 1 - true_alarm_rates
+
+        unique_missed_alarm_rates, mean_warning_times, std_warning_times = clump_many_to_one_statistics(warning_times_list, missed_alarm_rates)
+
+        return unique_missed_alarm_rates, mean_warning_times, std_warning_times
+    
+    def warning_vs_precision(self, horizon, scaled=False):
         """ Get statistics on warning times vs precision for a given horizon 
             This is inherently a macro statistic, since a single shot can have only one warning time
         """
@@ -336,6 +377,10 @@ class Experiment:
         true_alarms, false_alarms, _ = self.get_alarms_times(horizon)
 
         warning_times_list = self.get_warning_times_list(horizon)
+
+        if scaled:
+            shot_duration_list = self.get_disruptive_shot_durations()
+            warning_times_list = [warning_times / shot_duration for warning_times, shot_duration in zip(warning_times_list, shot_duration_list)]
 
         # Calculate the precision at each threshold
         threshold_precisions = np.sum(true_alarms, axis=0) / (np.sum(true_alarms, axis=0) + np.sum(false_alarms, axis=0))

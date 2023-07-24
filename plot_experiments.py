@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from Experiments import Experiment
+from experiment_utils import clump_many_to_one_statistics
 
 DEFAULT_HORIZONS = np.linspace(0.01, 0.4, 5)
 # TODO fix horizons
@@ -189,7 +190,7 @@ def plot_warning_time_vs_TAR(experiment_list:list[Experiment], horizon=DEFAULT_H
     plt.legend()
     plt.show()
 
-def plot_warning_time_vs_FAR(experiment_list:list[Experiment], horizon=DEFAULT_HORIZONS[0]):
+def plot_warning_time_vs_FAR(experiment_list:list[Experiment], horizon=DEFAULT_HORIZONS[0], min_far=None, max_far=None, min_warning_time=None, max_warning_time=None):
     """ Averaged over all shots
     """
 
@@ -204,8 +205,19 @@ def plot_warning_time_vs_FAR(experiment_list:list[Experiment], horizon=DEFAULT_H
         # TODO: reintroduce error bars
         plt.semilogx(false_alarm_rates, warning_time_avg_ms, label=experiment.name)
 
-    plt.xlim([min(false_alarm_rates), max(false_alarm_rates)])
-    plt.ylim([0, MAX_WARNING_TIME_MS])
+    # TODO: changed temporarily
+
+    if min_far is None:
+        min_far = min(false_alarm_rates)
+    if max_far is None:
+        max_far = max(false_alarm_rates)
+    if min_warning_time is None:
+        min_warning_time = 0
+    if max_warning_time is None:
+        max_warning_time = MAX_WARNING_TIME_MS
+
+    plt.xlim([min_far, max_far])
+    plt.ylim([min_warning_time, max_warning_time])
 
     plt.xlabel('False Alarm Rate')
     plt.ylabel('Warning Time [ms]')
@@ -215,7 +227,38 @@ def plot_warning_time_vs_FAR(experiment_list:list[Experiment], horizon=DEFAULT_H
     plt.legend()
     plt.show()
 
-def plot_warning_time_vs_precision(experiment_list:list[Experiment], horizon=DEFAULT_HORIZONS[0]):
+def plot_warning_time_vs_missed_alarm_rate(experiment_list:list[Experiment], horizon=DEFAULT_HORIZONS[0], min_missed_alarm_rate=None, max_missed_alarm_rate=None, min_warning_time=None, max_warning_time=None):
+    
+    horizon_ms = horizon*1000
+
+    plt.figure()
+
+    for experiment in experiment_list:
+        missed_alarm_rates, warning_time_avg, warning_time_std = experiment.warning_time_vs_missed_alarm_rate(horizon)
+        warning_time_avg_ms = [i * 1000 for i in warning_time_avg]
+        warning_time_std_ms = [i * 1000 for i in warning_time_std]
+        plt.semilogx(missed_alarm_rates, warning_time_avg_ms, label=experiment.name)
+
+    if min_missed_alarm_rate is None:
+        min_missed_alarm_rate = min(missed_alarm_rates)
+    if max_missed_alarm_rate is None:
+        max_missed_alarm_rate = max(missed_alarm_rates)
+    if min_warning_time is None:
+        min_warning_time = 0
+    if max_warning_time is None:
+        max_warning_time = MAX_WARNING_TIME_MS
+
+    plt.xlim([min_missed_alarm_rate, max_missed_alarm_rate])
+    plt.ylim([min_warning_time, max_warning_time])
+
+    plt.xlabel('Missed Alarm Rate')
+    plt.ylabel('Warning Time [ms]')
+
+    plt.title(f'Warning Time vs. Missed Alarm Rate at {horizon_ms:.0f} ms Horizon')
+
+    plt.legend()    
+
+def plot_warning_time_vs_precision(experiment_list:list[Experiment], horizon=DEFAULT_HORIZONS[0], scaled=True):
     """ Averaged over all shots
 
     """
@@ -225,19 +268,28 @@ def plot_warning_time_vs_precision(experiment_list:list[Experiment], horizon=DEF
     plt.figure()
 
     for experiment in experiment_list:
-        precision, warning_time_avg, warning_time_std = experiment.warning_vs_precision(horizon)
-        warning_time_avg_ms = [i * 1000 for i in warning_time_avg]
-        warning_time_std_ms = [i * 1000 for i in warning_time_std]
-        # TODO: reintroduce error bars
-        plt.plot(precision, warning_time_avg_ms, label=experiment.name)
+        precision, warning_time_avg, warning_time_std = experiment.warning_vs_precision(horizon, scaled=scaled)
+        if not scaled:
+            warning_time_avg_ms = [i * 1000 for i in warning_time_avg]
+            warning_time_std_ms = [i * 1000 for i in warning_time_std]
+            # TODO: reintroduce error bars
+            plt.plot(warning_time_avg_ms, precision, label=experiment.name)
+        else:
+            plt.plot(warning_time_avg, precision, label=experiment.name)
 
-    plt.xlim([min(precision), max(precision)])
-    plt.ylim([0, MAX_WARNING_TIME_MS])
+    plt.ylim([min(precision), max(precision)])
+    if not scaled:
+        plt.xlim([0, MAX_WARNING_TIME_MS])
+    else:
+        plt.xlim([0, 1])
 
-    plt.xlabel('Precision (True Alarms/(Total Alarms))')
-    plt.ylabel('Warning Time [ms]')
+    plt.ylabel('Precision (True Alarms/(Total Alarms))')
+    if scaled:
+        plt.xlabel('Warning Time Fraction of Shot Duration')
+    else:
+        plt.xlabel('Warning Time [ms]')
 
-    plt.title(f'Warning Time vs. Precision at {horizon_ms:.0f} ms Horizon')
+    plt.title(f'Precision vs. Warning Time at {horizon_ms:.0f} ms Horizon')
 
     plt.legend()
     plt.show()
@@ -275,3 +327,59 @@ def plot_risk_compare_models(experiment_list:list[Experiment], shot, horizon):
 def plot_expected_lifetime():
     """ NOT RIGOROUS """
     pass
+
+# Plots for showing the composition of the dataset
+
+def plot_all_shot_durations(experiment:Experiment):
+
+    shot_durations_ms = experiment.get_all_shot_durations()*1000
+
+    plt.figure()
+
+    plt.hist(shot_durations_ms, bins=50)
+
+    plt.xlabel('Shot Duration [ms]')
+    plt.ylabel('Number of Shots')
+
+    plt.title(f'Shot Durations for {experiment.dataset_path}')
+
+    plt.show()
+
+def plot_disruptive_vs_non_disruptive_shot_durations(experiment:Experiment):
+
+    disruptive_shot_durations_ms = experiment.get_disruptive_shot_durations()*1000
+    non_disruptive_shot_durations_ms = experiment.get_non_disruptive_shot_durations()*1000
+
+    plt.figure()
+
+    plt.hist(disruptive_shot_durations_ms, bins=50, label='Disruptive')
+    plt.hist(non_disruptive_shot_durations_ms, bins=50, label='Non-Disruptive')
+
+    plt.xlim([500, max(max(disruptive_shot_durations_ms), max(non_disruptive_shot_durations_ms))])
+
+    plt.xlabel('Shot Duration [ms]')
+    plt.ylabel('Number of Shots')
+    plt.title(f'Shot Durations for {experiment.dataset_path}')
+    plt.legend()
+    plt.show()
+
+def plot_warning_time_vs_shot_duration(experiment:Experiment, horizon):
+
+    disruptive_shot_duration_ms = experiment.get_disruptive_shot_durations()*1000
+    warning_time_ms = experiment.get_warning_times_list(horizon)*1000
+
+    unique_disruptive_shot_duration, mean_warning_time, _ = clump_many_to_one_statistics(warning_time_ms, disruptive_shot_duration_ms)
+
+    plt.figure()
+
+    plt.plot(unique_disruptive_shot_duration, mean_warning_time)
+
+    plt.xlim([0, max(unique_disruptive_shot_duration)])
+    plt.ylim([0, max(mean_warning_time)])
+
+    plt.xlabel('Shot Duration [ms]')
+    plt.ylabel('Mean Warning Time [ms]')
+    plt.title(f'Mean Warning Time vs. Shot Duration for {experiment.dataset_path} at {horizon*1000:.0f} ms Horizon')
+
+    plt.show()
+

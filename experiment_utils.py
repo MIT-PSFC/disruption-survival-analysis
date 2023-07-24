@@ -107,8 +107,17 @@ def clump_many_to_one_statistics(warning_times_list, true_alarm_rates, epsilon=0
     This function clumps the warning times together for each unique true alarm rate
     TODO: refactor to be the clumper vs the clumpee or something like that
 
+    Parameters
+    ----------
+    warning_times_list : numpy.ndarray
+        Warning times for each threshold (clumped values)
+    true_alarm_rates : numpy.ndarray
+        The true alarm rates for each threshold (unique values)
+
     Returns
     -------
+    unique_true_alarm_rates : numpy.ndarray
+        The unique true alarm rates
     mean_warning_times : numpy.ndarray
         The mean warning times for each unique true alarm rate
     std_warning_times : numpy.ndarray
