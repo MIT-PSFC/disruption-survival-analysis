@@ -176,5 +176,8 @@ data/d3d
 *_train.csv
 *_val.csv
 
-# Locally trained model pikles
+# Locally trained model pickles
 models
+
+# WandB output files
+wandb

@@ -92,7 +92,7 @@ def plot_roc_auc_vs_horizon_micro(experiment_list:list[Experiment], horizons=DEF
     plt.legend()
     plt.show()
 
-def plot_TAR_vs_threshold(experiment_list:list[Experiment], horizon=DEFAULT_HORIZONS[0]):
+def plot_missed_alarm_rate_vs_threshold(experiment_list:list[Experiment], horizon=DEFAULT_HORIZONS[0]):
     """ Averaged over all shots
     
     """
@@ -101,16 +101,17 @@ def plot_TAR_vs_threshold(experiment_list:list[Experiment], horizon=DEFAULT_HORI
 
     for experiment in experiment_list:
         thresholds, true_alarm_rates = experiment.true_alarm_rate_vs_threshold(horizon)
+        missed_alarm_rates = 1 - true_alarm_rates
         # Plot false alarm rate vs threshold, where threshold is on a log scale
-        plt.semilogx(thresholds, true_alarm_rates, label=experiment.name)
+        plt.loglog(thresholds, missed_alarm_rates, label=experiment.name)
 
     plt.xlim([min(thresholds), 1])
     plt.ylim([0, 1])
 
     plt.xlabel('Threshold')
-    plt.ylabel('True Alarm Rate')
+    plt.ylabel('Missed Alarm Rate')
 
-    plt.title(f'True Alarm Rate vs. Threshold at {horizon*1000:.0f} ms Horizon')
+    plt.title(f'Missed Alarm Rate vs. Threshold at {horizon*1000:.0f} ms Horizon')
 
     plt.legend()
     plt.show()
