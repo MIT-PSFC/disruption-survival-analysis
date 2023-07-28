@@ -1,0 +1,33 @@
+# Training configuration for cph
+command:
+  - "/c/users/zkeith/documents/Risk-Aware Frameworks/disruption-survival-analysis/.venv/Scripts/python"
+  - ${program}
+  - ${args}
+# (required) Training script to run
+program: "/c/users/zkeith/documents/Risk-Aware Frameworks/disruption-survival-analysis/wandb_job.py"
+# (required) specify the search strategy (grid, random, or bayes)
+method: bayes
+# Name of the sweep, displayed in UI
+name: test-cph-sweep
+# Text description of sweep
+description: "First tests to get this working on CPH model"
+# Specify metric to optimize (used by certain search strategies and stopping criteria)
+metric:
+  goal: minimize
+  name: timeslice_ibs
+# (required) Parameter bounds to search. Model-dependent
+parameters:
+  valmin:
+    min: 0.0
+    max: 0.4
+  valmax: 
+    min: 0.6
+    max: 1.0
+  numval:
+    min: 4
+    max: 28
+  l2:
+    distribution: log_uniform_values
+    min: 0.00001
+    max: 0.01
+
