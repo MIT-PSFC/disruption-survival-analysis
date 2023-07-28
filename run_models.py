@@ -139,7 +139,7 @@ def run_survival_model(model_string, x_tr, x_val, y_tr, y_val):
     params = ParameterGrid(param_grid)
     
     # Define the times for model evaluation
-    times = get_train_times(y_tr)
+    times = get_val_times(y_tr, 0.1, 0.9, 10)
 
     # Perform hyperparameter tuning for SurvivalModel 
     models = []
@@ -275,7 +275,7 @@ def eval_model(model, x_te, y_tr, y_te):
     """    
 
     # Define the times for model testing
-    times = get_test_times(y_tr)
+    times = get_val_times(y_tr)
 
     # Obtain survival probabilities for test set
     predictions_te = model.predict_survival(x_te, times)
