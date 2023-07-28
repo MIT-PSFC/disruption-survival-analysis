@@ -4,8 +4,14 @@ from model_evaluation import evaluate_model
 
 SURVIVAL_MODELS = ['cph', 'dcph', 'dcm', 'dsm', 'rsf']
 
+# This is a bit of a hack because I don't want to pass variables to this special 'wandb function'
+device = 'cmod'
+dataset_path = 'random_flattop_256_shots_60%_disruptive'
+model_type = 'cph'
+evaluation_method = 'timeslice_ibs'
+
 def run_wandb():
-    run = wandb.init()
+    run = wandb.init(project='local-sweep')
 
     # Positions to validate the model on
     # TODO: I want to get rid of this, just trying it out for now
@@ -30,22 +36,4 @@ def run_wandb():
 
     wandb.log({evaluation_method: metric_val})
 
-def main():
-    # This is a bit of a hack because I don't want to pass variables to this special 'wandb function'
-    sweep_id = sys.argv[1]
-    
-    global device 
-    device = sys.argv[2]
-
-    global dataset_path
-    dataset_path = sys.argv[3]
-
-    global model_type
-    model_type = sys.argv[4]
-
-    global evaluation_method 
-    evaluation_method = sys.argv[5]
-
-    wandb.agent(sweep_id, function=run_wandb)
-
-main()
+run_wandb()
