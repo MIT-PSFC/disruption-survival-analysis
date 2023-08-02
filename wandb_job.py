@@ -4,6 +4,8 @@ from model_utils import make_survival_model
 from model_evaluation import evaluate_model
 
 SURVIVAL_MODELS = ['cph', 'dcph', 'dcm', 'dsm', 'rsf']
+RECURRENT_MODELS = ['rdsm', 'rdcm']
+FOREST_MODLES = ['rf']
 
 run = wandb.init()
 

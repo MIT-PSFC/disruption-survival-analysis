@@ -5,6 +5,8 @@ import pkgutil
 import numpy as np
 import pandas as pd
 
+from auton_survival.preprocessing import Preprocessor
+
 NOT_FEATURES = ['time', 'shot', 'time_until_disrupt'] # Columns that are not features
 DROPPED_FEATURES = ['v_surf', 'dbetap_dt', 'dli_dt', 'dWmhd_dt', 'dn_dt', 'dip_dt', 'dip_smoothed', 'dipprog_dt', 'ip_prog'] # Additional features to drop from the raw dataset (should not wind up in the training datasets)
 
@@ -219,7 +221,7 @@ def load_non_disruptive_shot_list(device, dataset_path, dataset_category):
     Get the list of non-disruptive shots from the dataset
     """
 
-    # Load the raw dataset
+    # Load the dataset
     data = load_dataset(device, dataset_path, dataset_category)
 
     # Find the non-disruptive shots in the dataset
@@ -234,7 +236,8 @@ def load_non_disruptive_shot_list(device, dataset_path, dataset_category):
 
 def make_training_sets(device, dataset_path, random_seed=0, debug=False):
     """
-    Split the raw data into training, test, and validation sets
+    Split the raw data into training, test, and validation sets,
+    where all data is transformed based on the training set
     """
 
     # Load the raw dataset
@@ -267,6 +270,18 @@ def make_training_sets(device, dataset_path, random_seed=0, debug=False):
     train_data = data[data['shot'].isin(train_shots)]
     test_data = data[data['shot'].isin(test_shots)]
     val_data = data[data['shot'].isin(val_shots)]
+
+    # Get the features
+    features = [col for col in data.columns if col not in ['shot', 'time_until_disrupt']]
+
+    # Transform the data based on the training set
+    preprocessor = Preprocessor(cat_feat_strat='ignore', num_feat_strat='mean')
+    transformer = preprocessor.fit(train_data[features], cat_feats=[], num_feats=features, one_hot=True, fill_value=-1)
+
+    # Transform the training, test, and validation sets
+    train_data[features] = transformer.transform(train_data[features])
+    test_data[features] = transformer.transform(test_data[features])
+    val_data[features] = transformer.transform(val_data[features])
 
     # Save the training, test, and validation sets
     train_data.to_csv('data/{}/{}/train.csv'.format(device, dataset_path), index=False)
@@ -321,33 +336,3 @@ def make_stacked_sets(device, dataset_path, dataset_category, stack_size):
         os.makedirs(new_dataset_path)
 
     stacked_features.to_csv(new_dataset_path + f'/{dataset_category}.csv', index=False)
-
-
-
-"""
-def load_benchmark_data(predictor:DisruptionPredictor, device, dataset):
-    # TODO: this is such a garbo function, completely get rid of it
-
-
-    # Get a list of all disruptive shots (disruption happens during flattop)
-    disruptive_shots = get_disruptive_shot_list(device, dataset)
-
-    # Load the data grouped by shot number
-    raw_data = load_dataset_grouped(device, dataset)
-    
-    data = []
-    for entry in raw_data:
-        # Replace the shot numbers with a boolean indicating if the shot is disruptive
-        shotnumber = entry[0]
-        disrupt = shotnumber in disruptive_shots
-
-        # Trim the raw data to only include the features used by the predictor
-        # and apply the transformer
-        raw_shot_data = entry[1]
-        shot_data = predictor.transformer.transform(raw_shot_data[predictor.features])
-        # Put the times back in
-        shot_data['time'] = raw_shot_data['time']
-        data.append((disrupt, shot_data))
-
-    return data
-"""
