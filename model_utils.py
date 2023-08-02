@@ -131,21 +131,21 @@ def run_rf_model(x_tr, x_val, y_tr, y_val):
 
 # Methods for saving and loading models
 
-def save_model(model, transformer, model_name, device, dataset_path, features):
-    """Save model and transformer to file"""
+def save_model(model, model_name, device, dataset_path, features):
+    """Save model and features to file"""
     model_path = 'models/' + device + '/' + dataset_path
     try:
         os.makedirs(model_path)
     except:
         pass
     model_file = model_path + '/' + model_name + '.pkl'
-    dill.dump([model, transformer, features], open(model_file, 'wb'))
+    dill.dump([model, features], open(model_file, 'wb'))
     print('Saved model to ' + model_file)
 
 def load_model(model_name, device, dataset_path):
-    """Load model and transformer from file"""
+    """Load model and features from file"""
     model_file = 'models/' + device + '/' + dataset_path + '/' + model_name + '.pkl'
     with open(model_file, 'rb') as f:
-        model, transformer, features = dill.load(f)
+        model, features = dill.load(f)
     print('Loaded model from ' + model_file)
-    return model, transformer, features
+    return model, features
