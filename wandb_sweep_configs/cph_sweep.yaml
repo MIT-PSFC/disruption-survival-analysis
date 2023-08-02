@@ -1,0 +1,40 @@
+# (required wb) is required by wandb, (required zk) is required by training scripts
+# (required wb) Training configuration for cph
+command:
+  - ${env}
+  - python
+  - ${program}
+  - ${args}
+# (required wb) Training script to run
+program: wandb_job.py
+# (required wb) specify the search strategy (grid, random, or bayes)
+method: bayes
+# Name of the sweep, displayed in UI
+name: cph-sweep-test-2
+# Text description of sweep
+description: "Testing sweep after large refactor to bring post-sweep analysis into line with actual sweep"
+
+# (required zk) which type of model to run
+model_type: cph
+# (required zk) Device and datset pathing
+device: cmod
+dataset_path: random_flattop_256_shots_60%_disruptive
+# (required zk) Specify metric to optimize (used by certain search strategies and stopping criteria)
+metric:
+  goal: minimize
+  name: timeslice_ibs
+# (required wb) Parameter bounds to search. Model-dependent
+parameters:
+  valmin:
+    desc: "Minimum quantile for validation when using timeslice-based metric"
+    min: 0.0
+    max: 0.15
+  valmax: 
+    desc: "Minimum quantile for validation when using timeslice-based metrics"
+    min: 0.95
+    max: 1.0
+  l2:
+    distribution: log_uniform_values
+    min: 0.00001
+    max: 0.01
+

@@ -5,7 +5,7 @@ import unittest
 from manage_datasets import *
 
 TEST_DEVICE = 'cmod'
-TEST_DATASET_PATH = 'random_256_shots_60%_flattop'
+TEST_DATASET_PATH = 'random_flattop_256_shots_60%_disruptive'
 
 class TestLoadDataset(unittest.TestCase):
 

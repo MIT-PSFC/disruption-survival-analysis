@@ -3,7 +3,7 @@
 # debugging in here for the time being
 
 from manage_datasets import load_features_outcomes, load_features_labels, make_training_sets, make_stacked_sets, load_feature_list
-from run_models import run_survival_model, run_rf_model, save_model
+from model_utils import run_survival_model, run_rf_model, save_model
 
 device = 'cmod'
 #dataset_path = 'random_2000_shots_50%_flattop'

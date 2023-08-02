@@ -20,23 +20,21 @@ metric:
 # (required) Parameter bounds to search. Model-dependent
 parameters:
   valmin:
+    desc: "Minimum quantile for validation when using timeslice-based metric"
     min: 0.0
     max: 0.15
   valmax: 
+    desc: "Minimum quantile for validation when using timeslice-based metrics"
     min: 0.95
     max: 1.0
-  numval:
-    distribution: constant
-    value: 10
-  layers:
-    distribution: categorical
-    values: 
-      - "100"
-      - "100_100"
-      - "200"
-      - "200_200"
-      - "300"
-      - "100_100_100"
+  layer_width:
+    desc: "Number of nodes in each layer of the neural network"
+    min: 50
+    max: 200
+  layer_depth:
+    desc: "Number of layers in the neural network"
+    min: 1
+    max: 5
   distribution:
     distribution: categorical
     values:

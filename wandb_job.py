@@ -26,39 +26,18 @@ def fix_pathing():
 
 fix_pathing()
 
-run = wandb.init(project='local-sweep')
+#run = wandb.init(project='local-sweep')
 
-# Positions to validate the model on
-# TODO: I want to get rid of this, just trying it out for now
-valmin = wandb.config.valmin
-valmax = wandb.config.valmax
-numval = wandb.config.numval
+print("==================")
+print("======CONFIG======")
+print("==================")
+print(wandb.config)
+print("==================")
+print("======ENDFIG======")
+print("==================")
 
-if model_type in SURVIVAL_MODELS:
-    from auton_survival.estimators import SurvivalModel
-    
-    if model_type == 'cph':
-        # Parameters for this type of model
-        l2 = wandb.config.l2
+model = make_model(wandb.config)
 
-        # Create model with parameters
-        model = SurvivalModel('cph', l2=l2)
-
-    elif model_type == 'dsm':
-        # Parameters for this type of model
-        layers_str = wandb.config.layers
-        layers = [int(i) for i in layers_str.split('_')]
-        distribution = wandb.config.distribution
-        temperature = wandb.config.temperature
-        batch_size = wandb.config.batch_size
-        learning_rate = wandb.config.learning_rate
-        epochs = wandb.config.epochs
-        max_features = wandb.config.max_features
-        k = wandb.config.k
-
-        # Create model with parameters
-        model = SurvivalModel('dsm', layers=layers, distribution=distribution, temperature=temperature, batch_size=batch_size, learning_rate=learning_rate, epochs=epochs, max_features=max_features, k=k)
-
-metric_val = evaluate_model(device, dataset_path, model, evaluation_method, valmin, valmax, numval)
+metric_val = evaluate_model(model, wandb.config)
 
 wandb.log({evaluation_method: metric_val})
