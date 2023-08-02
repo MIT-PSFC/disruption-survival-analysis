@@ -24,10 +24,50 @@ def make_survival_model(config:dict):
     """Make a survival model with hyperparameters depending on the config
     
     Parameters
-        config: 
+    ----------
+        config: dict
+            Dictionary of everything unique to this model.
+            Should contain the model type, the metric to be evaluated, which dataset to use, and the hyperparameters
+    
+    Returns
+    -------
+        model: SurvivalModel
+            The survival model to be trained
     """
 
-def train_survival_model(config):
+    model_type = config['model_type']
+    if model_type == 'cph':
+        l2 = config['l2']
+        model = SurvivalModel(model_type, l2=l2)
+    elif model_type == 'dcph':
+        layers = config['layers']
+        learning_rate = config['learning_rate']
+        batch_size = config['batch_size']
+        epochs = config['epochs']
+        model = SurvivalModel(model_type, layers=layers, learning_rate=learning_rate, batch_size=batch_size, epochs=epochs)
+    elif model_type == 'dcm':
+        k = config['k']
+        layers = config['layers']
+        batch_size = config['batch_size']
+        lr = config['learning_rate']
+        epochs = config['epochs']
+        smoothing_factor = config['smoothing_factor']
+        model = SurvivalModel(model_type, k=k, layers=layers, batch_size=batch_size, lr=lr, epochs=epochs, smoothing_factor=smoothing_factor)
+    elif model_type == 'dsm':
+        layers = config['layers']
+        distribution = config['distribution']
+        temperature = config['temperature']
+        batch_size = config['batch_size']
+        learning_rate = config['learning_rate']
+        epochs = config['epochs']
+        model = SurvivalModel(model_type, layers=layers, distribution=distribution, temperature=temperature, batch_size=batch_size, learning_rate=learning_rate, epochs=epochs)
+    else:
+        raise ValueError(f"Model type \"{model_type}\" not recognized")
+
+    return model
+
+
+def train_survival_model(model, config):
     """Train a survival model depending on the input config"""
 
 def run_recurrent_model(model_string, x_tr, t_tr, e_tr, x_val, t_val, e_val):
@@ -88,29 +128,6 @@ def run_rf_model(x_tr, x_val, y_tr, y_val):
     model = models[first_min_idx][1]
 
     return model
-
-
-def eval_model(model, x_te, y_tr, y_te):
-    """
-    Evaluate Cox Survival model
-    Taken from example script in auton-survival package
-    Survival Regression with Auton-Survival.ipynb
-    """    
-
-    # Define the times for model testing
-    times = get_val_times(y_tr)
-
-    # Obtain survival probabilities for test set
-    predictions_te = model.predict_survival(x_te, times)
-
-    # Compute the Brier Score and time-dependent concordance index for the test set to assess model performance
-    results = dict()
-    results['Brier Score'] = survival_regression_metric('brs', outcomes=y_te, predictions=predictions_te, 
-                                                        times=times, outcomes_train=y_tr)
-    results['Concordance Index'] = survival_regression_metric('ctd', outcomes=y_te, predictions=predictions_te, 
-                                                        times=times, outcomes_train=y_tr)
-    
-    return results, times
 
 # Methods for saving and loading models
 
