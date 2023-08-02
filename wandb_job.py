@@ -40,8 +40,5 @@ if config["model_type"] in SURVIVAL_MODELS:
         metric_val = None
 else:
     metric_val = None
-    
-
-#metric_val = evaluate_model(model, wandb.config)
 
 wandb.log({config['metric']: metric_val})
