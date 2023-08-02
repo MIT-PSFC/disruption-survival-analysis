@@ -14,23 +14,32 @@ name: cph-sweep-test-2
 # Text description of sweep
 description: "Testing sweep after large refactor to bring post-sweep analysis into line with actual sweep"
 
-# (required zk) which type of model to run
-model_type: cph
-# (required zk) Device and datset pathing
-device: cmod
-dataset_path: random_flattop_256_shots_60%_disruptive
 # (required zk) Specify metric to optimize (used by certain search strategies and stopping criteria)
 metric:
   goal: minimize
   name: timeslice_ibs
 # (required wb) Parameter bounds to search. Model-dependent
 parameters:
+  # (required zk) which type of model to run
+  model_type:
+    distribution: constant
+    value: cph
+  # (required zk) Device and datset pathing
+  device:
+    distribution: constant
+    value: cmod
+  dataset_path: 
+    distribution: constant
+    value: random_flattop_256_shots_60%_disruptive
+  # (required zk) Which metric is being used at the top level (inaccessible otherwise)
+  metric:
+    distribution: constant
+    value: timeslice_ibs
+  # Min and max values for timeslice-based metric validation
   valmin:
-    desc: "Minimum quantile for validation when using timeslice-based metric"
     min: 0.0
     max: 0.15
   valmax: 
-    desc: "Minimum quantile for validation when using timeslice-based metrics"
     min: 0.95
     max: 1.0
   l2:
