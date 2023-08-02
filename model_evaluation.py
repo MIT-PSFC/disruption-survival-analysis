@@ -11,40 +11,15 @@ def get_val_times(y_tr, min_quantile, max_quantile):
     """
     return np.quantile(y_tr['time'][y_tr['event']==1], np.linspace(min_quantile, max_quantile, 10)).tolist()
 
-def load_timeslice_data(device, dataset_path):
-    """ Load the training and validation data on a per-timeslice basis
+def evaluate_model(model, x_val, y_val, y_train, config):
 
-    Parameters:
-    ----------
-    device : str
-        The device to train on.
-    dataset_path : str
-        The path to the dataset.
-    """
+    # Get the metric we're evaluating the model's performance on
+    metric_type = config['metric']
 
-    # Load the training and validation data
-
-    numeric_feats = load_feature_list(device, dataset_path)
-
-    features_train, outcomes_train = load_features_outcomes(device, dataset_path, 'train', numeric_feats)
-    features_val, outcomes_val= load_features_outcomes(device, dataset_path, 'val', numeric_feats)
-
-    # Fit the imputer and scaler to the training data and transform the training, test, and validation data
-    preprocessor = Preprocessor(cat_feat_strat='ignore', num_feat_strat='mean')
-    transformer=preprocessor.fit(features_train, cat_feats=[], num_feats=numeric_feats, one_hot=True, fill_value=-1)
-
-    x_train = transformer.transform(features_train)
-    y_train = outcomes_train
-    x_val = transformer.transform(features_val)
-    y_val = outcomes_val
-
-    return x_train, y_train, x_val, y_val
-
-def evaluate_model(device, dataset_path, model, evaluation_method, valmin, valmax):
-
-    if evaluation_method == 'timeslice_ibs':
-        metric_val = timeslice_eval(device, dataset_path, model, valmin, valmax)
-    elif evaluation_method == 'missed_alarm':
+    if metric_type == 'timeslice_ibs':
+        val_times = get_val_times(y_train, config['valmin'], config['valmax'])
+        metric_val = timeslice_eval(model, x_val, y_val, y_train, val_times)
+    elif metric_type == 'missed_alarm':
         #metric_val = missed_alarm_eval(model, device, dataset_path)
         metric_val = None
     else:
@@ -52,17 +27,10 @@ def evaluate_model(device, dataset_path, model, evaluation_method, valmin, valma
 
     return metric_val
 
-def timeslice_eval(device, dataset_path, model, valmin, valmax):
+def timeslice_eval(model, x_val, y_val, y_train, val_times):
 
-    # Load the training and validation data
-    x_train, y_train, x_val, y_val = load_timeslice_data(device, dataset_path)
-
-    val_times = get_val_times(y_train, valmin, valmax)
-
-    # Fit the model
+    # Evaluate the model on the validation set
     try:
-        model.fit(x_train, y_train)
-
         if isinstance(model, SurvivalModel):
             predictions_val = model.predict_survival(x_val, val_times)
 

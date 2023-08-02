@@ -25,14 +25,14 @@ def make_survival_model(config:dict):
     
     Parameters
     ----------
-        config: dict
-            Dictionary of everything unique to this model.
-            Should contain the model type, the metric to be evaluated, which dataset to use, and the hyperparameters
+    config: dict
+        Dictionary of everything unique to this model.
+        Should contain the model type, the metric to be evaluated, which dataset to use, and the hyperparameters
     
     Returns
     -------
-        model: SurvivalModel
-            The survival model to be trained
+    model: SurvivalModel
+        The survival model to be trained
     """
 
     model_type = config['model_type']

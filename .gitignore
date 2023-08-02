@@ -179,6 +179,8 @@ data/d3d
 
 # Locally trained model pickles
 models
+!models/*.yaml
+
 
 # WandB output files
 wandb

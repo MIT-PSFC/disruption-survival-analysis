@@ -1,0 +1,48 @@
+wandb_version: 1
+
+model_type: cph
+device: cmod
+dataset_path: random_flattop_256_shots_60%_disruptive
+metric:
+  goal: minimize
+  name: timeslice_ibs
+
+l2:
+  desc: null
+  value: 0.0009463651933527752
+numval:
+  desc: null
+  value: 4
+valmax:
+  desc: null
+  value: 0.9907279194005936
+valmin:
+  desc: null
+  value: 0.0010114259238160784
+_wandb:
+  desc: null
+  value:
+    python_version: 3.8.10
+    cli_version: 0.15.7
+    framework: torch
+    is_jupyter_run: false
+    is_kaggle_kernel: false
+    start_time: 1690520438.482376
+    t:
+      1:
+      - 1
+      - 5
+      - 53
+      - 55
+      2:
+      - 1
+      - 5
+      - 53
+      - 55
+      3:
+      - 23
+      - 37
+      4: 3.8.10
+      5: 0.15.7
+      8:
+      - 5
