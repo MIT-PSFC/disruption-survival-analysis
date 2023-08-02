@@ -1,0 +1,65 @@
+# Training configuration for cph
+command:
+  - ${env}
+  - python
+  - ${program}
+  - ${args}
+# (required) Training script to run
+#program: "/c/users/zkeith/documents/Risk-Aware Frameworks/disruption-survival-analysis/wandb_job.py"
+program: wandb_job.py
+# (required) specify the search strategy (grid, random, or bayes)
+method: bayes
+# Name of the sweep, displayed in UI
+name: test-dsm-sweep
+# Text description of sweep
+description: "Further test to see impacts of hyperparameters on DSM model"
+# Specify metric to optimize (used by certain search strategies and stopping criteria)
+metric:
+  goal: minimize
+  name: timeslice_ibs
+# (required) Parameter bounds to search. Model-dependent
+parameters:
+  valmin:
+    min: 0.0
+    max: 0.15
+  valmax: 
+    min: 0.95
+    max: 1.0
+  numval:
+    distribution: constant
+    value: 10
+  layers:
+    distribution: categorical
+    values: 
+      - "100"
+      - "100_100"
+      - "200"
+      - "200_200"
+      - "300"
+      - "100_100_100"
+  distribution:
+    distribution: categorical
+    values:
+      - 'Weibull'
+      - 'LogNormal'
+  temperature:
+    min: 0.5
+    max: 1.5
+  batch_size:
+    min: 50
+    max: 200
+  learning_rate:
+    distribution: log_uniform_values
+    min: 0.00001
+    max: 0.01
+  epochs:
+    min: 50
+    max: 200
+  max_features:
+    distribution: categorical
+    values:
+      - 'sqrt'
+      - 'log2'
+  k:
+    min: 2
+    max: 6
