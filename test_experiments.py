@@ -7,12 +7,12 @@ import pandas as pd
 from Experiments import Experiment
 from DisruptionPredictors import DisruptionPredictorSM
 
-from run_models import load_model
+from model_utils import load_model
 from experiment_utils import label_shot_data, calculate_alarm_times, clump_many_to_one_statistics
 from manage_datasets import load_dataset, load_disruptive_shot_list, load_non_disruptive_shot_list
 
 TEST_DEVICE = 'cmod'
-TEST_DATASET_PATH = 'random_256_shots_60%_flattop'
+TEST_DATASET_PATH = 'random_flattop_256_shots_60%_disruptive'
 
 class TestSimpleFunctions(unittest.TestCase):
 
