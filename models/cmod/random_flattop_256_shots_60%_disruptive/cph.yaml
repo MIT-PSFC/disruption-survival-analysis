@@ -10,9 +10,6 @@ metric:
 l2:
   desc: null
   value: 0.0009463651933527752
-numval:
-  desc: null
-  value: 4
 valmax:
   desc: null
   value: 0.9907279194005936

@@ -66,10 +66,6 @@ def make_survival_model(config:dict):
 
     return model
 
-
-def train_survival_model(model, config):
-    """Train a survival model depending on the input config"""
-
 def run_recurrent_model(model_string, x_tr, t_tr, e_tr, x_val, t_val, e_val):
     """
     Train and tune a recurrent model from auton-survival package
