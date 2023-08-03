@@ -272,7 +272,7 @@ def make_training_sets(device, dataset_path, random_seed=0, debug=False):
     val_data = data[data['shot'].isin(val_shots)]
 
     # Get the features
-    features = [col for col in data.columns if col not in ['shot', 'time_until_disrupt']]
+    features = [col for col in data.columns if col not in ['shot', 'time_until_disrupt', 'time']]
 
     # Transform the data based on the training set
     preprocessor = Preprocessor(cat_feat_strat='ignore', num_feat_strat='mean')
@@ -289,9 +289,10 @@ def make_training_sets(device, dataset_path, random_seed=0, debug=False):
     val_data.to_csv('data/{}/{}/val.csv'.format(device, dataset_path), index=False)
 
     # Print the number of shots in each set
-    print('Training shots: {}'.format(len(train_shots)))
-    print('Test shots: {}'.format(len(test_shots)))
-    print('Validation shots: {}'.format(len(val_shots)))
+    if debug:
+        print('Training shots: {}'.format(len(train_shots)))
+        print('Test shots: {}'.format(len(test_shots)))
+        print('Validation shots: {}'.format(len(val_shots)))
 
 def make_stacked_sets(device, dataset_path, dataset_category, stack_size):
     """Given some dataset, stack the features so each timeslice includes itself and the stack_size previous timeslices

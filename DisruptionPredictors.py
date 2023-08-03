@@ -1,17 +1,15 @@
 import numpy as np
 
-from auton_survival.preprocessing import Preprocessor
 from auton_survival.estimators import SurvivalModel
 from sklearn.ensemble import RandomForestClassifier
 
 class DisruptionPredictor:
     """Analog to how a machine learning model would be seen by the plasma control system
     Data goes in, disruption time comes out
-    This class does NOT store actual data, it only stores the model and the transformer
-    As such, 
+    This class does NOT store actual data, it only stores the model and features
     """
 
-    def __init__(self, name, model, features, transformer:Preprocessor):
+    def __init__(self, name, model, features):
         """
         Parameters
         ----------
@@ -21,15 +19,11 @@ class DisruptionPredictor:
             The model to use for disruption prediction
         features : list of str
             The features used to train the model (should match names in dataset)
-        transformer : Preprocessor
-            The transformer to use to transform the data before feeding it to the model
-            Should match the transformer used to train the model
         """
 
         self.name = name
         self.model = model
         self.features = features
-        self.transformer = transformer
 
     # Methods for calculating the risk at each time slice for a given shot
     # using different models
@@ -43,7 +37,7 @@ class DisruptionPredictor:
         ----------
         data : pandas.DataFrame
             The data to calculate the risk for. 
-            Should already be sorted by time and transformed by the predictor's transformer
+            Should already be sorted by time and transformed
         horizon : float
             How far into the future the predictor is looking
 
@@ -58,8 +52,8 @@ class DisruptionPredictor:
 class DisruptionPredictorSM(DisruptionPredictor):
     """Disruption Predictors using SurvivalModel from Auton-Survival package"""
 
-    def __init__(self, name, model:SurvivalModel, features, transformer:Preprocessor):
-        super().__init__(name, model, features, transformer)
+    def __init__(self, name, model:SurvivalModel, features):
+        super().__init__(name, model, features)
 
     def calculate_risk_at_time(self, data, horizon):
 
@@ -79,8 +73,8 @@ class DisruptionPredictorSM(DisruptionPredictor):
 class DisruptionPredictorRF(DisruptionPredictor):
     """Disruption Predictors using RandomForestClassifier from sklearn"""
 
-    def __init__(self, name, model:RandomForestClassifier, features, transformer:Preprocessor):
-        super().__init__(name, model, features, transformer)
+    def __init__(self, name, model:RandomForestClassifier, features):
+        super().__init__(name, model, features)
 
     def calculate_risk_at_time(self, data, horizon=None):
 
@@ -94,8 +88,8 @@ class DisruptionPredictorRF(DisruptionPredictor):
 class DisruptionPredictorKM(DisruptionPredictor):
     """Kaplan-Meier Disruption predictor like Tinguely et al. 2019"""
 
-    def __init__(self, name, model:RandomForestClassifier, features, transformer: Preprocessor):
-        super().__init__(name, model, features, transformer)
+    def __init__(self, name, model:RandomForestClassifier, features):
+        super().__init__(name, model, features)
 
     def linear_slope(self, x, y):
         # Calculate the slope of a linear fit to the data
@@ -110,6 +104,7 @@ class DisruptionPredictorKM(DisruptionPredictor):
         
         # Time in seconds to do linear fit over
         # In paper, used 0.05, 0.1, 0.2
+        # TODO: this should be a hyperparameter
         t_fit = 0.1 
 
         risk_at_time = data.copy()
