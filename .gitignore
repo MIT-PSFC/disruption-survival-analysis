@@ -181,6 +181,8 @@ data/d3d
 models
 !models/*.yaml
 
-
 # WandB output files
 wandb
+
+# SLURM output files
+*.out
