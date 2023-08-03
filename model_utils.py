@@ -84,10 +84,11 @@ def run_recurrent_model(model_string, x_tr, t_tr, e_tr, x_val, t_val, e_val):
     #model.fit(x_tr, y_tr['time'], y_tr['event'], learning_rate=param['learning_rate'])
     pass
 
-def run_rf_model(x_tr, x_val, y_tr, y_val):
-    """
+"""
+def make_rf_model(config:dict):
+    
     Train and tune a random forest model
-    """
+    
 
     param_grid = {'n_estimators' : [100, 300],
               'max_depth' : [3, 5],
@@ -126,6 +127,7 @@ def run_rf_model(x_tr, x_val, y_tr, y_val):
     return model
 
 # Methods for saving and loading models
+"""
 
 def save_model(model, model_name, device, dataset_path, features):
     """Save model and features to file"""

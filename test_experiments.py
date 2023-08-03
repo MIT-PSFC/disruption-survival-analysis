@@ -184,8 +184,8 @@ class TestExperimentUtils(unittest.TestCase):
     def test_clump_many_to_one_statistics_TAR_vs_FAR(self):
 
         # Load simple CPH model
-        self.model, self.transformer, self.numeric_feats = load_model('cph', TEST_DEVICE, TEST_DATASET_PATH)
-        self.predictor = DisruptionPredictorSM("Cox Proportional Hazards", self.model, self.numeric_feats, self.transformer)
+        self.model, self.numeric_feats = load_model('cph', TEST_DEVICE, TEST_DATASET_PATH)
+        self.predictor = DisruptionPredictorSM("Cox Proportional Hazards", self.model, self.numeric_feats)
         self.experiment = Experiment(TEST_DEVICE, TEST_DATASET_PATH, self.predictor, name='CPH')
 
         try:
