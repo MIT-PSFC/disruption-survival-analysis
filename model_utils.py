@@ -40,21 +40,34 @@ def make_survival_model(config:dict):
         l2 = config['l2']
         model = SurvivalModel(model_type, l2=l2)
     elif model_type == 'dcph':
-        layers = config['layers']
+        # Make layers a list of ints
+        layer_width = config['layer_width']
+        layer_depth = config['layer_depth']
+        layers = [layer_width] * layer_depth
+        
         learning_rate = config['learning_rate']
         batch_size = config['batch_size']
         epochs = config['epochs']
         model = SurvivalModel(model_type, layers=layers, learning_rate=learning_rate, batch_size=batch_size, epochs=epochs)
     elif model_type == 'dcm':
         k = config['k']
-        layers = config['layers']
+
+        # Make layers a list of ints
+        layer_width = config['layer_width']
+        layer_depth = config['layer_depth']
+        layers = [layer_width] * layer_depth
+
         batch_size = config['batch_size']
         lr = config['learning_rate']
         epochs = config['epochs']
         smoothing_factor = config['smoothing_factor']
         model = SurvivalModel(model_type, k=k, layers=layers, batch_size=batch_size, lr=lr, epochs=epochs, smoothing_factor=smoothing_factor)
     elif model_type == 'dsm':
-        layers = config['layers']
+        # Make layers a list of ints
+        layer_width = config['layer_width']
+        layer_depth = config['layer_depth']
+        layers = [layer_width] * layer_depth
+
         distribution = config['distribution']
         temperature = config['temperature']
         batch_size = config['batch_size']
