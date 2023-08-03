@@ -8,6 +8,7 @@ SURVIVAL_MODELS = ['cph', 'dcph', 'dcm', 'dsm', 'rsf']
 RECURRENT_MODELS = ['rdsm', 'rdcm']
 FOREST_MODLES = ['rf']
 
+os.environ["WANDB__SERVICE_WAIT"] = "800"
 run = wandb.init()
 
 config = wandb.config
