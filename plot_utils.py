@@ -85,7 +85,7 @@ def plot_time_to_disrupt(device, dataset, shot_number, risk_time, model, transfo
     ax.legend()
 
 
-def get_transformed_shot(device, dataset, shot_number, transformer, features=DEFAULT_FEATURES):
+def get_shot_features(device, dataset, shot_number, features=DEFAULT_FEATURES):
 
     data = load_dataset(device, dataset)
 

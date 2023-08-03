@@ -9,6 +9,15 @@ TEST_DATASET_PATH = 'random_flattop_256_shots_60%_disruptive'
 
 class TestLoadDataset(unittest.TestCase):
 
+    def test_make_training_sets(self):
+        """Ensure that the training sets are created without error
+        """
+
+        try:
+            make_training_sets(TEST_DEVICE, TEST_DATASET_PATH)
+        except:
+            self.fail("make_training_sets() raised an exception unexpectedly!")
+
     def test_no_negative_time(self):
         """Ensure there is no negative time in the experiment datasets
         """

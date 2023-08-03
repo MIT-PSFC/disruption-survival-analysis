@@ -24,8 +24,8 @@ class TestSimpleFunctions(unittest.TestCase):
         self.horizon = 0.2
 
         # Load simple CPH model
-        self.model, self.transformer, self.numeric_feats = load_model('cph', TEST_DEVICE, TEST_DATASET_PATH)
-        self.predictor = DisruptionPredictorSM("Cox Proportional Hazards", self.model, self.numeric_feats, self.transformer)
+        self.model, self.numeric_feats = load_model('cph', TEST_DEVICE, TEST_DATASET_PATH)
+        self.predictor = DisruptionPredictorSM("Cox Proportional Hazards", self.model, self.numeric_feats)
         self.experiment = Experiment(TEST_DEVICE, TEST_DATASET_PATH, self.predictor, name='CPH')
 
     def test_get_num_disrupt(self):
@@ -203,8 +203,8 @@ class TestExperimentsAlarms(unittest.TestCase):
         self.horizon = 0.2
 
         # Load simple CPH model
-        self.model, self.transformer, self.numeric_feats = load_model('cph', TEST_DEVICE, TEST_DATASET_PATH)
-        self.predictor = DisruptionPredictorSM("Cox Proportional Hazards", self.model, self.numeric_feats, self.transformer)
+        self.model, self.numeric_feats = load_model('cph', TEST_DEVICE, TEST_DATASET_PATH)
+        self.predictor = DisruptionPredictorSM("Cox Proportional Hazards", self.model, self.numeric_feats)
         self.experiment = Experiment(TEST_DEVICE, TEST_DATASET_PATH, self.predictor, name='CPH')
 
     def test_alarms_times_shapes(self):

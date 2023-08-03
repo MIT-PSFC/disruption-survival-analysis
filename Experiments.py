@@ -22,15 +22,10 @@ class Experiment:
 
         # Load test data
         self.all_data = load_dataset(device, dataset_path, 'test')
-        
-        # Transform required features using the predictor's transformer, discard the rest
-        feature_data = predictor.transformer.transform(self.all_data[predictor.features])
 
-        # Remove the features that were not used, keep other important columns
-        self.all_data = self.all_data[['shot', 'time', 'time_until_disrupt']]
-
-        # Replace the old data with the transformed data
-        self.all_data[predictor.features] = feature_data
+        # Drop all columns that are not features or time_until_disrupt, shot, or time
+        dropped_cols = [col for col in self.all_data.columns if col not in self.predictor.features + ['time_until_disrupt', 'shot', 'time']]
+        self.all_data = self.all_data.drop(columns=dropped_cols)
 
         # Set the name of the experiment
         if name is None:
