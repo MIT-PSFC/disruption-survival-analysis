@@ -10,9 +10,9 @@ program: wandb_job.py
 # (required wb) specify the search strategy (grid, random, or bayes)
 method: bayes
 # Name of the sweep, displayed in UI
-name: cph-sweep-test-2
+name: cph-timeslice-ibs-sweep
 # Text description of sweep
-description: "Testing sweep after large refactor to bring post-sweep analysis into line with actual sweep"
+description: "Random selection of 256 flattop shots where 60% are disruptive, including potential UFO disruptions."
 
 # (required zk) Specify metric to optimize (used by certain search strategies and stopping criteria)
 metric:
