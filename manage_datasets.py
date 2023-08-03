@@ -210,8 +210,8 @@ def load_disruptive_shot_list(device, dataset_path, dataset_category):
     # Load the raw dataset
     data = load_dataset(device, dataset_path, dataset_category)
 
-    # Find the disruptive shots in the dataset
-    disruptive_shots = data[data['time_until_disrupt'] >= 0]['shot'].unique()
+    # Find the disruptive shots in the dataset by checking where time_until_disrupt is not null
+    disruptive_shots = data[data['time_until_disrupt'].notnull()]['shot'].unique()
 
     # Return the list of disruptive shots
     return disruptive_shots

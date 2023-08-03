@@ -7,7 +7,7 @@ import unittest
 from manage_datasets import *
 
 TEST_DEVICE = 'cmod'
-TEST_DATASET_PATH = 'random_flattop_256_shots_60%_disruptive'
+TEST_DATASET_PATH = 'no_ufo_flattop_7736_shots_6%_disruptive'
 
 class TestLoadDataset(unittest.TestCase):
 
@@ -171,3 +171,23 @@ class TestCreatedTrainingSets(unittest.TestCase):
             # Ensure that the dropped features are not in the data
             for feature in DROPPED_FEATURES:
                 self.assertTrue(feature not in data.columns)
+
+    def test_no_category_imbalance(self):
+        """Ensure that there is a roughly even number of disruptive shots in the training sets,
+        proportional to their total size"""
+        
+        ratio = {}
+        ratio_epsilon = 0.02
+
+        for category in ['train', 'test', 'val']:
+            num_disrupt = len(load_disruptive_shot_list(TEST_DEVICE, TEST_DATASET_PATH, category))
+            total_size = len(load_shot_list(TEST_DEVICE, TEST_DATASET_PATH, category))
+
+            ratio[category] = num_disrupt / total_size
+        
+        # Ensure that the ratios are roughly equal
+        self.assertTrue(abs(ratio['train'] - ratio['test']) < ratio_epsilon)
+        self.assertTrue(abs(ratio['train'] - ratio['val']) < ratio_epsilon)
+        self.assertTrue(abs(ratio['test'] - ratio['val']) < ratio_epsilon)
+
+        
