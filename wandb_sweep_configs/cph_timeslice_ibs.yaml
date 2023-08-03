@@ -12,7 +12,7 @@ method: bayes
 # Name of the sweep, displayed in UI
 name: cph-timeslice-ibs-sweep
 # Text description of sweep
-description: "Random selection of 256 flattop shots where 60% are disruptive, including potential UFO disruptions."
+description: "All available data, minus UFO disruptions and filtered to flattop lasting over 400ms. Broken."
 
 # (required zk) Specify metric to optimize (used by certain search strategies and stopping criteria)
 metric:
@@ -30,7 +30,7 @@ parameters:
     value: cmod
   dataset_path: 
     distribution: constant
-    value: random_flattop_256_shots_60%_disruptive
+    value: no_ufo_flattop_7736_shots_6%_disruptive
   # (required zk) Which metric is being used at the top level (inaccessible otherwise)
   metric:
     distribution: constant
