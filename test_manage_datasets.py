@@ -1,5 +1,7 @@
 """Test functions to ensure that the data management works as expected
 """
+import os
+import time
 import unittest
 
 from manage_datasets import *
@@ -8,15 +10,6 @@ TEST_DEVICE = 'cmod'
 TEST_DATASET_PATH = 'random_flattop_256_shots_60%_disruptive'
 
 class TestLoadDataset(unittest.TestCase):
-
-    def test_make_training_sets(self):
-        """Ensure that the training sets are created without error
-        """
-
-        try:
-            make_training_sets(TEST_DEVICE, TEST_DATASET_PATH)
-        except:
-            self.fail("make_training_sets() raised an exception unexpectedly!")
 
     def test_no_negative_time(self):
         """Ensure there is no negative time in the experiment datasets
@@ -136,7 +129,20 @@ class TestShotLists(unittest.TestCase):
 
 class TestCreatedTrainingSets(unittest.TestCase):
 
-    # Assumes that the training sets have already been created
+    def test_make_training_sets(self):
+        """Ensure that the training sets are created without error
+        """
+
+        try:
+            make_training_sets(TEST_DEVICE, TEST_DATASET_PATH)
+        except:
+            self.fail("make_training_sets() raised an exception unexpectedly!")
+
+        # Ensure that the training sets that exist are actually new
+        for category in ['train', 'test', 'val']:
+            path = f'data/{TEST_DEVICE}/{TEST_DATASET_PATH}/{category}.csv'
+            self.assertTrue(os.path.exists(path))
+
 
     def test_no_null_values(self):
         """Ensure there are no null values in the training sets"""
