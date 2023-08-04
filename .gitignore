@@ -178,8 +178,7 @@ data/d3d
 *_val.csv
 
 # Locally trained model pickles
-models
-!models/*.yaml
+*.pkl
 
 # WandB output files
 wandb
