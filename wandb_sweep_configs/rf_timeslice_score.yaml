@@ -1,0 +1,64 @@
+# (required wb) is required by wandb, (required zk) is required by training scripts
+command:
+  - ${env}
+  - python
+  - ${program}
+  - ${args}
+# (required wb) Training script to run
+program: wandb_job.py
+# (required wb) specify the search strategy (grid, random, or bayes)
+method: bayes
+# Name of the sweep, displayed in UI
+name: rf-timeslice-score-sweep
+# Text description of sweep
+description: "All available data, minus UFO disruptions and filtered to flattop lasting over 400ms. Broken."
+
+# (required zk) Specify metric to optimize (used by certain search strategies and stopping criteria)
+metric:
+  goal: maximize
+  name: timeslice_score
+# (required wb) Parameter bounds to search. Model-dependent
+parameters:
+  # (required zk) which type of model to run
+  model_type:
+    distribution: constant
+    value: rf
+  # (required zk) Device and datset pathing
+  device:
+    distribution: constant
+    value: cmod
+  dataset_path: 
+    distribution: constant
+    value: no_ufo_flattop_7736_shots_6%_disruptive
+  # (required zk) Which metric is being used at the top level (inaccessible otherwise)
+  metric:
+    distribution: constant
+    value: timeslice_score
+  # Time in seconds before a disruption where timeslices are labeled as disruptive
+  disruptive_window:
+    min: 0.01
+    max: 0.4
+  # Number of trees in the forest. int, default 100
+  n_estimators:
+    min: 8
+    max: 400
+  # Function to measure quality of split
+  criterion:
+    distribution: categorical
+    values:
+      - 'gini'
+      - 'entropy'
+      - 'log_loss'
+  # Controls depth, minimum number of samples required to split an internal node
+  min_samples_split:
+    min: 1
+    max: 20
+  min_samples_leaf:
+    min: 1
+    max: 4
+  max_features:
+    distribution: categorical
+    values:
+      - 'sqrt'
+      - 'log2'
+

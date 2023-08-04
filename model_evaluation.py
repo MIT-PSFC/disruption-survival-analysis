@@ -17,8 +17,12 @@ def evaluate_model(model, x_val, y_val, y_train, config):
     metric_type = config['metric']
 
     if metric_type == 'timeslice_ibs':
+        # Only applicable to survival models
         val_times = get_val_times(y_train, config['valmin'], config['valmax'])
         metric_val = timeslice_eval(model, x_val, y_val, y_train, val_times)
+    elif metric_type == 'timeslice_score':
+        # Only applicable to binary classifiers
+        metric_val = model.score(x_val, y_val)
     elif metric_type == 'missed_alarm':
         #metric_val = missed_alarm_eval(model, device, dataset_path)
         metric_val = None
