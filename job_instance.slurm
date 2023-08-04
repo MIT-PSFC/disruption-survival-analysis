@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=dcm-tibs
+#SBATCH --job-name=rf-tibs
 #SBATCH -N 1 
 #SBATCH -n 1
 #SBATCH --cpus-per-task=1
