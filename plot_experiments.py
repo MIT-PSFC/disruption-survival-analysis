@@ -4,7 +4,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from Experiments import Experiment
-from experiment_utils import clump_many_to_one_statistics
+
+from manage_datasets import load_features_outcomes
+from auton_survival.metrics import survival_regression_metric
 
 DEFAULT_HORIZONS = np.linspace(0.01, 0.4, 5)
 # TODO fix horizons
@@ -15,6 +17,46 @@ MAX_WARNING_TIME_MS = 1000
 
 MINIMUM_WARNING_TIME = 0.02 # From Ryan, we need at least 20ms to react
 GOOD_WARNING_TIME = 0.1 # Also from Ryan, would be very nice to have 100ms to react
+
+
+def plot_brier_score_vs_horizon(experiment_list:list[Experiment], horizons=DEFAULT_HORIZONS):
+
+    horizons_ms = horizons*1000
+
+    plt.figure()
+    
+    for experiment in experiment_list:
+        device = experiment.device
+        dataset_path = experiment.dataset_path
+        
+        _, y_tr = load_features_outcomes(device, dataset_path, 'train', experiment.predictor.features)
+        x_test, y_test = load_features_outcomes(device, dataset_path, 'test', experiment.predictor.features)
+
+        survival_predictions = experiment.predictor.model.predict_survival(x_test, horizons)
+
+        if experiment.predictor.model.model in ['cph']:
+            brier_score = survival_regression_metric('brs', outcomes=y_test, predictions=survival_predictions, 
+                                                    times=horizons, outcomes_train=y_tr)
+        elif experiment.predictor.model.model in ['dsm']:
+            brier_score = survival_regression_metric('ibs', outcomes=y_test, predictions=survival_predictions, 
+                                                    times=horizons, outcomes_train=y_tr)
+        else:
+            brier_score = None
+        plt.plot(horizons_ms, brier_score, label=experiment.name)
+        #plt.fill_between(horizons, brier_score - brier_score_std, brier_score + brier_score_std, alpha=0.2)
+
+    plt.xlim([horizons_ms[0], horizons_ms[-1]])
+    plt.ylim([0, 1])
+
+    plt.xticks(horizons_ms)
+
+    plt.xlabel('Horizon [ms]')
+    plt.ylabel('Brier Score')
+
+    plt.title('Brier Score vs. Horizon')
+
+    plt.legend()
+    plt.show()
 
 # Plots for model performance tests (in terms of ROC AUC, TAR, FAR, Warning Time, etc.)
 
