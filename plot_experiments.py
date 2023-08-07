@@ -13,6 +13,9 @@ DEFAULT_HORIZONS[2] = 0.1
 DEFAULT_HORIZONS[3] = 0.2
 MAX_WARNING_TIME_MS = 1000
 
+MINIMUM_WARNING_TIME = 0.02 # From Ryan, we need at least 20ms to react
+GOOD_WARNING_TIME = 0.1 # Also from Ryan, would be very nice to have 100ms to react
+
 # Plots for model performance tests (in terms of ROC AUC, TAR, FAR, Warning Time, etc.)
 
 def plot_roc_auc_vs_horizon_macro(experiment_list:list[Experiment], horizons=DEFAULT_HORIZONS):
@@ -43,24 +46,36 @@ def plot_roc_auc_vs_horizon_macro(experiment_list:list[Experiment], horizons=DEF
     plt.legend()
     plt.show()
 
-def plot_TAR_vs_FAR(experiment_list:list[Experiment], horizon=DEFAULT_HORIZONS[0]):
+def plot_TAR_vs_FAR(experiment_list:list[Experiment], horizon=DEFAULT_HORIZONS[0], required_warning_time=MINIMUM_WARNING_TIME):
     """ Averaged over all shots
     
     """
 
     plt.figure()
 
+    # This gets funky because I want to plot the TAR as 0, 0.9, 0.99, 0.999, 1.0
+
+    plt.yscale('log')
+
     for experiment in experiment_list:
-        false_alarm_rates, true_alarm_rates = experiment.true_alarm_rate_vs_false_alarm_rate(horizon)
-        plt.plot(false_alarm_rates, true_alarm_rates, label=experiment.name)
+        false_alarm_rates, true_alarm_rates = experiment.true_alarm_rate_vs_false_alarm_rate(horizon, required_warning_time)
+        plt.plot(false_alarm_rates, 1-true_alarm_rates, label=experiment.name)
+
+    
+    plt.gca().invert_yaxis()
+    plt.gca().set_yticklabels(1-plt.gca().get_yticks())
+
+
+    # Set x axis to be logarithmic scale (to better show the low false alarm rates)
+    plt.xscale('log')
 
     plt.xlim([0, 1])
-    plt.ylim([0, 1])
+    plt.ylim([-5, 0])
 
     plt.xlabel('False Alarm Rate')
     plt.ylabel('True Alarm Rate')
 
-    plt.title(f"True Alarm Rate vs. False Alarm Rate at {horizon*1000} ms Horizon")
+    plt.title(f"{required_warning_time * 1000} ms True Alarm Rate vs. False Alarm Rate at {horizon*1000} ms Horizon")
 
     plt.legend()
     plt.show()

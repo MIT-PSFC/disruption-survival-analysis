@@ -189,7 +189,7 @@ class TestExperimentUtils(unittest.TestCase):
         self.experiment = Experiment(TEST_DEVICE, TEST_DATASET_PATH, self.predictor, name='CPH')
 
         try:
-            false_alarm_rates, true_alarm_rates = self.experiment.true_alarm_rate_vs_false_alarm_rate(0.05)
+            false_alarm_rates, true_alarm_rates = self.experiment.true_alarm_rate_vs_false_alarm_rate(0.05, 0.02)
         except:
             self.fail("true_alarm_rate_vs_false_alarm_rate raised an exception unexpectedly!")
 
@@ -200,26 +200,36 @@ class TestExperimentsAlarms(unittest.TestCase):
         """
         
         # Specify testing parameters
-        self.horizon = 0.2
+        self.horizon = 0.05
+        self.required_warning_time = 0.1
 
         # Load simple CPH model
         self.model, self.numeric_feats = load_model('cph', TEST_DEVICE, TEST_DATASET_PATH)
         self.predictor = DisruptionPredictorSM("Cox Proportional Hazards", self.model, self.numeric_feats)
         self.experiment = Experiment(TEST_DEVICE, TEST_DATASET_PATH, self.predictor, name='CPH')
 
-    def test_alarms_times_shapes(self):
+    def test_alarm_times_shapes(self):
         """Ensure that the alarms and times arrays have the correct shapes"""
 
-        # Get the alarms and  times
-        true_alarms, false_alarms, alarm_times = self.experiment.get_alarms_times(self.horizon)
+        # Get the alarm times
+        alarm_times = self.experiment.get_alarm_times(self.horizon)
+
+        # Check that the arrays have the correct shapes
+        # Should be the same length as the number of shots
+        # and the second dimension is the number of thresholds
+        self.assertEqual(alarm_times.shape, (self.experiment.get_num_shots(), len(self.experiment.thresholds)))
+        
+    def test_true_false_alarms_shapes(self):
+
+        # Get the true and false alarms
+        true_alarms, false_alarms = self.experiment.get_true_false_alarms(self.horizon, self.required_warning_time)
 
         # Check that the arrays have the correct shapes
         # Should be the same length as the number of shots
         # and the second dimension is the number of thresholds
         self.assertEqual(true_alarms.shape, (self.experiment.get_num_shots(), len(self.experiment.thresholds)))
         self.assertEqual(false_alarms.shape, (self.experiment.get_num_shots(), len(self.experiment.thresholds)))
-        self.assertEqual(alarm_times.shape, (self.experiment.get_num_shots(), len(self.experiment.thresholds)))
-        
+
     def test_warning_times_list_length(self):
         """Ensure that the warning times array has the correct length"""
 
@@ -259,7 +269,7 @@ class TestExperimentsAlarms(unittest.TestCase):
         """Ensure that the alarm times are always increasing"""
         
         # Get the alarm times for that shot
-        _, _, alarm_times = self.experiment.get_alarms_times(self.horizon)
+        alarm_times = self.experiment.get_alarm_times(self.horizon)
 
         # Check that the alarm times are always increasing until they are Nan, then all Nan
         for shot_index in range(len(alarm_times)):
