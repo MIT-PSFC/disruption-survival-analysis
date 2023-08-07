@@ -39,12 +39,13 @@ class Experiment:
         # Data shared between experiments
 
         # Dictionaries for true alarms, false alarms, and alarm times for various horizons
-        # Key is the horizon in seconds
+        # Alarm time key is the horizon in seconds
+        # True alarm and False alarm keys are first the horizon in seconds, then the required warning time in seconds
         # Value is an array of values of shape (num_shots, num_thresholds)
         # All values in these three arrays line up to correspond to the same shots and thresholds
+        self.alarm_times = {}
         self.true_alarms = {} 
         self.false_alarms = {}
-        self.alarm_times = {}
 
         # 2D Dictionary of pandas arrays containing risks at each time for each shot
         # First Key is the horizon in seconds
@@ -115,20 +116,18 @@ class Experiment:
 
     def get_risk_at_time(self, shot, horizon):
         """Returns a pandas dataframe containing the risk at each time for a given shot and horizon"""
-        try:
-            return self.risk_at_times[horizon][shot]
-        except KeyError:
-            if horizon not in self.risk_at_times:
-                self.risk_at_times[horizon] = {}   
+        
+        if horizon not in self.risk_at_times:
+            self.risk_at_times[horizon] = {}
+        if shot not in self.risk_at_times[horizon]:
             self.risk_at_times[horizon][shot] = self.calc_risk_at_time(shot, horizon)
-            return self.risk_at_times[horizon][shot]
+        
+        return self.risk_at_times[horizon][shot]
 
     def calc_risk_at_time(self, shot, horizon):
         """ Calculates the risk score for a shot at a given horizon"""
         shot_data = self.all_data[self.all_data['shot'] == shot]
         return self.predictor.calculate_risk_at_time(shot_data, horizon)
-    
-    
     
     # ROC AUC methods
 
@@ -199,54 +198,92 @@ class Experiment:
     
     # True Alarms, False Alarms methods
 
-    def get_alarms_times(self, horizon):
-        """Attempt to get the true alarms, false alarms, and warning times arrays for a given horizon.
+    def get_alarm_times(self, horizon):
+        """Attempt to get the alarm times arrays for a given horizon.
         If they have already been calculated, return them. Otherwise, calculate them and return them.
         """
-        try:
-            return self.true_alarms[horizon], self.false_alarms[horizon], self.alarm_times[horizon]
-        except KeyError:
-            self.true_alarms[horizon], self.false_alarms[horizon], self.alarm_times[horizon] = self.calc_alarms_times(horizon)
-            return self.true_alarms[horizon], self.false_alarms[horizon], self.alarm_times[horizon]
 
-    def calc_alarms_times(self, horizon):
+        if horizon not in self.alarm_times:
+            self.alarm_times[horizon] = self.calc_alarm_times(horizon)
+
+        return self.alarm_times[horizon]
+        
+    def get_true_false_alarms(self, horizon, required_warning_time=0.02):
+        """Attempt to get the true alarms and false alarms arrays for a given horizon and required warning time.
+        If they have already been calculated, return them. Otherwise, calculate them and return them."""
+
+        if horizon not in self.true_alarms or horizon not in self.false_alarms:
+            self.true_alarms[horizon] = {}
+            self.false_alarms[horizon] = {}
+        if required_warning_time not in self.true_alarms[horizon]:
+            self.true_alarms[horizon][required_warning_time], self.false_alarms[horizon][required_warning_time] = self.calc_true_false_alarms(horizon, required_warning_time)
+
+        return self.true_alarms[horizon][required_warning_time], self.false_alarms[horizon][required_warning_time]
+
+    def calc_alarm_times(self, horizon):
         """Calculate the true alarms, false alarms, and warning times arrays for a given horizon.
+        Where the arrays are of shape (num_shots, num_thresholds)"""
+
+        # Get list of all shots
+        shot_list = self.get_shot_list()
+        
+        # Create arrays to store the results
+        # Array is of shape (num_shots, num_thresholds)
+        alarm_times = np.zeros((len(shot_list), len(self.thresholds)))
+
+        # Iterate through shots
+        for i, shot in enumerate(shot_list):
+
+            # Get the alarm times given by the model
+            risk_at_time = self.get_risk_at_time(shot, horizon)
+            alarm_times_calced = calculate_alarm_times(risk_at_time, self.thresholds)
+
+            # Save the alarm times
+            alarm_times[i,:] = alarm_times_calced
+
+        return alarm_times
+    
+    def calc_true_false_alarms(self, horizon, required_warning_time):
+        """Calculate the true alarms and false alarm arrays for a given horizon and required warning time,
+        where warning time is the time before the disruption that the alarm must be raised.
         Where the arrays are of shape (num_shots, num_thresholds)"""
 
         # Get list of all shots
         shot_list = self.get_shot_list()
         # Get list of disruptive shots
         disruptive_shots = self.get_disruptive_shot_list()
-        
         # Create arrays to store the results
         # Array is of shape (num_shots, num_thresholds)
         true_alarms = np.zeros((len(shot_list), len(self.thresholds)))
         false_alarms = np.zeros((len(shot_list), len(self.thresholds)))
-        alarm_times = np.zeros((len(shot_list), len(self.thresholds)))
+
+        # Get the alarm times given by the model
+        alarm_times = self.get_alarm_times(horizon)
 
         # Iterate through shots
         for i, shot in enumerate(shot_list):
             disrupt = shot in disruptive_shots
 
-            # Get the alarm times given by the model
-            risk_at_time = self.get_risk_at_time(shot, horizon)
-            alarm_times_calced = calculate_alarm_times(risk_at_time, self.thresholds)
+            # If the shot is disruptive, find the time of disruption
+            # Even if the shot is non-disruptive, we will determine a warning time for the false alarm calculation
+            disruption_time = self.get_shot_duration(shot)
+            # Warning time is disruption time minus alarm time
+            warning_times = disruption_time - alarm_times[i,:]
 
             # Fill in true and false alarms
-            true_alarms[i] = np.array([disrupt and (alarm_time is not None) for alarm_time in alarm_times_calced])
-            false_alarms[i] = np.array([(not disrupt) and (alarm_time is not None) for alarm_time in alarm_times_calced])
+            # True alarm is when shot is disruptive and warning time is greater than required warning time
+            # False alarm is when shot is not disruptive but an alarm time is still given
+            true_alarms[i,:] = (disrupt & (warning_times >= required_warning_time)).astype(int)
+            false_alarms[i,:] = (~disrupt & ~np.isnan(alarm_times[i,:])).astype(int)
+            
+        return true_alarms, false_alarms
 
-            # Save the alarm times
-            alarm_times[i,:] = alarm_times_calced
-
-        return true_alarms, false_alarms, alarm_times
-    
     def true_alarm_rate_vs_threshold(self, horizon):
         """ Get statistics on true alarm rate vs threshold for a given horizon 
             This is inherently a macro statistic, since a single shot can have only one alarm at a given threshold
         """
 
-        true_alarms, _, _ = self.get_alarms_times(horizon)
+        true_alarms, _ = self.get_true_false_alarms(horizon)
 
         true_alarm_rates = np.sum(true_alarms, axis=0) / self.get_num_disruptive_shots()
 
@@ -257,15 +294,15 @@ class Experiment:
             This is inherently a macro statistic, since a single shot can have only one alarm at a given threshold
         """
 
-        _, false_alarms, _ = self.get_alarms_times(horizon)
+        _, false_alarms = self.get_true_false_alarms(horizon)
 
         false_alarm_rates = np.sum(false_alarms, axis=0) / (self.get_num_shots() - self.get_num_disruptive_shots())
 
         return self.thresholds, false_alarm_rates
     
-    def true_alarm_rate_vs_false_alarm_rate(self, horizon):
+    def true_alarm_rate_vs_false_alarm_rate(self, horizon, required_warning_time):
 
-        true_alarms, false_alarms, _ = self.get_alarms_times(horizon)
+        true_alarms, false_alarms = self.get_true_false_alarms(horizon, required_warning_time)
 
         true_alarm_rates = np.sum(true_alarms, axis=0) / self.get_num_disruptive_shots()
         false_alarm_rates = np.sum(false_alarms, axis=0) / (self.get_num_shots() - self.get_num_disruptive_shots())
@@ -276,7 +313,7 @@ class Experiment:
      
     def missed_alarm_rate_vs_false_alarm_rate(self, horizon):
 
-        true_alarms, false_alarms, _ = self.get_alarms_times(horizon)
+        true_alarms, false_alarms = self.get_true_false_alarms(horizon)
 
         missed_alarm_rates = 1 - np.sum(true_alarms, axis=0) / self.get_num_disruptive_shots()
         false_alarm_rates = np.sum(false_alarms, axis=0) / (self.get_num_shots() - self.get_num_disruptive_shots())
@@ -301,7 +338,7 @@ class Experiment:
         disruptive_shots = self.get_disruptive_shot_list()
 
         # Get array of alarm times for this horizon
-        _, _, alarm_times = self.get_alarms_times(horizon)
+        alarm_times = self.get_alarm_times(horizon)
 
         # Create list to store warning times
         warning_times_list = []
