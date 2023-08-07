@@ -1,0 +1,65 @@
+wandb_version: 1
+
+criterion:
+  desc: null
+  value: gini
+dataset_path:
+  desc: null
+  value: no_ufo_flattop_7736_shots_6%_disruptive
+device:
+  desc: null
+  value: cmod
+disruptive_window:
+  desc: null
+  value: 0.016259637789369365
+max_features:
+  desc: null
+  value: log2
+metric:
+  desc: null
+  value: timeslice_score
+min_samples_leaf:
+  desc: null
+  value: 1
+min_samples_split:
+  desc: null
+  value: 13
+model_type:
+  desc: null
+  value: rf
+n_estimators:
+  desc: null
+  value: 254
+valmax:
+  desc: null
+  value: 0.9738642761713036
+valmin:
+  desc: null
+  value: 0.06329184584539764
+_wandb:
+  desc: null
+  value:
+    python_version: 3.10.8
+    cli_version: 0.15.8
+    framework: torch
+    is_jupyter_run: false
+    is_kaggle_kernel: false
+    start_time: 1691165366.602461
+    t:
+      1:
+      - 1
+      - 5
+      - 53
+      - 55
+      2:
+      - 1
+      - 5
+      - 53
+      - 55
+      3:
+      - 23
+      - 37
+      4: 3.10.8
+      5: 0.15.8
+      8:
+      - 5
