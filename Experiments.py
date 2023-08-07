@@ -208,7 +208,7 @@ class Experiment:
 
         return self.alarm_times[horizon]
         
-    def get_true_false_alarms(self, horizon, required_warning_time=0.02):
+    def get_true_false_alarms(self, horizon, required_warning_time):
         """Attempt to get the true alarms and false alarms arrays for a given horizon and required warning time.
         If they have already been calculated, return them. Otherwise, calculate them and return them."""
 
@@ -278,23 +278,23 @@ class Experiment:
             
         return true_alarms, false_alarms
 
-    def true_alarm_rate_vs_threshold(self, horizon):
-        """ Get statistics on true alarm rate vs threshold for a given horizon 
+    def true_alarm_rate_vs_threshold(self, horizon, required_warning_time):
+        """ Get statistics on true alarm rate vs threshold for a given horizon and required warning time
             This is inherently a macro statistic, since a single shot can have only one alarm at a given threshold
         """
 
-        true_alarms, _ = self.get_true_false_alarms(horizon)
+        true_alarms, _ = self.get_true_false_alarms(horizon, required_warning_time)
 
         true_alarm_rates = np.sum(true_alarms, axis=0) / self.get_num_disruptive_shots()
 
         return self.thresholds, true_alarm_rates
     
-    def false_alarm_rate_vs_threshold(self, horizon):
-        """ Get statistics on false alarm rate vs threshold for a given horizon
+    def false_alarm_rate_vs_threshold(self, horizon, required_warning_time):
+        """ Get statistics on false alarm rate vs threshold for a given horizon and required warning time
             This is inherently a macro statistic, since a single shot can have only one alarm at a given threshold
         """
 
-        _, false_alarms = self.get_true_false_alarms(horizon)
+        _, false_alarms = self.get_true_false_alarms(horizon, required_warning_time)
 
         false_alarm_rates = np.sum(false_alarms, axis=0) / (self.get_num_shots() - self.get_num_disruptive_shots())
 
@@ -311,9 +311,9 @@ class Experiment:
 
         return unique_false_alarms, avg_true_alarm_rates#, std_true_alarm_rates
      
-    def missed_alarm_rate_vs_false_alarm_rate(self, horizon):
+    def missed_alarm_rate_vs_false_alarm_rate(self, horizon, required_warning_time):
 
-        true_alarms, false_alarms = self.get_true_false_alarms(horizon)
+        true_alarms, false_alarms = self.get_true_false_alarms(horizon, required_warning_time)
 
         missed_alarm_rates = 1 - np.sum(true_alarms, axis=0) / self.get_num_disruptive_shots()
         false_alarm_rates = np.sum(false_alarms, axis=0) / (self.get_num_shots() - self.get_num_disruptive_shots())
@@ -321,7 +321,6 @@ class Experiment:
         unique_false_alarms, avg_missed_alarm_rates, std_missed_alarm_rates = clump_many_to_one_statistics(false_alarm_rates, missed_alarm_rates)
 
         return unique_false_alarms, avg_missed_alarm_rates
-
 
     # Warning Times Methods
 
@@ -433,3 +432,7 @@ class Experiment:
 
         # TODO: ignore zero precision results?
         return unique_precision[:], avg_warning_times[:], std_warning_times[:]
+
+    # Expected Lifetime Methods
+
+    #def expected_lifetime_difference(self, normalized=True)
