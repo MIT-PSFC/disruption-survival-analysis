@@ -5,14 +5,16 @@ import numpy as np
 
 from sklearn.metrics import roc_auc_score
 from manage_datasets import load_dataset
-from experiment_utils import label_shot_data, calculate_alarm_times, clump_many_to_one_statistics
+from experiment_utils import label_shot_data, calculate_alarm_times, calculate_alarm_times_hysteresis, calculate_alarm_times_expected_lifetime, clump_many_to_one_statistics
 
 from DisruptionPredictors import DisruptionPredictor
 
 class Experiment:
     """ Class that holds onto data shared between multiple experiments """
 
-    def __init__(self, device, dataset_path, predictor:DisruptionPredictor, name=None, thresholds=np.logspace(-3, 0, 500)):
+    def __init__(self, device, dataset_path, dataset_category, predictor:DisruptionPredictor, name=None, alarm_type='simple_threshold'):
+
+        # Replace the 'thresholds' with a tuple of (min, max, num) for hysteresis
 
         # all_data: all data, including shot, time, time_until_disrupt, and features fed to predictor
 
@@ -20,8 +22,8 @@ class Experiment:
         self.dataset_path = dataset_path
         self.predictor = predictor
 
-        # Load test data
-        self.all_data = load_dataset(device, dataset_path, 'test')
+        # Load data to be used in the experiment (should be either 'test' or 'val')
+        self.all_data = load_dataset(device, dataset_path, dataset_category)
 
         # Drop all columns that are not features or time_until_disrupt, shot, or time
         dropped_cols = [col for col in self.all_data.columns if col not in self.predictor.features + ['time_until_disrupt', 'shot', 'time']]
@@ -33,8 +35,23 @@ class Experiment:
         else:
             self.name = name
 
+        self.alarm_type = alarm_type
         # Set the thresholds for usage in tpr/fpr calculations
-        self.thresholds = thresholds
+        if alarm_type == 'simple_threshold':
+            self.thresholds = np.linspace(0, 1, 100)
+        elif alarm_type == 'hysteresis':
+            # Make list of tuples of (min, max, num) for hysteresis
+            # where max goes from 0 to 1 and min goes from 0 to max
+            # and num goes from 1 to 4
+            self.thresholds = []
+            for max in np.linspace(0, 1, 10):
+                for min in np.linspace(0, max, 4):
+                    for num in range(1, 5):
+                        self.thresholds.append((min, max, num))
+        elif alarm_type == 'expected_time_to_disruption':
+            self.thresholds = [0.1, 0.02] # Expected time to disruption thresholds in seconds
+        else:
+            raise ValueError('Invalid alarm_type: ' + alarm_type)
 
         # Data shared between experiments
 
@@ -47,10 +64,16 @@ class Experiment:
         self.true_alarms = {} 
         self.false_alarms = {}
 
-        # 2D Dictionary of pandas arrays containing risks at each time for each shot
+        # 2D Dictionary of pandas arrays 
         # First Key is the horizon in seconds
-        # Second Key is the shot number
-        self.risk_at_times = {}
+        # Second Key is the shot number 
+        self.risk_at_times = {} # Risks at each time for each shot
+
+        # 1D Dictionary of pandas arrays
+        # Key is the shot number
+        self.ettd_at_times = {} # Expected time to disruption at each time for each shot
+        
+    # Simple helper methods
 
     def get_shot_list(self):
         """ Returns a list of all shots in the dataset """
@@ -109,6 +132,8 @@ class Experiment:
             shot_durations.append(self.get_shot_duration(shot))
         return np.array(shot_durations)
 
+    # Get risk at time from predictor
+
     def get_risk(self, shot, horizon):
         """ Returns the risk score for a shot at a given horizon """
         risk_at_time = self.get_risk_at_time(shot, horizon)
@@ -129,6 +154,22 @@ class Experiment:
         shot_data = self.all_data[self.all_data['shot'] == shot]
         return self.predictor.calculate_risk_at_time(shot_data, horizon)
     
+    # Get expected time to disruption at time from predictor
+
+    def get_ettd_at_time(self, shot):
+        """ Returns the expected time to disruption for a shot"""
+
+        if shot not in self.ettd_at_times:
+            self.ettd_at_times[shot] = self.calc_ettd_at_time(shot)
+        
+        return self.ettd_at_times[shot]
+
+    def calc_ettd_at_time(self, shot):
+        """ Calculates the expected time to disruption for a shot """
+
+        # TODO: must be implemented in the predictor. Different method of interpreting this for different predictors
+        return self.predictor.calculate_ettd_at_time(shot)
+
     # ROC AUC methods
 
     def roc_auc_single(self, horizons, shot):
@@ -168,7 +209,6 @@ class Experiment:
         # Average the ROC AUCs over all shots
         return np.mean(roc_auc_array, axis=0), np.std(roc_auc_array, axis=0)
     
-
     def roc_auc_micro_all(self, horizons, disrupt_only=False):
         """ Returns the ROC AUC on a timeslice basis over many horizons"""
 
@@ -221,7 +261,7 @@ class Experiment:
         return self.true_alarms[horizon][required_warning_time], self.false_alarms[horizon][required_warning_time]
 
     def calc_alarm_times(self, horizon):
-        """Calculate the true alarms, false alarms, and warning times arrays for a given horizon.
+        """Calculate the alarm times for a given horizon using the Experiment's alarm type.
         Where the arrays are of shape (num_shots, num_thresholds)"""
 
         # Get list of all shots
@@ -231,18 +271,53 @@ class Experiment:
         # Array is of shape (num_shots, num_thresholds)
         alarm_times = np.zeros((len(shot_list), len(self.thresholds)))
 
-        # Iterate through shots
-        for i, shot in enumerate(shot_list):
 
-            # Get the alarm times given by the model
-            risk_at_time = self.get_risk_at_time(shot, horizon)
-            alarm_times_calced = calculate_alarm_times(risk_at_time, self.thresholds)
+        # Determine which function to use 
+        if self.alarm_type == 'simple_threshold':
+            # Iterate through shots
+            for i, shot in enumerate(shot_list):
 
-            # Save the alarm times
-            alarm_times[i,:] = alarm_times_calced
+                # Get the alarm times given by the model
+                risk_at_time = self.get_risk_at_time(shot, horizon)
+                alarm_times_calced = calculate_alarm_times(risk_at_time, self.thresholds)
+
+                # Save the alarm times
+                alarm_times[i,:] = alarm_times_calced
+        
+        elif self.alarm_type == 'hysteresis':
+
+            # Iterate through shots
+            for i, shot in enumerate(shot_list):
+
+                # Get the alarm times given by the model
+                risk_at_time = self.get_risk_at_time(shot, horizon)
+                alarm_times_calced = calculate_alarm_times_hysteresis(risk_at_time, self.thresholds)
+
+                # Save the alarm times
+                alarm_times[i,:] = alarm_times_calced
+        
+        elif self.alarm_type == 'expected_time_to_disruption':
+
+            # Iterate through shots
+            for i, shot in enumerate(shot_list):
+                
+                # Get the expected time to disruption of the shot
+                expected_lifetime = self.get_ettd_at_time(shot)
+                alarm_times_calced = calculate_alarm_times_expected_lifetime(expected_lifetime, self.thresholds)
+
+                # Save the alarm times
+                alarm_times[i,:] = alarm_times_calced
+
+        elif self.alarm_type == 'expected_time_to_disruption_hysteresis':
+
+            # TBD if we want to do this (probably yes, and it shouldn't be too difficult)
+            pass
+
+        else:
+            raise ValueError(f'Unknown alarm type: {self.alarm_type}')
 
         return alarm_times
-    
+
     def calc_true_false_alarms(self, horizon, required_warning_time):
         """Calculate the true alarms and false alarm arrays for a given horizon and required warning time,
         where warning time is the time before the disruption that the alarm must be raised.
@@ -433,6 +508,7 @@ class Experiment:
         # TODO: ignore zero precision results?
         return unique_precision[:], avg_warning_times[:], std_warning_times[:]
 
-    # Expected Lifetime Methods
 
-    #def expected_lifetime_difference(self, normalized=True)
+class ValidationMetricExperiment:
+
+    
