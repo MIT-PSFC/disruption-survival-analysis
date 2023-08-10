@@ -24,15 +24,14 @@ model = make_model(config)
 
 # Train and evaluate model based on model type
 if config["model_type"] in SURVIVAL_MODELS:
-    # Load training and validation sets
+    # Load training sets
     x_train, y_train = load_features_outcomes(device, dataset_path, 'train', numeric_feats)
-    x_val, y_val = load_features_outcomes(device, dataset_path, 'val', numeric_feats)
     
     # Try to train and evaluate the model with this hyperparameter config
     # If anything goes wrong, return metric val of 'none'
     try:
         model.fit(x_train, y_train)
-        metric_val = evaluate_model(model, x_val, y_val, y_train, config)
+        metric_val = evaluate_model(model, device, dataset_path, y_train, config)
     except:
         metric_val = None
 

@@ -11,21 +11,32 @@ def get_val_times(y_tr, min_quantile, max_quantile):
     """
     return np.quantile(y_tr['time'][y_tr['event']==1], np.linspace(min_quantile, max_quantile, 10)).tolist()
 
-def evaluate_model(model, x_val, y_val, y_train, config):
+def make_validation_experiment():
+    """
+    Create an experiment object to be used for validation
+    """
+    return
+
+def evaluate_model(model, device, dataset_path, y_train, config):
 
     # Get the metric we're evaluating the model's performance on
     metric_type = config['metric']
+    numeric_feats = load_feature_list(device, dataset_path)
 
     if metric_type == 'timeslice_ibs':
         # Only applicable to survival models
+        
+        x_val, y_val = load_features_outcomes(device, dataset_path, 'val', numeric_feats)
         val_times = get_val_times(y_train, config['valmin'], config['valmax'])
         metric_val = timeslice_eval(model, x_val, y_val, y_train, val_times)
     elif metric_type == 'timeslice_score':
         # Only applicable to binary classifiers
+        x_val, y_val = load_features_outcomes(device, dataset_path, 'val', numeric_feats)
         metric_val = model.score(x_val, y_val)
-    elif metric_type == 'missed_alarm':
-        #metric_val = missed_alarm_eval(model, device, dataset_path)
-        metric_val = None
+    elif metric_type == 'au_roc_simple_threshold':
+        experiment = make_validation_experiment(model, device, dataset_path, numeric_feats)
+
+        metric_val = au_roc_simple_threshold(experiment)
     else:
         metric_val = None
 
@@ -49,12 +60,17 @@ def timeslice_eval(model, x_val, y_val, y_train, val_times):
 
     return metric_val
 
-#def missed_alarm_eval():
+def au_roc_simple_threshold(model, ):
+    
+    # Create a predictor based on the model type
+    predictor = 
+
+    # Create an Experiment with the validation data
+
 
 
 #    return
 
 def disruptive_shot_expected_lifetime_eval():
-
 
     return

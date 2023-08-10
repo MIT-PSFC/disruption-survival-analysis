@@ -87,7 +87,7 @@ def calculate_alarm_times(risk_at_time, thresholds):
     # Return the alarm times
     return alarm_times
 
-def calculate_alarm_time_hysterisis(self, shot_data, 
+def calculate_alarm_times_hysteresis(risk_at_time, 
                                             upper_threshold, lower_threshold, 
                                             window, horizons):
     """
@@ -97,6 +97,13 @@ def calculate_alarm_time_hysterisis(self, shot_data,
     is predicted
     """
     raise NotImplementedError("Hysterisis method not yet implemented")
+
+def calculate_alarm_times_expected_lifetime(et_at_time, thresholds):
+    """
+    Calculates the alarm times for a given shot using the expected lifetime.
+    If the expected lifetime output of the model drops below some threshold,
+    a disruption is predicted.
+    """
 
 def clump_many_to_one_statistics(unique_values_raw, clumping_values, epsilon=0.01):
     """
