@@ -9,7 +9,7 @@ class DisruptionPredictor:
     This class does NOT store actual data, it only stores the model and features
     """
 
-    def __init__(self, name, model, features, trained_required_warning_time, trained_disruptive_window):
+    def __init__(self, name, model, trained_required_warning_time, trained_disruptive_window):
         """
         Parameters
         ----------
@@ -27,7 +27,6 @@ class DisruptionPredictor:
 
         self.name = name
         self.model = model
-        self.features = features
 
         self.trained_required_warning_time = trained_required_warning_time
         self.trained_disruptive_window = trained_disruptive_window
@@ -77,8 +76,8 @@ class DisruptionPredictor:
 class DisruptionPredictorSM(DisruptionPredictor):
     """Disruption Predictors using SurvivalModel from Auton-Survival package"""
 
-    def __init__(self, name, model:SurvivalModel, features, trained_required_warning_time, trained_horizon):
-        super().__init__(name, model, features, trained_required_warning_time, trained_horizon)
+    def __init__(self, name, model:SurvivalModel, trained_required_warning_time, trained_horizon):
+        super().__init__(name, model, trained_required_warning_time, trained_horizon)
 
     def calculate_risk_at_time(self, data, horizon=None):
 
@@ -89,10 +88,10 @@ class DisruptionPredictorSM(DisruptionPredictor):
 
         # Iterate through the data and calculate the risk for each time slice
         try:
-            risk_at_time['risk'] = self.model.predict_risk(data[self.features], horizon)
+            risk_at_time['risk'] = self.model.predict_risk(data, horizon)
         except:
             # DSM expects horizons in a list
-            risk_at_time['risk'] = self.model.predict_risk(data[self.features], [horizon])
+            risk_at_time['risk'] = self.model.predict_risk(data, [horizon])
 
         # Trim the data to only include the risk and time columns
         return risk_at_time[['risk', 'time']]
@@ -101,23 +100,23 @@ class DisruptionPredictorSM(DisruptionPredictor):
 class DisruptionPredictorRF(DisruptionPredictor):
     """Disruption Predictors using RandomForestClassifier from sklearn"""
 
-    def __init__(self, name, model:RandomForestClassifier, features, trained_required_warning_time, trained_class_time):
-        super().__init__(name, model, features, trained_required_warning_time, trained_class_time)
+    def __init__(self, name, model:RandomForestClassifier, trained_required_warning_time, trained_class_time):
+        super().__init__(name, model, trained_required_warning_time, trained_class_time)
 
     def calculate_risk_at_time(self, data, horizon=None):
 
         risk_at_time = data.copy()
 
         # Iterate through the data and calculate the risk for each time slice
-        risk_at_time['risk'] = self.model.predict_proba(data[self.features])[:,1]
+        risk_at_time['risk'] = self.model.predict_proba(data)[:,1]
 
         return risk_at_time[['risk', 'time']]
     
 class DisruptionPredictorKM(DisruptionPredictor):
     """Kaplan-Meier Disruption predictor like Tinguely et al. 2019"""
 
-    def __init__(self, name, model:RandomForestClassifier, features, trained_warning_time, trained_class_time):
-        super().__init__(name, model, features, trained_warning_time, trained_class_time)
+    def __init__(self, name, model:RandomForestClassifier, trained_warning_time, trained_class_time):
+        super().__init__(name, model, trained_warning_time, trained_class_time)
 
     def linear_slope(self, x, y):
         # Calculate the slope of a linear fit to the data

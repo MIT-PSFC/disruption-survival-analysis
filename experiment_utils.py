@@ -2,6 +2,62 @@
 
 import numpy as np
 
+from Experiments import Experiment
+
+from DisruptionPredictors import DisruptionPredictorSM, DisruptionPredictorRF, DisruptionPredictorKM
+
+from auton_survival.estimators import SurvivalModel # CPH, DCPH, DSM, DCM, RSF
+from sklearn.ensemble import RandomForestClassifier
+
+from model_utils import get_model_for_experiment, name_model
+from manage_datasets import load_dataset
+
+
+SURVIVAL_MODELS = ['cph', 'dcph', 'dcm', 'dsm']
+BINARY_CLASSIFIERS = ['rf', 'km']
+
+def make_experiment(config, experiment_type):
+    """
+    Make an experiment from a config dictionary. 
+    If the experiment type is 'test', then the experiment will be a test experiment.
+    If the experiment type is 'val', then the experiment will be a validation experiment.
+
+    Parameters
+    ----------
+    config : dict
+        Dictionary of everything unique to this experiment.
+        Should contain the model type, the metric to be evaluated, which dataset to use, and some model-specific hyperparameters
+    experiment_type : str
+        The type of experiment to make. Either 'test' or 'val'
+        
+    Returns
+    -------
+    experiment : Experiment
+        The experiment to be run
+
+    """
+
+    # Create the model and predictor for the experiment
+    model = get_model_for_experiment(config, experiment_type)
+
+    required_warning_time = config['01_required_warning_time']
+
+    name = name_model(config)
+
+    if isinstance(model, SurvivalModel):
+        predictor = DisruptionPredictorSM(name, model, required_warning_time, config['horizon'])
+    elif isinstance(model, RandomForestClassifier):
+        predictor = DisruptionPredictorRF(name, model, required_warning_time, config['horizon'])
+    else:
+        raise ValueError('Model type not recognized')
+    
+    # Load data for the experiment
+    all_data = load_dataset(config['00_device'], config['00_dataset_path'], experiment_type)
+
+    experiment = Experiment(name, all_data, predictor, config['01_alarm_type'])
+
+    return experiment
+
 def label_shot_data(shot_data, disrupt, disruptive_window):
     """
     Label the data as disruptive or not disruptive based on the disruptive window

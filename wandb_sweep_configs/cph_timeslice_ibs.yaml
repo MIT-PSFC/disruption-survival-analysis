@@ -21,27 +21,28 @@ metric:
 # (required wb) Parameter bounds to search. Model-dependent
 parameters:
   # (required zk) which type of model to run
-  model_type:
+  00model_type:
     distribution: constant
     value: cph
   # (required zk) Device and datset pathing
-  device:
+  00device:
     distribution: constant
     value: cmod
-  dataset_path: 
+  00dataset_path: 
     distribution: constant
     value: no_ufo_flattop_7736_shots_6%_disruptive
   # (required zk) Which metric is being used at the top level (inaccessible otherwise)
-  metric:
+  01metric:
     distribution: constant
     value: timeslice_ibs
   # Min and max values for timeslice-based metric validation
-  valmin:
+  01valmin:
     min: 0.0
     max: 0.15
-  valmax: 
+  01valmax: 
     min: 0.95
     max: 1.0
+  # Model-specific hyperparameters
   l2:
     distribution: log_uniform_values
     min: 0.00001

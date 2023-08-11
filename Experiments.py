@@ -12,28 +12,14 @@ from DisruptionPredictors import DisruptionPredictor
 class Experiment:
     """ Class that holds onto data shared between multiple experiments """
 
-    def __init__(self, device, dataset_path, dataset_category, predictor:DisruptionPredictor, name=None, alarm_type='simple_threshold'):
+    def __init__(self, name, all_data, predictor:DisruptionPredictor, alarm_type='simple_threshold'):
 
         # Replace the 'thresholds' with a tuple of (min, max, num) for hysteresis
 
         # all_data: all data, including shot, time, time_until_disrupt, and features fed to predictor
 
-        self.device = device
-        self.dataset_path = dataset_path
         self.predictor = predictor
-
-        # Load data to be used in the experiment (should be either 'test' or 'val')
-        self.all_data = load_dataset(device, dataset_path, dataset_category)
-
-        # Drop all columns that are not features or time_until_disrupt, shot, or time
-        dropped_cols = [col for col in self.all_data.columns if col not in self.predictor.features + ['time_until_disrupt', 'shot', 'time']]
-        self.all_data = self.all_data.drop(columns=dropped_cols)
-
-        # Set the name of the experiment
-        if name is None:
-            self.name = device + ' ' + dataset_path
-        else:
-            self.name = name
+        self.name = name
 
         self.alarm_type = alarm_type
         # Set the thresholds for usage in tpr/fpr calculations
@@ -461,23 +447,29 @@ class Experiment:
     
     # Metrics methods
 
-    def au_true_alarm_rate_false_alarm_rate_curve(self, required_warning_time, horizon=None):
+    def au_true_alarm_rate_false_alarm_rate_curve(self, horizon=None, required_warning_time=None):
         """ Calculate the area under the ROC curve for a given horizon and required warning time"""
 
         raise NotImplementedError
     
-    def au_warning_time_false_alarm_rate_curve(self, horizon, required_warning_time):
+    def au_warning_time_false_alarm_rate_curve(self, horizon=None, required_warning_time=None):
         """ Calculate the area under the average warning time vs false alarm rate curve for a given horizon and required warning time"""
 
         raise NotImplementedError
     
-    def best_f1(self, horizon, required_warning_time):
+    def best_f1(self, horizon=None, required_warning_time=None):
         """ Calculate the best f1 score in terms of true alarm rate and false alarm rate for a given horizon and required warning time"""
 
         raise NotImplementedError
     
-    def best_f1_info(self, horizon, required_warning_time):
+    def best_f1_info(self, horizon=None, required_warning_time=None):
         """ Get the true alarm rate, false alarm rate, and warning time statistics at the best f1 score,
+            for a given horizon and required warning time"""
+
+        raise NotImplementedError
+    
+    def ettd_diff_integral(self, horizon=None, required_warning_time=None):
+        """ Calculate the integral of the difference between the expected time to disruption and the actual time to disruption,
             for a given horizon and required warning time"""
 
         raise NotImplementedError

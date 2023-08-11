@@ -12,7 +12,7 @@ def get_val_times(y_tr, min_quantile, max_quantile):
     #return np.quantile(y_tr['time'][y_tr['event']==1], np.linspace(min_quantile, max_quantile, 10)).tolist()
     return [0.02, 0.1] # The two most important threshold times according to Ryan
 
-def evaluate_model(model, device, dataset_path, y_train, config):
+def evaluate_model(model, config):
 
     # Get the metric we're evaluating the model's performance on
     metric_type = config['metric']
