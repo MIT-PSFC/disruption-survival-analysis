@@ -9,7 +9,7 @@ class DisruptionPredictor:
     This class does NOT store actual data, it only stores the model and features
     """
 
-    def __init__(self, name, model, features):
+    def __init__(self, name, model, features, trained_minimum_warning_time, trained_disruptive_window):
         """
         Parameters
         ----------
@@ -19,16 +19,23 @@ class DisruptionPredictor:
             The model to use for disruption prediction
         features : list of str
             The features used to train the model (should match names in dataset)
+        trained_minimum_warning_time : float
+            The minimum warning time used to train the model (in seconds)
+        trained_disruptive_window : float
+            The disruptive window used to train the model (in seconds)
         """
 
         self.name = name
         self.model = model
         self.features = features
 
+        self.trained_minimum_warning_time = trained_minimum_warning_time
+        self.trained_disruptive_window = trained_disruptive_window
+
     # Methods for calculating the risk at each time slice for a given shot
     # using different models
 
-    def calculate_risk_at_time(self, data, horizon):
+    def calculate_risk_at_time(self, data, horizon=None):
         """
         Finds the risk of disruption for a given shot at each time slice
         when looking horizon seconds into the future
@@ -52,10 +59,13 @@ class DisruptionPredictor:
 class DisruptionPredictorSM(DisruptionPredictor):
     """Disruption Predictors using SurvivalModel from Auton-Survival package"""
 
-    def __init__(self, name, model:SurvivalModel, features):
-        super().__init__(name, model, features)
+    def __init__(self, name, model:SurvivalModel, features, trained_minimum_warning_time, trained_horizon):
+        super().__init__(name, model, features, trained_minimum_warning_time, trained_horizon)
 
-    def calculate_risk_at_time(self, data, horizon):
+    def calculate_risk_at_time(self, data, horizon=None):
+
+        if horizon is None:
+            horizon = self.trained_disruptive_window
 
         risk_at_time = data.copy()
 
@@ -73,8 +83,8 @@ class DisruptionPredictorSM(DisruptionPredictor):
 class DisruptionPredictorRF(DisruptionPredictor):
     """Disruption Predictors using RandomForestClassifier from sklearn"""
 
-    def __init__(self, name, model:RandomForestClassifier, features):
-        super().__init__(name, model, features)
+    def __init__(self, name, model:RandomForestClassifier, features, trained_minimum_warning_time, trained_class_time):
+        super().__init__(name, model, features, trained_minimum_warning_time, trained_class_time)
 
     def calculate_risk_at_time(self, data, horizon=None):
 
@@ -88,24 +98,28 @@ class DisruptionPredictorRF(DisruptionPredictor):
 class DisruptionPredictorKM(DisruptionPredictor):
     """Kaplan-Meier Disruption predictor like Tinguely et al. 2019"""
 
-    def __init__(self, name, model:RandomForestClassifier, features):
-        super().__init__(name, model, features)
+    def __init__(self, name, model:RandomForestClassifier, features, trained_warning_time, trained_class_time):
+        super().__init__(name, model, features, trained_warning_time, trained_class_time)
 
     def linear_slope(self, x, y):
         # Calculate the slope of a linear fit to the data
         # x and y should be numpy arrays
         return (len(x) * np.sum(x * y) - np.sum(x) * np.sum(y)) / (len(x) * np.sum(x**2) - np.sum(x)**2)
     
-    def calculate_risk_at_time(self, data, horizon):
+    def calculate_risk_at_time(self, data, horizon=None, t_fit=None):
         # This disruption predictor takes present predicted disruption risk and a
         # linear least-square's fit over some previous time window to predict the
         # disruption risk at some future time
         # P_disrupt(t + horizon) = P_disrupt(t) + slope * horizon
         
+        
+        if horizon is None:
+            horizon = self.trained_disruptive_window
+
         # Time in seconds to do linear fit over
         # In paper, used 0.05, 0.1, 0.2
-        # TODO: this should be a hyperparameter
-        t_fit = 0.1 
+        if t_fit is None:
+            t_fit = 0.1
 
         risk_at_time = data.copy()
 

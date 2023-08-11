@@ -449,7 +449,7 @@ class Experiment:
     
     # Metrics methods
 
-    def au_true_alarm_rate_false_alarm_rate_curve(self, horizon, required_warning_time):
+    def au_true_alarm_rate_false_alarm_rate_curve(self, required_warning_time, horizon=None):
         """ Calculate the area under the ROC curve for a given horizon and required warning time"""
 
         raise NotImplementedError
