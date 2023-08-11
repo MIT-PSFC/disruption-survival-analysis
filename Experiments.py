@@ -12,7 +12,7 @@ from DisruptionPredictors import DisruptionPredictor
 class Experiment:
     """ Class that holds onto data shared between multiple experiments """
 
-    def __init__(self, name, all_data, predictor:DisruptionPredictor, alarm_type='simple_threshold'):
+    def __init__(self, name, all_data, predictor:DisruptionPredictor, experiment_type, alarm_type):
 
         # Replace the 'thresholds' with a tuple of (min, max, num) for hysteresis
 
@@ -20,12 +20,16 @@ class Experiment:
 
         self.predictor = predictor
         self.name = name
+        self.all_data = all_data
+        self.experiment_type = experiment_type
 
         self.alarm_type = alarm_type
         # Set the thresholds for usage in tpr/fpr calculations
-        if alarm_type == 'simple_threshold':
+        if alarm_type == 'sthr':
+            # Simple Threshold
             self.thresholds = np.linspace(0, 1, 100)
-        elif alarm_type == 'hysteresis':
+        elif alarm_type == 'hyst':
+            # Hysteresis
             # Make list of tuples of (min, max, num) for hysteresis
             # where max goes from 0 to 1 and min goes from 0 to max
             # and num goes from 1 to 4
@@ -34,7 +38,8 @@ class Experiment:
                 for min in np.linspace(0, max, 4):
                     for num in range(1, 5):
                         self.thresholds.append((min, max, num))
-        elif alarm_type == 'expected_time_to_disruption':
+        elif alarm_type == 'ettd':
+            # Expected time to disruption
             self.thresholds = [0.1, 0.02] # Expected time to disruption thresholds in seconds
         else:
             raise ValueError('Invalid alarm_type: ' + alarm_type)
@@ -457,12 +462,12 @@ class Experiment:
 
         raise NotImplementedError
     
-    def best_f1(self, horizon=None, required_warning_time=None):
+    def max_f1(self, horizon=None, required_warning_time=None):
         """ Calculate the best f1 score in terms of true alarm rate and false alarm rate for a given horizon and required warning time"""
 
         raise NotImplementedError
     
-    def best_f1_info(self, horizon=None, required_warning_time=None):
+    def max_f1_info(self, horizon=None, required_warning_time=None):
         """ Get the true alarm rate, false alarm rate, and warning time statistics at the best f1 score,
             for a given horizon and required warning time"""
 
