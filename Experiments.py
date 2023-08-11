@@ -134,22 +134,25 @@ class Experiment:
 
     # Get risk at time from predictor
 
-    def get_risk(self, shot, horizon):
+    def get_risk(self, shot, horizon=None):
         """ Returns the risk score for a shot at a given horizon """
-        risk_at_time = self.get_risk_at_time(shot, horizon)
+        risk_at_time = self.get_risk_at_time(shot, horizon=horizon)
         return risk_at_time['risk'].values
 
-    def get_risk_at_time(self, shot, horizon):
+    def get_risk_at_time(self, shot, horizon=None):
         """Returns a pandas dataframe containing the risk at each time for a given shot and horizon"""
         
+        if horizon is None:
+            horizon = self.predictor.trained_disruptive_window
+
         if horizon not in self.risk_at_times:
             self.risk_at_times[horizon] = {}
         if shot not in self.risk_at_times[horizon]:
-            self.risk_at_times[horizon][shot] = self.calc_risk_at_time(shot, horizon)
+            self.risk_at_times[horizon][shot] = self._calc_risk_at_time(shot, horizon)
         
         return self.risk_at_times[horizon][shot]
 
-    def calc_risk_at_time(self, shot, horizon):
+    def _calc_risk_at_time(self, shot, horizon):
         """ Calculates the risk score for a shot at a given horizon"""
         shot_data = self.all_data[self.all_data['shot'] == shot]
         return self.predictor.calculate_risk_at_time(shot_data, horizon)
@@ -160,15 +163,16 @@ class Experiment:
         """ Returns the expected time to disruption for a shot"""
 
         if shot not in self.ettd_at_times:
-            self.ettd_at_times[shot] = self.calc_ettd_at_time(shot)
+            self.ettd_at_times[shot] = self._calc_ettd_at_time(shot)
         
         return self.ettd_at_times[shot]
 
-    def calc_ettd_at_time(self, shot):
+    def _calc_ettd_at_time(self, shot):
         """ Calculates the expected time to disruption for a shot """
 
         # TODO: must be implemented in the predictor. Different method of interpreting this for different predictors
-        return self.predictor.calculate_ettd_at_time(shot)
+        shot_data = self.all_data[self.all_data['shot'] == shot]
+        return self.predictor.calculate_ettd_at_time(shot_data)
 
     # ROC AUC methods
 
@@ -238,17 +242,20 @@ class Experiment:
     
     # True Alarms, False Alarms methods
 
-    def get_alarm_times(self, horizon):
+    def get_alarm_times(self, horizon=None):
         """Attempt to get the alarm times arrays for a given horizon.
         If they have already been calculated, return them. Otherwise, calculate them and return them.
         """
 
+        if horizon is None:
+            horizon = self.predictor.trained_disruptive_window
+
         if horizon not in self.alarm_times:
-            self.alarm_times[horizon] = self.calc_alarm_times(horizon)
+            self.alarm_times[horizon] = self._calc_alarm_times(horizon)
 
         return self.alarm_times[horizon]
         
-    def calc_alarm_times(self, horizon):
+    def _calc_alarm_times(self, horizon):
         """Calculate the alarm times for a given horizon using the Experiment's alarm type.
         Where the arrays are of shape (num_shots, num_thresholds)"""
 
@@ -305,19 +312,24 @@ class Experiment:
 
         return alarm_times
 
-    def get_true_false_alarms(self, horizon, required_warning_time):
+    def get_true_false_alarms(self, horizon=None, required_warning_time=None):
         """Attempt to get the true alarms and false alarms arrays for a given horizon and required warning time.
         If they have already been calculated, return them. Otherwise, calculate them and return them."""
+
+        if horizon is None:
+            horizon = self.predictor.trained_disruptive_window
+        if required_warning_time is None:
+            required_warning_time = self.predictor.trained_required_warning_time
 
         if horizon not in self.true_alarms or horizon not in self.false_alarms:
             self.true_alarms[horizon] = {}
             self.false_alarms[horizon] = {}
         if required_warning_time not in self.true_alarms[horizon]:
-            self.true_alarms[horizon][required_warning_time], self.false_alarms[horizon][required_warning_time] = self.calc_true_false_alarms(horizon, required_warning_time)
+            self.true_alarms[horizon][required_warning_time], self.false_alarms[horizon][required_warning_time] = self._calc_true_false_alarms(horizon, required_warning_time)
 
         return self.true_alarms[horizon][required_warning_time], self.false_alarms[horizon][required_warning_time]
 
-    def calc_true_false_alarms(self, horizon, required_warning_time):
+    def _calc_true_false_alarms(self, horizon, required_warning_time):
         """Calculate the true alarms and false alarm arrays for a given horizon and required warning time,
         where warning time is the time before the disruption that the alarm must be raised.
         Where the arrays are of shape (num_shots, num_thresholds)"""
@@ -352,7 +364,7 @@ class Experiment:
             
         return true_alarms, false_alarms
     
-    def true_false_alarm_rates(self, horizon, required_warning_time):
+    def true_false_alarm_rates(self, horizon=None, required_warning_time=None):
         """ Get statistics on false alarm rate vs threshold for a given horizon and required warning time
             This is inherently a macro statistic, since a single shot can have only one alarm at a given threshold
         """
@@ -364,7 +376,7 @@ class Experiment:
 
         return true_alarm_rates, false_alarm_rates
 
-    def true_alarm_rate_vs_false_alarm_rate(self, horizon, required_warning_time):
+    def true_alarm_rate_vs_false_alarm_rate(self, horizon=None, required_warning_time=None):
 
         true_alarm_rates, false_alarm_rates = self.true_false_alarm_rates(horizon, required_warning_time)
 
@@ -372,7 +384,7 @@ class Experiment:
 
         return unique_false_alarms, avg_true_alarm_rates#, std_true_alarm_rates
      
-    def missed_alarm_rate_vs_false_alarm_rate(self, horizon, required_warning_time):
+    def missed_alarm_rate_vs_false_alarm_rate(self, horizon=None, required_warning_time=None):
 
         true_alarms, false_alarms = self.get_true_false_alarms(horizon, required_warning_time)
 
@@ -385,7 +397,7 @@ class Experiment:
 
     # Warning Times Methods
 
-    def get_warning_times_list(self, horizon):
+    def get_warning_times_list(self, horizon=None):
         """Get a list of warning times for each disruptive shot at a given horizon.
         This is a list of arrays of variable length,
         but the arrays will line up such that each index corresponds to the same threshold.
@@ -423,7 +435,7 @@ class Experiment:
 
         return warning_times_list
 
-    def warning_time_vs_threshold(self, horizon):
+    def warning_time_vs_threshold(self, horizon=None):
         """ Get statistics on warning time vs threshold for a given horizon 
             This is inherently a macro statistic, since a single shot can have only one warning time
         """
