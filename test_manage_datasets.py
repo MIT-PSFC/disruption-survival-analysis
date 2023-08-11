@@ -62,7 +62,7 @@ class TestLoadFeaturesOutcomes(unittest.TestCase):
         """Ensure that the time to event in outcomes is different from the regular input time 
         """
         for category in ['train', 'test', 'val']:
-            _, outcomes = load_features_outcomes(TEST_DEVICE, TEST_DATASET_PATH, category, features=load_feature_list(TEST_DEVICE, TEST_DATASET_PATH))
+            _, outcomes = load_features_outcomes(TEST_DEVICE, TEST_DATASET_PATH, category)
 
             data = load_dataset(TEST_DEVICE, TEST_DATASET_PATH, category)
             
@@ -73,7 +73,7 @@ class TestLoadFeaturesOutcomes(unittest.TestCase):
         """
 
         for category in ['train', 'test', 'val']:
-            _, outcomes = load_features_outcomes(TEST_DEVICE, TEST_DATASET_PATH, category, features=load_feature_list(TEST_DEVICE, TEST_DATASET_PATH))
+            _, outcomes = load_features_outcomes(TEST_DEVICE, TEST_DATASET_PATH, category)
             
             # Assert that there are no negative times
             self.assertTrue((outcomes['time'] >= 0).all())
@@ -82,7 +82,7 @@ class TestLoadFeaturesOutcomes(unittest.TestCase):
         """Ensure there are no zero time to event in the outcomes"""
 
         for category in ['train', 'test', 'val']:
-            _, outcomes = load_features_outcomes(TEST_DEVICE, TEST_DATASET_PATH, category, features=load_feature_list(TEST_DEVICE, TEST_DATASET_PATH))
+            _, outcomes = load_features_outcomes(TEST_DEVICE, TEST_DATASET_PATH, category)
             
             # Assert that there are no zero times
             self.assertTrue((outcomes['time'] != 0).all())
@@ -91,7 +91,7 @@ class TestLoadFeaturesOutcomes(unittest.TestCase):
         """Ensure that the outcomes are binary and not all 1's or all 0's"""
 
         for category in ['train', 'test', 'val']:
-            _, outcomes = load_features_outcomes(TEST_DEVICE, TEST_DATASET_PATH, category, features=load_feature_list(TEST_DEVICE, TEST_DATASET_PATH))
+            _, outcomes = load_features_outcomes(TEST_DEVICE, TEST_DATASET_PATH, category)
             
             # Assert that there are both 0's and 1's
             self.assertTrue((outcomes['event'] == 0).any())

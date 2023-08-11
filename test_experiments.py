@@ -20,13 +20,7 @@ class TestSimpleFunctions(unittest.TestCase):
         """Set up the test case
         """
         
-        # Specify testing parameters
-        self.horizon = 0.2
-
-        # Load simple CPH model
-        self.model, self.numeric_feats = load_model('cph', TEST_DEVICE, TEST_DATASET_PATH)
-        self.predictor = DisruptionPredictorSM("Cox Proportional Hazards", self.model, self.numeric_feats)
-        self.experiment = Experiment(TEST_DEVICE, TEST_DATASET_PATH, self.predictor, name='CPH')
+        # aaaah
 
     def test_get_num_disrupt(self):
         """Test that the number of disruptions is calculated correctly
@@ -122,7 +116,7 @@ class TestExperimentUtils(unittest.TestCase):
         self.assertEqual(alarm_times[10], None)
 
     def test_calculate_alarm_times_hysteresis_exact(self):
-
+        self.fail()
 
     def test_clump_many_to_one_statistics_single_array(self):
 
