@@ -5,7 +5,7 @@ import numpy as np
 
 from sklearn.metrics import roc_auc_score
 from manage_datasets import load_dataset
-from experiment_utils import label_shot_data, calculate_alarm_times, calculate_alarm_times_hysteresis, calculate_alarm_times_expected_lifetime, clump_many_to_one_statistics
+from experiment_utils import label_shot_data, calculate_alarm_times, calculate_alarm_times_hysteresis, calculate_alarm_times_ettd, clump_many_to_one_statistics
 
 from DisruptionPredictors import DisruptionPredictor
 
@@ -248,18 +248,6 @@ class Experiment:
 
         return self.alarm_times[horizon]
         
-    def get_true_false_alarms(self, horizon, required_warning_time):
-        """Attempt to get the true alarms and false alarms arrays for a given horizon and required warning time.
-        If they have already been calculated, return them. Otherwise, calculate them and return them."""
-
-        if horizon not in self.true_alarms or horizon not in self.false_alarms:
-            self.true_alarms[horizon] = {}
-            self.false_alarms[horizon] = {}
-        if required_warning_time not in self.true_alarms[horizon]:
-            self.true_alarms[horizon][required_warning_time], self.false_alarms[horizon][required_warning_time] = self.calc_true_false_alarms(horizon, required_warning_time)
-
-        return self.true_alarms[horizon][required_warning_time], self.false_alarms[horizon][required_warning_time]
-
     def calc_alarm_times(self, horizon):
         """Calculate the alarm times for a given horizon using the Experiment's alarm type.
         Where the arrays are of shape (num_shots, num_thresholds)"""
@@ -271,8 +259,7 @@ class Experiment:
         # Array is of shape (num_shots, num_thresholds)
         alarm_times = np.zeros((len(shot_list), len(self.thresholds)))
 
-
-        # Determine which function to use 
+                # Determine which function to use 
         if self.alarm_type == 'simple_threshold':
             # Iterate through shots
             for i, shot in enumerate(shot_list):
@@ -303,7 +290,7 @@ class Experiment:
                 
                 # Get the expected time to disruption of the shot
                 expected_lifetime = self.get_ettd_at_time(shot)
-                alarm_times_calced = calculate_alarm_times_expected_lifetime(expected_lifetime, self.thresholds)
+                alarm_times_calced = calculate_alarm_times_ettd(expected_lifetime, self.thresholds)
 
                 # Save the alarm times
                 alarm_times[i,:] = alarm_times_calced
@@ -317,6 +304,18 @@ class Experiment:
             raise ValueError(f'Unknown alarm type: {self.alarm_type}')
 
         return alarm_times
+
+    def get_true_false_alarms(self, horizon, required_warning_time):
+        """Attempt to get the true alarms and false alarms arrays for a given horizon and required warning time.
+        If they have already been calculated, return them. Otherwise, calculate them and return them."""
+
+        if horizon not in self.true_alarms or horizon not in self.false_alarms:
+            self.true_alarms[horizon] = {}
+            self.false_alarms[horizon] = {}
+        if required_warning_time not in self.true_alarms[horizon]:
+            self.true_alarms[horizon][required_warning_time], self.false_alarms[horizon][required_warning_time] = self.calc_true_false_alarms(horizon, required_warning_time)
+
+        return self.true_alarms[horizon][required_warning_time], self.false_alarms[horizon][required_warning_time]
 
     def calc_true_false_alarms(self, horizon, required_warning_time):
         """Calculate the true alarms and false alarm arrays for a given horizon and required warning time,
@@ -352,35 +351,22 @@ class Experiment:
             false_alarms[i,:] = (~disrupt & ~np.isnan(alarm_times[i,:])).astype(int)
             
         return true_alarms, false_alarms
-
-    def true_alarm_rate_vs_threshold(self, horizon, required_warning_time):
-        """ Get statistics on true alarm rate vs threshold for a given horizon and required warning time
-            This is inherently a macro statistic, since a single shot can have only one alarm at a given threshold
-        """
-
-        true_alarms, _ = self.get_true_false_alarms(horizon, required_warning_time)
-
-        true_alarm_rates = np.sum(true_alarms, axis=0) / self.get_num_disruptive_shots()
-
-        return self.thresholds, true_alarm_rates
     
-    def false_alarm_rate_vs_threshold(self, horizon, required_warning_time):
+    def true_false_alarm_rates(self, horizon, required_warning_time):
         """ Get statistics on false alarm rate vs threshold for a given horizon and required warning time
             This is inherently a macro statistic, since a single shot can have only one alarm at a given threshold
         """
-
-        _, false_alarms = self.get_true_false_alarms(horizon, required_warning_time)
-
-        false_alarm_rates = np.sum(false_alarms, axis=0) / (self.get_num_shots() - self.get_num_disruptive_shots())
-
-        return self.thresholds, false_alarm_rates
-    
-    def true_alarm_rate_vs_false_alarm_rate(self, horizon, required_warning_time):
 
         true_alarms, false_alarms = self.get_true_false_alarms(horizon, required_warning_time)
 
         true_alarm_rates = np.sum(true_alarms, axis=0) / self.get_num_disruptive_shots()
         false_alarm_rates = np.sum(false_alarms, axis=0) / (self.get_num_shots() - self.get_num_disruptive_shots())
+
+        return true_alarm_rates, false_alarm_rates
+
+    def true_alarm_rate_vs_false_alarm_rate(self, horizon, required_warning_time):
+
+        true_alarm_rates, false_alarm_rates = self.true_false_alarm_rates(horizon, required_warning_time)
 
         unique_false_alarms, avg_true_alarm_rates, std_true_alarm_rates = clump_many_to_one_statistics(false_alarm_rates, true_alarm_rates)
 
@@ -448,67 +434,38 @@ class Experiment:
 
         return unique_thresholds, avg_warning_times, std_warning_times
 
-    def warning_time_vs_true_alarm_rate(self, horizon):
-        """ Get statistics on warning time vs true alarm rate for a given horizon 
-            This is inherently a macro statistic, since a single shot can have only one warning time
-        """
-
-        warning_times_list = self.get_warning_times_list(horizon)
-        _, true_alarm_rates = self.true_alarm_rate_vs_threshold(horizon)
-
-        unique_true_alarm_rates, avg_warning_times, std_warning_times = clump_many_to_one_statistics(true_alarm_rates, warning_times_list)
-
-        return unique_true_alarm_rates, avg_warning_times, std_warning_times
-
-    def warning_time_vs_false_alarm_rate(self, horizon):
+    def warning_time_vs_false_alarm_rate(self, horizon, required_warning_time):
         """ Get statistics on warning time vs false alarm rate for a given horizon 
             This is inherently a macro statistic, since a single shot can have only one warning time
         """
 
         warning_times_list = self.get_warning_times_list(horizon)
-        _, false_alarm_rates = self.false_alarm_rate_vs_threshold(horizon)
+        _, false_alarm_rates = self.true_false_alarm_rates(horizon, required_warning_time)
 
         unique_false_alarm_rates, avg_warning_times, std_warning_times = clump_many_to_one_statistics(false_alarm_rates, warning_times_list)
 
         # TODO: Ignore zero false positve rate results???
         return unique_false_alarm_rates, avg_warning_times, std_warning_times
     
-    def warning_time_vs_missed_alarm_rate(self, horizon):
-        """ Get statistics on warning time vs false negative rate for a given horizon 
-            This is inherently a macro statistic, since a single shot can have only one warning time
-        """
+    # Metrics methods
 
-        warning_times_list = self.get_warning_times_list(horizon)
-        _, true_alarm_rates = self.true_alarm_rate_vs_threshold(horizon)
-        missed_alarm_rates = 1 - true_alarm_rates
+    def au_true_alarm_rate_false_alarm_rate_curve(self, horizon, required_warning_time):
+        """ Calculate the area under the ROC curve for a given horizon and required warning time"""
 
-        unique_missed_alarm_rates, avg_warning_times, std_warning_times = clump_many_to_one_statistics(missed_alarm_rates, warning_times_list)
-
-        return unique_missed_alarm_rates, avg_warning_times, std_warning_times
+        raise NotImplementedError
     
-    def warning_vs_precision(self, horizon, scaled=False):
-        """ Get statistics on warning times vs precision for a given horizon 
-            This is inherently a macro statistic, since a single shot can have only one warning time
-        """
+    def au_warning_time_false_alarm_rate_curve(self, horizon, required_warning_time):
+        """ Calculate the area under the average warning time vs false alarm rate curve for a given horizon and required warning time"""
 
-        # TODO need to set this up as a dictionary, so that we can have multiple horizons
-        true_alarms, false_alarms, _ = self.get_alarms_times(horizon)
-
-        warning_times_list = self.get_warning_times_list(horizon)
-
-        if scaled:
-            shot_duration_list = self.get_disruptive_shot_durations()
-            warning_times_list = [warning_times / shot_duration for warning_times, shot_duration in zip(warning_times_list, shot_duration_list)]
-
-        # Calculate the precision at each threshold
-        threshold_precisions = np.sum(true_alarms, axis=0) / (np.sum(true_alarms, axis=0) + np.sum(false_alarms, axis=0))
-
-        unique_precision, avg_warning_times, std_warning_times = clump_many_to_one_statistics(threshold_precisions, warning_times_list)
-
-        # TODO: ignore zero precision results?
-        return unique_precision[:], avg_warning_times[:], std_warning_times[:]
-
-
-class ValidationMetricExperiment:
-
+        raise NotImplementedError
     
+    def best_f1(self, horizon, required_warning_time):
+        """ Calculate the best f1 score in terms of true alarm rate and false alarm rate for a given horizon and required warning time"""
+
+        raise NotImplementedError
+    
+    def best_f1_info(self, horizon, required_warning_time):
+        """ Get the true alarm rate, false alarm rate, and warning time statistics at the best f1 score,
+            for a given horizon and required warning time"""
+
+        raise NotImplementedError
