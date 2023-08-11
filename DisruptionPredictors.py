@@ -9,7 +9,7 @@ class DisruptionPredictor:
     This class does NOT store actual data, it only stores the model and features
     """
 
-    def __init__(self, name, model, features, trained_minimum_warning_time, trained_disruptive_window):
+    def __init__(self, name, model, features, trained_required_warning_time, trained_disruptive_window):
         """
         Parameters
         ----------
@@ -19,8 +19,8 @@ class DisruptionPredictor:
             The model to use for disruption prediction
         features : list of str
             The features used to train the model (should match names in dataset)
-        trained_minimum_warning_time : float
-            The minimum warning time used to train the model (in seconds)
+        trained_required_warning_time : float
+            The required warning time used to train the model (in seconds)
         trained_disruptive_window : float
             The disruptive window used to train the model (in seconds)
         """
@@ -29,7 +29,7 @@ class DisruptionPredictor:
         self.model = model
         self.features = features
 
-        self.trained_minimum_warning_time = trained_minimum_warning_time
+        self.trained_required_warning_time = trained_required_warning_time
         self.trained_disruptive_window = trained_disruptive_window
 
     # Methods for calculating the risk at each time slice for a given shot
@@ -55,12 +55,30 @@ class DisruptionPredictor:
         """
 
         raise NotImplementedError("calculate_risk() must be implemented by a subclass of DisruptionPredictor")
+    
+    def calculate_ettd_at_time(self, data):
+        """
+        Calculates the expected time to disruption for a given shot at each time slice.
+
+        Parameters
+        ----------
+        data : pandas.DataFrame
+            The data to calculate the expected time to disruption for
+            Should already be sorted by time and transformed
+        
+        Returns
+        -------
+        ettd_at_time : pandas.DataFrame
+            The expected time to disruption for each time slice
+        """
+    
+        raise NotImplementedError("calculate_ettd_at_time() must be implemented by a subclass of DisruptionPredictor")
 
 class DisruptionPredictorSM(DisruptionPredictor):
     """Disruption Predictors using SurvivalModel from Auton-Survival package"""
 
-    def __init__(self, name, model:SurvivalModel, features, trained_minimum_warning_time, trained_horizon):
-        super().__init__(name, model, features, trained_minimum_warning_time, trained_horizon)
+    def __init__(self, name, model:SurvivalModel, features, trained_required_warning_time, trained_horizon):
+        super().__init__(name, model, features, trained_required_warning_time, trained_horizon)
 
     def calculate_risk_at_time(self, data, horizon=None):
 
@@ -83,8 +101,8 @@ class DisruptionPredictorSM(DisruptionPredictor):
 class DisruptionPredictorRF(DisruptionPredictor):
     """Disruption Predictors using RandomForestClassifier from sklearn"""
 
-    def __init__(self, name, model:RandomForestClassifier, features, trained_minimum_warning_time, trained_class_time):
-        super().__init__(name, model, features, trained_minimum_warning_time, trained_class_time)
+    def __init__(self, name, model:RandomForestClassifier, features, trained_required_warning_time, trained_class_time):
+        super().__init__(name, model, features, trained_required_warning_time, trained_class_time)
 
     def calculate_risk_at_time(self, data, horizon=None):
 
