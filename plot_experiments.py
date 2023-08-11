@@ -88,7 +88,7 @@ def plot_roc_auc_vs_horizon_macro(experiment_list:list[Experiment], horizons=DEF
     plt.legend()
     plt.show()
 
-def plot_TAR_vs_FAR(experiment_list:list[Experiment], horizon=DEFAULT_HORIZONS[0], required_warning_time=MINIMUM_WARNING_TIME):
+def plot_TAR_vs_FAR(experiment_list:list[Experiment], horizon=None, required_warning_time=MINIMUM_WARNING_TIME):
     """ Averaged over all shots
     
     """
@@ -100,7 +100,7 @@ def plot_TAR_vs_FAR(experiment_list:list[Experiment], horizon=DEFAULT_HORIZONS[0
     plt.yscale('log')
 
     for experiment in experiment_list:
-        false_alarm_rates, true_alarm_rates = experiment.true_alarm_rate_vs_false_alarm_rate(required_warning_time)
+        false_alarm_rates, true_alarm_rates = experiment.true_alarm_rate_vs_false_alarm_rate(horizon, required_warning_time)
         plt.plot(false_alarm_rates, 1-true_alarm_rates, label=experiment.name)
 
     
@@ -117,7 +117,10 @@ def plot_TAR_vs_FAR(experiment_list:list[Experiment], horizon=DEFAULT_HORIZONS[0
     plt.xlabel('False Alarm Rate')
     plt.ylabel('True Alarm Rate')
 
-    plt.title(f"{required_warning_time * 1000} ms True Alarm Rate vs. False Alarm Rate at {horizon*1000} ms Horizon")
+    if horizon is None:
+        plt.title(f"{required_warning_time * 1000} ms True Alarm Rate vs. False Alarm Rate")
+    else:
+        plt.title(f"{required_warning_time * 1000} ms True Alarm Rate vs. False Alarm Rate at {horizon*1000} ms Horizon")
 
     plt.legend()
     plt.show()

@@ -35,6 +35,7 @@ def load_dataset(device, dataset_path, dataset_category):
 
     data = pkgutil.get_data(__name__, 'data/{}/{}/{}.csv'.format(device, dataset_path, dataset_category))
     data = pd.read_csv(io.BytesIO(data)) # type: ignore
+
     # Sort by shot number and time
     data = data.sort_values(['shot','time'])
     return data
@@ -67,7 +68,7 @@ def load_dataset_grouped(device, dataset_path, dataset_category):
     # Return the grouped dataset
     return group_data
 
-def load_features_outcomes(device, dataset_path, dataset_category, features, epsilon=1e-4):
+def load_features_outcomes(device, dataset_path, dataset_category, epsilon=1e-4):
     """ Load the specified dataset from a device, and return the features and outcomes
     For usage in SurvivalModel
 
@@ -106,9 +107,10 @@ def load_features_outcomes(device, dataset_path, dataset_category, features, eps
     # make outcomes the correct type for models
     outcomes = outcomes.astype({'event': 'int64', 'time': 'float64'})
 
-    # trim data to only include features used for training
+    # remove NOT_FEATURES from data
+    data = data.drop(NOT_FEATURES, axis=1)
     # trim outcomes to only include event and time columns
-    return data[features], outcomes[['event', 'time']]
+    return data, outcomes[['event', 'time']]
 
 def load_features_events_indicators(device, dataset_path, dataset_category, features):
     """ Load the specified dataset from a device,
@@ -135,7 +137,7 @@ def load_features_events_indicators(device, dataset_path, dataset_category, feat
     # TODO fill this out after get DPRF working
     return None
 
-def load_features_labels(device, dataset_path, dataset_category, disruptive_window, features):
+def load_features_labels(device, dataset_path, dataset_category, disruptive_window):
     """Load the features from a dataset and label each timeslice based on some disruptive window.
     In disruptive shots, the timeslice is labeled '1' if it is within the disruptive window, and '0' otherwise.
     In non-disruptive shots, the timeslice is labeled '0' always.
@@ -151,8 +153,6 @@ def load_features_labels(device, dataset_path, dataset_category, disruptive_wind
         The category of the dataset to load
     disruptive_window : float
         The time window to use for labeling disruptive timeslices
-    features : list of str
-        The features to load from the dataset
 
     Returns
     -------
@@ -168,8 +168,10 @@ def load_features_labels(device, dataset_path, dataset_category, disruptive_wind
     # label is '1' if time_until_disrupt is less than disruptive_window, '0' otherwise
     labels = (data['time_until_disrupt'] < disruptive_window).astype(int)
 
-    # trim data to only include features used for training
-    return data[features], labels
+    # remove NOT_FEATURES from data
+    data.drop(NOT_FEATURES, axis=1)
+
+    return data, labels
 
 def load_feature_list(device, dataset):
     """

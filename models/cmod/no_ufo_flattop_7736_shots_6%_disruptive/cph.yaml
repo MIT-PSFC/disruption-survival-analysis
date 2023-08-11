@@ -1,26 +1,29 @@
 wandb_version: 1
 
-dataset_path:
+00_dataset_path:
   desc: null
   value: no_ufo_flattop_7736_shots_6%_disruptive
-device:
+00_device:
   desc: null
   value: cmod
+00_model_type:
+  desc: null
+  value: cph
+01_alarm_type:
+  desc: null
+  value: sthr
+01_metric:
+  desc: null
+  value: tslc
+01_required_warning_time:
+  desc: null
+  value: 0.02
+horizon:
+  desc: null
+  value: 0.05
 l2:
   desc: null
   value: 0.0016030271450649424
-metric:
-  desc: null
-  value: timeslice_ibs
-model_type:
-  desc: null
-  value: cph
-valmax:
-  desc: null
-  value: 0.9501379720805356
-valmin:
-  desc: null
-  value: 0.0001932921383980879
 _wandb:
   desc: null
   value:
