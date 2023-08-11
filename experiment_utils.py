@@ -2,17 +2,17 @@
 
 import numpy as np
 
-def label_shot_data(shot_data, disrupt, horizon):
+def label_shot_data(shot_data, disrupt, disruptive_window):
     """
-    Label the data as disruptive or not disruptive at a given horizon
+    Label the data as disruptive or not disruptive based on the disruptive window
     Parameters
     ----------
     data : pandas.DataFrame
         The data to label
     disrupt : bool
         If the shot is disruptive
-    horizon : float
-        How far into the future to look
+    disruptive_window : float
+        Time before a disruption to label shot data as disruptive (in seconds)
     Returns
     -------
     labeled_data : numpy.ndarray
@@ -21,11 +21,11 @@ def label_shot_data(shot_data, disrupt, horizon):
 
     if disrupt:
         # If the shot disrupts, label all time slices up to
-        # horizon seconds before the disruption as non-disruptive
-        # and all time slices after horizon seconds before the disruption as disruptive
+        # disruptive_window seconds before the disruption as non-disruptive
+        # and all time slices after disruptive_window seconds before the disruption as disruptive
         # Labels are either 0 (non-disruptive) or 1 (disruptive)
         disruption_time = shot_data['time'].max()
-        labeled_data = np.array(shot_data['time'] > (disruption_time - horizon)).astype(int)
+        labeled_data = np.array(shot_data['time'] > (disruption_time - disruptive_window)).astype(int)
     else:
         # If the shot is not disruptive, label all time slices as non-disruptive
         labeled_data = np.zeros(len(shot_data))
@@ -87,23 +87,36 @@ def calculate_alarm_times(risk_at_time, thresholds):
     # Return the alarm times
     return alarm_times
 
-def calculate_alarm_times_hysteresis(risk_at_time, 
-                                            upper_threshold, lower_threshold, 
-                                            window, horizons):
+def calculate_alarm_times_hysteresis(risk_at_time, thresholds):
     """
     Calculates the alarm times for a given shot with hysterisis method
     If the 'disruptivity' output of the model goes above the upper threshold
     and remains above the lower threshold for the window length, a disruption
     is predicted
+
+    Parameters
+    ----------
+    risk_at_time : pandas.DataFrame
+        The risk of disruption for each time slice in a single shot
+        Should be sorted by time
+        Should be transformed by the predictor's transformer
+    thresholds : list of tuple of (float, float, float)
+        The thresholds to use for determining if a disruption is imminent
+        Expects a list of tuples of the form (lower_threshold, upper_threshold, window_length)
+        Disruption is predicted when the risk exceeds the upper threshold
+        and remains above the lower threshold for the window length (Same implementation as ENI script, maybe same as CERN?)
+
     """
     raise NotImplementedError("Hysterisis method not yet implemented")
 
-def calculate_alarm_times_expected_lifetime(et_at_time, thresholds):
+def calculate_alarm_times_ettd(ettd_at_time, thresholds):
     """
-    Calculates the alarm times for a given shot using the expected lifetime.
-    If the expected lifetime output of the model drops below some threshold,
+    Calculates the alarm times for a given shot using the expected time to disruption.
+    If the expected time to disruption output of the model drops below some threshold,
     a disruption is predicted.
     """
+
+    raise NotImplementedError("Expected Time To Disruption method not yet implemented")
 
 def clump_many_to_one_statistics(unique_values_raw, clumping_values, epsilon=0.01):
     """
