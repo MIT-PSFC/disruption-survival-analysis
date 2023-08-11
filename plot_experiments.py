@@ -100,7 +100,7 @@ def plot_TAR_vs_FAR(experiment_list:list[Experiment], horizon=DEFAULT_HORIZONS[0
     plt.yscale('log')
 
     for experiment in experiment_list:
-        false_alarm_rates, true_alarm_rates = experiment.true_alarm_rate_vs_false_alarm_rate(horizon, required_warning_time)
+        false_alarm_rates, true_alarm_rates = experiment.true_alarm_rate_vs_false_alarm_rate(required_warning_time)
         plt.plot(false_alarm_rates, 1-true_alarm_rates, label=experiment.name)
 
     
