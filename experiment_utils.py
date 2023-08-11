@@ -47,14 +47,14 @@ def make_experiment(config, experiment_type):
     if isinstance(model, SurvivalModel):
         predictor = DisruptionPredictorSM(name, model, required_warning_time, config['horizon'])
     elif isinstance(model, RandomForestClassifier):
-        predictor = DisruptionPredictorRF(name, model, required_warning_time, config['horizon'])
+        predictor = DisruptionPredictorRF(name, model, required_warning_time, config['class_time'])
     else:
         raise ValueError('Model type not recognized')
     
     # Load data for the experiment
     all_data = load_dataset(config['00_device'], config['00_dataset_path'], experiment_type)
 
-    experiment = Experiment(name, all_data, predictor, config['01_alarm_type'])
+    experiment = Experiment(name, all_data, predictor, experiment_type, config['01_alarm_type'])
 
     return experiment
 

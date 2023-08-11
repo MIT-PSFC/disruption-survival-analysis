@@ -4,59 +4,64 @@ from auton_survival.estimators import SurvivalModel # CPH, DCPH, DSM, DCM, RSF
 from auton_survival.preprocessing import Preprocessor
 from auton_survival.metrics import survival_regression_metric
 from manage_datasets import load_features_outcomes, load_feature_list
+from Experiments import Experiment
+from sklearn.ensemble import RandomForestClassifier
 
-def get_val_times(y_tr, min_quantile, max_quantile):
-    """
-    Get the validation times for survival models
-    """
-    #return np.quantile(y_tr['time'][y_tr['event']==1], np.linspace(min_quantile, max_quantile, 10)).tolist()
-    return [0.02, 0.1] # The two most important threshold times according to Ryan
-
-def evaluate_model(model, config):
+def evaluate_model(experiment:Experiment, config):
 
     # Get the metric we're evaluating the model's performance on
-    metric_type = config['metric']
-    numeric_feats = load_feature_list(device, dataset_path)
+    metric_type = config['01_metric']
 
-    if metric_type == 'timeslice_ibs':
-        # Only applicable to survival models
-        x_val, y_val = load_features_outcomes(device, dataset_path, 'val', numeric_feats)
-        val_times = get_val_times(y_train, config['valmin'], config['valmax'])
-        metric_val = timeslice_eval(model, x_val, y_val, y_train, val_times)
-    elif metric_type == 'timeslice_score':
-        # Only applicable to binary classifiers
-        x_val, y_val = load_features_outcomes(device, dataset_path, 'val', numeric_feats)
-        metric_val = model.score(x_val, y_val)
-    elif metric_type == 'au_roc_simple_threshold':
-        #experiment = 
-
-        metric_val = experiment.
+    if metric_type == 'tslic':
+        # Timeslice metric. Micro avgerage over entire dataset
+        # Get the validation times
+        metric_val = timeslice_eval(experiment, config)
+    elif metric_type == 'auroc':
+        # Area under ROC curve
+        metric_val = experiment.au_true_alarm_rate_false_alarm_rate_curve()
+    elif metric_type == 'auwtc':
+        # Area under warning time curve
+        metric_val = experiment.au_warning_time_false_alarm_rate_curve()
+    elif metric_type == 'maxf1':
+        # Highest f1 score
+        metric_val = experiment.max_f1()
+    elif metric_type == 'ettdi':
+        # Expected time to disruption error integral
+        metric_val = experiment.ettd_diff_integral()
     else:
         metric_val = None
 
     return metric_val
 
-def timeslice_eval(model, x_val, y_val, y_train, val_times):
+def timeslice_eval(experiment:Experiment, config):
+
+    # Get the model
+    model = experiment.predictor.model
+
+    # Load validation/test data
+    device = config['00_device']
+    dataset_path = config['00_dataset_path']
+
+    # Load either validation or test data
+    x_set, y_set = load_features_outcomes(device, dataset_path, experiment.experiment_type)
+
+    # Validation times are hardcoded for now
+    val_times = [0.1, 0.02]
 
     # Evaluate the model on the validation set
     try:
         if isinstance(model, SurvivalModel):
-            predictions_val = model.predict_survival(x_val, val_times)
-
+            predictions_val = model.predict_survival(x_set, val_times)
+            _, y_train = load_features_outcomes(device, dataset_path, 'train')
             if np.isnan(predictions_val).any():
                 return None
             else:
-                metric_val = survival_regression_metric('ibs', y_val, predictions_val, val_times, y_train)
+                metric_val = survival_regression_metric('ibs', y_set, predictions_val, val_times, y_train)
+        elif isinstance(model, RandomForestClassifier):
+            metric_val = model.score(x_set, y_set)
         else:
             return None
     except:
         metric_val = None
 
     return metric_val
-
-def au_roc_simple_threshold(model, ):
-
-
-
-#    return
-
