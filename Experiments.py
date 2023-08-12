@@ -188,7 +188,7 @@ class Experiment:
         for horizon in horizons:
             # Set up true labels and predicted risk scores
             y_true = label_shot_data(shot_data, disruptive, horizon)
-            y_pred = self.get_risk_at_time(shot, horizon)['risk'].values
+            y_pred = self.get_risk(shot, horizon=horizon)
 
             roc_auc_list.append(roc_auc_score(y_true, y_pred))
 
@@ -228,8 +228,10 @@ class Experiment:
                 # Determine if shot was disruptive
                 disruptive = shot in self.get_disruptive_shot_list()
                 # Set up true labels and predicted risk scores
-                y_true.extend(label_shot_data(shot_data, disruptive, horizon))
-                y_pred.extend(self.get_risk_at_time(shot, horizon)['risk'].values)
+                new_labels = label_shot_data(shot_data, disruptive, horizon)
+                new_predictions = self.get_risk(shot, horizon=horizon)
+                y_true.extend(new_labels)
+                y_pred.extend(new_predictions)
 
             roc_auc_list.append(roc_auc_score(y_true, y_pred))
 
