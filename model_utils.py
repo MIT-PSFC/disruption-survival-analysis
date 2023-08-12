@@ -33,7 +33,7 @@ def make_model(config:dict):
         The survival model to be trained
     """
 
-    model_type = config['model_type']
+    model_type = config['00_model_type']
     if model_type == 'cph':
         l2 = config['l2']
         model = SurvivalModel(model_type, l2=l2)

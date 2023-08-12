@@ -35,13 +35,6 @@ parameters:
   01metric:
     distribution: constant
     value: timeslice_ibs
-  # Min and max values for timeslice-based metric validation
-  01valmin:
-    min: 0.0
-    max: 0.15
-  01valmax: 
-    min: 0.95
-    max: 1.0
   # Model-specific hyperparameters
   l2:
     distribution: log_uniform_values
