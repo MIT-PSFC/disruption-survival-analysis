@@ -13,7 +13,7 @@ DEFAULT_HORIZONS = np.linspace(0.01, 0.4, 5)
 DEFAULT_HORIZONS[1] = 0.05
 DEFAULT_HORIZONS[2] = 0.1
 DEFAULT_HORIZONS[3] = 0.2
-MAX_WARNING_TIME_MS = 1000
+MAX_WARNING_TIME_MS = 200
 
 MINIMUM_WARNING_TIME = 0.02 # From Ryan, we need at least 20ms to react
 GOOD_WARNING_TIME = 0.1 # Also from Ryan, would be very nice to have 100ms to react
@@ -96,23 +96,25 @@ def plot_TAR_vs_FAR(experiment_list:list[Experiment], horizon=None, required_war
     plt.figure()
 
     # This gets funky because I want to plot the TAR as 0, 0.9, 0.99, 0.999, 1.0
+    # Still broken, going 
 
-    plt.yscale('log')
+    #plt.yscale('log')
 
     for experiment in experiment_list:
         false_alarm_rates, true_alarm_rates = experiment.true_alarm_rate_vs_false_alarm_rate(horizon, required_warning_time)
-        plt.plot(false_alarm_rates, 1-true_alarm_rates, label=experiment.name)
+        plt.plot(false_alarm_rates, true_alarm_rates, label=experiment.name)
 
     
-    plt.gca().invert_yaxis()
-    plt.gca().set_yticklabels(1-plt.gca().get_yticks())
+    #plt.gca().invert_yaxis()
+    #plt.gca().set_yticklabels(1-plt.gca().get_yticks())
 
 
     # Set x axis to be logarithmic scale (to better show the low false alarm rates)
-    plt.xscale('log')
+    #plt.xscale('log')
 
     plt.xlim([0, 1])
-    plt.ylim([-5, 0])
+    #plt.ylim([-5, 0])
+    plt.ylim([0, 1])
 
     plt.xlabel('False Alarm Rate')
     plt.ylabel('True Alarm Rate')
@@ -276,16 +278,14 @@ def plot_warning_time_vs_TAR(experiment_list:list[Experiment], horizon=DEFAULT_H
     plt.legend()
     plt.show()
 
-def plot_warning_time_vs_FAR(experiment_list:list[Experiment], horizon=DEFAULT_HORIZONS[0], min_far=None, max_far=None, min_warning_time=None, max_warning_time=None):
+def plot_warning_time_vs_FAR(experiment_list:list[Experiment], horizon=None, required_warning_time=MINIMUM_WARNING_TIME, min_far=None, max_far=None, min_warning_time=None, max_warning_time=None):
     """ Averaged over all shots
     """
-
-    horizon_ms = horizon*1000
 
     plt.figure()
 
     for experiment in experiment_list:
-        false_alarm_rates, warning_time_avg, warning_time_std = experiment.warning_time_vs_false_alarm_rate(horizon)
+        false_alarm_rates, warning_time_avg, warning_time_std = experiment.warning_time_vs_false_alarm_rate(horizon, required_warning_time)
         warning_time_avg_ms = [i * 1000 for i in warning_time_avg]
         warning_time_std_ms = [i * 1000 for i in warning_time_std]
         # TODO: reintroduce error bars
@@ -302,13 +302,16 @@ def plot_warning_time_vs_FAR(experiment_list:list[Experiment], horizon=DEFAULT_H
     if max_warning_time is None:
         max_warning_time = MAX_WARNING_TIME_MS
 
+    # Put a line at the required warning time
+    plt.plot([min_far, max_far], [required_warning_time*1000, required_warning_time*1000], 'k--')
+
     plt.xlim([min_far, max_far])
     plt.ylim([min_warning_time, max_warning_time])
 
     plt.xlabel('False Alarm Rate')
     plt.ylabel('Warning Time [ms]')
 
-    plt.title(f'Warning Time vs. False Alarm Rate at {horizon_ms:.0f} ms Horizon')
+    plt.title(f'Warning Time vs. {int(required_warning_time*1000)}ms False Alarm Rate')
 
     plt.legend()
     plt.show()
