@@ -263,8 +263,10 @@ class Experiment:
         # Array is of shape (num_shots, num_thresholds)
         alarm_times = np.zeros((len(shot_list), len(self.thresholds)))
 
-                # Determine which function to use 
-        if self.alarm_type == 'simple_threshold':
+        # Determine which function to use 
+        if self.alarm_type == 'sthr':
+            # Simple Threshold
+
             # Iterate through shots
             for i, shot in enumerate(shot_list):
 
@@ -275,7 +277,8 @@ class Experiment:
                 # Save the alarm times
                 alarm_times[i,:] = alarm_times_calced
         
-        elif self.alarm_type == 'hysteresis':
+        elif self.alarm_type == 'hyst':
+            # Hysteresis
 
             # Iterate through shots
             for i, shot in enumerate(shot_list):
@@ -287,7 +290,8 @@ class Experiment:
                 # Save the alarm times
                 alarm_times[i,:] = alarm_times_calced
         
-        elif self.alarm_type == 'expected_time_to_disruption':
+        elif self.alarm_type == 'ettd':
+            # Expected Time to Disruption
 
             # Iterate through shots
             for i, shot in enumerate(shot_list):
@@ -299,7 +303,8 @@ class Experiment:
                 # Save the alarm times
                 alarm_times[i,:] = alarm_times_calced
 
-        elif self.alarm_type == 'expected_time_to_disruption_hysteresis':
+        elif self.alarm_type == 'ethy':
+            # Expected time to disruption hysteresis
 
             # TBD if we want to do this (probably yes, and it shouldn't be too difficult)
             pass
@@ -461,12 +466,20 @@ class Experiment:
     def au_true_alarm_rate_false_alarm_rate_curve(self, horizon=None, required_warning_time=None):
         """ Calculate the area under the ROC curve for a given horizon and required warning time"""
 
-        raise NotImplementedError
+        false_alarm_rates, true_alarm_rates = self.true_alarm_rate_vs_false_alarm_rate(horizon, required_warning_time)
+
+        return np.trapz(true_alarm_rates, false_alarm_rates)
     
-    def au_warning_time_false_alarm_rate_curve(self, horizon=None, required_warning_time=None):
+    def au_warning_time_false_alarm_rate_curve(self, horizon=None, required_warning_time=None, FAR_lim=0.05):
         """ Calculate the area under the average warning time vs false alarm rate curve for a given horizon and required warning time"""
 
-        raise NotImplementedError
+        false_alarm_rates, warning_times, _ = self.warning_time_vs_false_alarm_rate(horizon, required_warning_time)
+
+        # Limit the false alarm rate to be less than FAR_lim
+        warning_times = warning_times[false_alarm_rates < FAR_lim]
+        false_alarm_rates = false_alarm_rates[false_alarm_rates < FAR_lim]
+
+        return np.trapz(warning_times, false_alarm_rates)
     
     def max_f1(self, horizon=None, required_warning_time=None):
         """ Calculate the best f1 score in terms of true alarm rate and false alarm rate for a given horizon and required warning time"""
