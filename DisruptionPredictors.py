@@ -31,6 +31,17 @@ class DisruptionPredictor:
         self.trained_required_warning_time = trained_required_warning_time
         self.trained_disruptive_window = trained_disruptive_window
 
+        self.features = None
+
+    def fill_features(self, data):
+        # Get the list of columns minus shot, time, and time to disruption
+
+        features = list(data.columns)
+        features.remove('shot')
+        features.remove('time')
+        features.remove('time_until_disrupt')
+        self.features = features
+
     # Methods for calculating the risk at each time slice for a given shot
     # using different models
 
@@ -86,12 +97,15 @@ class DisruptionPredictorSM(DisruptionPredictor):
 
         risk_at_time = data.copy()
 
+        if self.features is None:
+            self.fill_features(data)
+
         # Iterate through the data and calculate the risk for each time slice
         try:
-            risk_at_time['risk'] = self.model.predict_risk(data, horizon)
+            risk_at_time['risk'] = self.model.predict_risk(data[self.features], horizon)
         except:
             # DSM expects horizons in a list
-            risk_at_time['risk'] = self.model.predict_risk(data, [horizon])
+            risk_at_time['risk'] = self.model.predict_risk(data[self.features], [horizon])
 
         # Trim the data to only include the risk and time columns
         return risk_at_time[['risk', 'time']]
@@ -107,8 +121,11 @@ class DisruptionPredictorRF(DisruptionPredictor):
 
         risk_at_time = data.copy()
 
+        if self.features is None:
+            self.fill_features(data)
+
         # Iterate through the data and calculate the risk for each time slice
-        risk_at_time['risk'] = self.model.predict_proba(data)[:,1]
+        risk_at_time['risk'] = self.model.predict_proba(data[self.features])[:,1]
 
         return risk_at_time[['risk', 'time']]
     
@@ -129,6 +146,8 @@ class DisruptionPredictorKM(DisruptionPredictor):
         # disruption risk at some future time
         # P_disrupt(t + horizon) = P_disrupt(t) + slope * horizon
         
+        if self.features is None:
+            self.fill_features(data)
         
         if horizon is None:
             horizon = self.trained_disruptive_window

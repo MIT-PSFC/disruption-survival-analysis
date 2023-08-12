@@ -201,7 +201,7 @@ def save_model(model, model_name, device, dataset_path):
     except:
         pass
     model_file = model_path + '/' + model_name + '.pkl'
-    dill.dump([model], open(model_file, 'wb'))
+    dill.dump(model, open(model_file, 'wb'))
     print('Saved model to ' + model_file)
 
 def load_model(model_name, device, dataset_path):
