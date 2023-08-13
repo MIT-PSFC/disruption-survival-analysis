@@ -2,6 +2,8 @@
 
 import numpy as np
 
+# Labeling data
+
 def label_shot_data(shot_data, disrupt, disruptive_window):
     """
     Label the data as disruptive or not disruptive based on the disruptive window
@@ -31,6 +33,42 @@ def label_shot_data(shot_data, disrupt, disruptive_window):
         labeled_data = np.zeros(len(shot_data))
 
     return labeled_data
+
+def make_shot_lifetime_curve(times, disrupt, lifetime):
+    """
+    Create a shot lifetime curve from a list of times and a disruption time.
+    The shot lifetime curve is a simplistic linear model of the shot lifetime,
+    where non-disruptive shots have a constant lifetime throughout, 
+    and disruptive shots have a lifetime that is constant until the end where
+    it linearly decreases to 0
+
+    Parameters
+    ----------
+    times : numpy.ndarray
+        The times of each time slice in the shot
+    disrupt : bool
+        If the shot is disruptive
+    disruptive_window : float
+        Time before a disruption to label shot data as disruptive (in seconds)
+
+    Returns
+    -------
+    shot_lifetime_curve: numpy.ndarray
+        An array of what the anticipated shot lifetime should be with a simplistic linear model
+    """
+
+    if disrupt:
+        # If the shot disrupts, the lifetime is constant until the end
+        # where it linearly decreases to 0
+        shot_lifetime_curve = np.ones(len(times)) * lifetime
+        shot_lifetime_curve[times > (times.max() - lifetime)] = np.linspace(lifetime, 0, len(times[times > (times.max() - lifetime)]))
+    else:
+        # If the shot is not disruptive, all the timeslices get the same time
+        shot_lifetime_curve = np.ones(len(times)) * lifetime
+
+    return shot_lifetime_curve
+
+# Calculating alarm times
 
 def calculate_alarm_times(risk_at_time, thresholds):
     """
@@ -171,9 +209,10 @@ def calculate_alarm_times_ettd(ettd_at_time, thresholds):
             # If the ettd is below the threshold, save the alarm time
             if ettd < thresholds[j]:
                 alarm_times[j] = time
-    
 
     return alarm_times
+
+# Other functions
 
 def clump_many_to_one_statistics(unique_values_raw, clumping_values, epsilon=0.01):
     """
