@@ -463,11 +463,13 @@ def plot_ettd_compare_models(experiment_list:list[Experiment], shot):
     for i, experiment in enumerate(experiment_list):
         color = colors[i % len(colors)]
         lifetime_curve = make_shot_lifetime_curve(times, disruptive, experiment.predictor.trained_disruptive_window*1000)
-        plt.plot(times, lifetime_curve, label=experiment.name, color=color, linestyle='--')
-        ettd = experiment.get_ettd(shot)*1000
-        plt.plot(times, ettd, label=experiment.name, color=color, linestyle='-')
+        plt.plot(times, lifetime_curve, color=color, linestyle='--')
+        ettd_ms = experiment.get_ettd(shot)*1000
+        plt.plot(times, ettd_ms, label=experiment.name, color=color, linestyle='-')
 
     plt.xlim([times[0], times[-1]])
+    #plt.gca().set_ylim(bottom=0)
+    plt.ylim([0, 1000])
 
     plt.xlabel('Time [ms]')
     plt.ylabel('Expected Time To Disruption [ms]')
