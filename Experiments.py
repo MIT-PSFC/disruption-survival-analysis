@@ -485,50 +485,41 @@ class Experiment:
 
         return np.trapz(warning_times, false_alarm_rates)
     
-    def max_f1(self, horizon=None, required_warning_time=None):
+    def max_f1(self, horizon=None, required_warning_time=None, info=False):
         """ Calculate the best f1 score in terms of true alarm rate and false alarm rate for a given horizon and required warning time"""
 
         true_alarms, false_alarms = self.get_true_false_alarms(horizon, required_warning_time)
 
+        num_true_alarms = np.sum(true_alarms, axis=0)
+        num_false_alarms = np.sum(false_alarms, axis=0)
+
+
         # Calculate the f1 score for each threshold
         f1_scores = []
-        for num_true_alarms, num_false_alarms in zip(true_alarms, false_alarms):
-            num_missed_alarms = self.get_num_disruptive_shots() - num_true_alarms
-            f1_score = num_true_alarms/(num_true_alarms + 0.5*(num_missed_alarms + num_false_alarms))
+        for true_alarm_count, false_alarm_count in zip(num_true_alarms, num_false_alarms):
+            missed_alarm_count = self.get_num_disruptive_shots() - true_alarm_count
+            f1_score = true_alarm_count/(true_alarm_count + 0.5*(missed_alarm_count + false_alarm_count))
             f1_scores.append(f1_score)
 
         # Find the best f1 score
         best_f1_score = np.max(f1_scores)
 
-        return best_f1_score
-    
-    def max_f1_info(self, horizon=None, required_warning_time=None):
-        """ Get the true alarm rate, false alarm rate, and warning time statistics at the best f1 score,
-            for a given horizon and required warning time"""
-        
-        true_alarms, false_alarms = self.get_true_false_alarms(horizon, required_warning_time)
+        if info == False:
+            return best_f1_score
+        else:
+            # Find the index of the best f1 score
+            best_f1_score_index = np.argmax(f1_scores)
 
-        # Calculate the f1 score for each threshold
-        f1_scores = []
-        for num_true_alarms, num_false_alarms in zip(true_alarms, false_alarms):
-            num_missed_alarms = self.get_num_disruptive_shots() - num_true_alarms
-            f1_score = num_true_alarms/(num_true_alarms + 0.5*(num_missed_alarms + num_false_alarms))
-            f1_scores.append(f1_score)
+            # Get the true alarm rate, false alarm rate, and warning time at the best f1 score
+            true_alarm_rate = num_true_alarms[best_f1_score_index]/self.get_num_disruptive_shots()
+            false_alarm_rate = num_false_alarms[best_f1_score_index]/self.get_num_non_disruptive_shots()
+            
+            _, avg_warning_times, std_warning_times = self.warning_time_vs_threshold(horizon)
+            avg_warning_time = avg_warning_times[best_f1_score_index]
+            std_warning_time = std_warning_times[best_f1_score_index]
 
-        # Find the index of the best f1 score
-        best_f1_score_index = np.argmax(f1_scores)
+            return best_f1_score, true_alarm_rate, false_alarm_rate, avg_warning_time, std_warning_time
 
-        # Get the true alarm rate, false alarm rate, and warning time at the best f1 score
-        true_alarm_rate = true_alarms[best_f1_score_index]/self.get_num_disruptive_shots()
-        false_alarm_rate = false_alarms[best_f1_score_index]/self.get_num_non_disruptive_shots()
-        
-        _, avg_warning_times, std_warning_times = self.warning_time_vs_threshold(horizon)
-        avg_warning_time = avg_warning_times[best_f1_score_index]
-        std_warning_time = std_warning_times[best_f1_score_index]
-
-        return true_alarm_rate, false_alarm_rate, avg_warning_time, std_warning_time
-
-    
     def ettd_diff_integral(self, horizon=None, required_warning_time=None):
         """ Calculate the integral of the difference between the expected time to disruption and the actual time to disruption,
             for a given horizon and required warning time"""
