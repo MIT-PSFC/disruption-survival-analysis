@@ -54,7 +54,7 @@ def calculate_alarm_times(risk_at_time, thresholds):
         If no disruption is predicted, returns None in that position
     """
     
-    # Make a copy of the thresholds it to keep track of which have been used
+    # Make a copy of the thresholds to keep track of which have been used
     if isinstance(thresholds, np.ndarray):
         avail_thresholds = thresholds.tolist()
     else:
@@ -106,8 +106,45 @@ def calculate_alarm_times_hysteresis(risk_at_time, thresholds):
         Disruption is predicted when the risk exceeds the upper threshold
         and remains above the lower threshold for the window length (Same implementation as ENI script, maybe same as CERN?)
 
+    Returns
+    -------
+    alarm_times : list of float
+        The times of alarm (predicted disruption)
+        If no disruption is predicted, returns None in that position
     """
-    raise NotImplementedError("Hysterisis method not yet implemented")
+
+    # Make array of alarm times the same length as thresholds, starting with all None
+    alarm_times = [None] * len(thresholds)
+
+    # Make array of saved times the same length as thresholds
+    saved_times = np.zeros(len(thresholds))
+
+    # Go through the shot data
+    for i in range(len(risk_at_time)):
+        # Get the risk and time
+        risk = risk_at_time.iloc[i]['risk']
+        time = risk_at_time.iloc[i]['time']
+
+        # Go through the thresholds
+        for j in range(len(thresholds)):
+            # If alarm has already been triggered, skip
+            if alarm_times[j] is not None:
+                continue
+
+            # If the risk is above the upper threshold and we don't already have a time saved, save the time
+            if risk > thresholds[j][1] and saved_times[j] == 0:
+                saved_times[j] = time
+
+            # If the risk is below the lower threshold, reset the saved time
+            elif risk < thresholds[j][0]:
+                saved_times[j] = 0
+
+            # Check if enough time has elapsed to predict a disruption
+            if time - saved_times[j] > thresholds[j][2]:
+                # Save alarm time
+                alarm_times[j] = time
+
+    return alarm_times
 
 def calculate_alarm_times_ettd(ettd_at_time, thresholds):
     """
