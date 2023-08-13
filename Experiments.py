@@ -158,6 +158,11 @@ class Experiment:
     
     # Get expected time to disruption at time from predictor
 
+    def get_ettd(self, shot):
+        """ Returns the expected time to disruption for a shot """
+        ettd_at_time = self.get_ettd_at_time(shot)
+        return ettd_at_time['ettd'].values
+
     def get_ettd_at_time(self, shot):
         """ Returns the expected time to disruption for a shot"""
 
