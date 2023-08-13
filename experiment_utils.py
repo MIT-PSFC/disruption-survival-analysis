@@ -153,7 +153,27 @@ def calculate_alarm_times_ettd(ettd_at_time, thresholds):
     a disruption is predicted.
     """
 
-    raise NotImplementedError("Expected Time To Disruption method not yet implemented")
+    # Make array of alarm times the same length as thresholds, starting with all None
+    alarm_times = [None] * len(thresholds)
+
+    # Go through the shot data
+    for i in range(len(ettd_at_time)):
+        # Get the risk and time
+        ettd = ettd_at_time.iloc[i]['risk']
+        time = ettd_at_time.iloc[i]['time']
+
+        # Go through the thresholds
+        for j in range(len(thresholds)):
+            # If alarm has already been triggered, skip
+            if alarm_times[j] is not None:
+                continue
+            
+            # If the ettd is below the threshold, save the alarm time
+            if ettd < thresholds[j]:
+                alarm_times[j] = time
+    
+
+    return alarm_times
 
 def clump_many_to_one_statistics(unique_values_raw, clumping_values, epsilon=0.01):
     """
