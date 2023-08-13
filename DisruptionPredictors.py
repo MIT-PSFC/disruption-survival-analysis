@@ -114,20 +114,58 @@ class DisruptionPredictorSM(DisruptionPredictor):
 
         ettd_at_time = data.copy()
 
-        # Take samples of risk at three different horizons
+        # Take samples of risk at various horizons
         risk_at_time_10ms = self.calculate_risk_at_time(data, horizon=0.01)
         risk_at_time_20ms = self.calculate_risk_at_time(data, horizon=0.02)
         risk_at_time_100ms = self.calculate_risk_at_time(data, horizon=0.1)
+        risk_at_time_200ms = self.calculate_risk_at_time(data, horizon=0.2)
+        risk_at_time_1s = self.calculate_risk_at_time(data, horizon=1)
+
+        ettd_list = []
 
         # Calculate the expected time to disruption for each time slice
         for i in range(len(ettd_at_time)):
             risk_10ms = risk_at_time_10ms.iloc[i]['risk']
             risk_20ms = risk_at_time_20ms.iloc[i]['risk']
             risk_100ms = risk_at_time_100ms.iloc[i]['risk']
+            risk_200ms = risk_at_time_200ms.iloc[i]['risk']
+            risk_1s = risk_at_time_1s.iloc[i]['risk']
 
+            ettd_10ms = 0.01 / risk_10ms
+            ettd_20ms = 0.02 / risk_20ms
+            ettd_100ms = 0.1 / risk_100ms
+            ettd_200ms = 0.2 / risk_200ms
+            ettd_1s = 1 / risk_1s
 
-    
+            ettd_15ms = (ettd_10ms + ettd_20ms) / 2
+            ettd_60ms = (ettd_20ms + ettd_100ms) / 2
+            ettd_150ms = (ettd_100ms + ettd_200ms) / 2
+            ettd_600ms = (ettd_200ms + ettd_1s) / 2
 
+            # If expected time to disruption is greater than 1 second, use 1 second extrapolation
+            #if ettd_1s > 1:
+            #    final_ettd = ettd_1s
+            #else:
+            # TODO what we're doing here needs work
+            # 10 - 20 ms probability
+            p_15ms = risk_20ms - risk_10ms
+            # 20 - 100 ms probability
+            p_60ms = risk_100ms - risk_20ms
+            # 100 - 200 ms probability
+            p_150ms = risk_200ms - risk_100ms
+            # 200 ms - 1 s probability
+            p_600ms = risk_1s - risk_200ms
+
+            # Calculate the expected time to disruption
+            final_ettd = ettd_15ms * p_15ms + ettd_60ms * p_60ms + ettd_150ms * p_150ms + ettd_600ms * p_600ms
+
+            ettd_list.append(final_ettd)
+        
+        ettd_at_time['ettd'] = ettd_list
+        
+        # Trim the data to only include the ettd and time columns
+        return ettd_at_time[['ettd', 'time']]
+            
 class DisruptionPredictorRF(DisruptionPredictor):
     """Disruption Predictors using RandomForestClassifier from sklearn"""
 
@@ -145,6 +183,20 @@ class DisruptionPredictorRF(DisruptionPredictor):
         risk_at_time['risk'] = self.model.predict_proba(data[self.features])[:,1]
 
         return risk_at_time[['risk', 'time']]
+    
+    def calculate_ettd_at_time(self, data):
+
+        ettd_at_time = data.copy()
+        risk_at_time = self.calculate_risk_at_time(data)
+
+        # Calculate the expected time to disruption for each time slice
+        # Using the 'disruptivity' value in 1/s
+        for i in range(len(ettd_at_time)):
+            risk = risk_at_time.iloc[i]['risk']
+            ettd = (1 / risk) * self.trained_disruptive_window
+            ettd_at_time.iloc[i]['ettd'] = ettd
+
+        return ettd_at_time[['ettd', 'time']]
     
 class DisruptionPredictorKM(DisruptionPredictor):
     """Kaplan-Meier Disruption predictor like Tinguely et al. 2019"""
