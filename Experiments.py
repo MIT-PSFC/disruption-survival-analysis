@@ -514,9 +514,27 @@ class Experiment:
             true_alarm_rate = num_true_alarms[best_f1_score_index]/self.get_num_disruptive_shots()
             false_alarm_rate = num_false_alarms[best_f1_score_index]/self.get_num_non_disruptive_shots()
             
-            _, avg_warning_times, std_warning_times = self.warning_time_vs_threshold(horizon)
-            avg_warning_time = avg_warning_times[best_f1_score_index]
-            std_warning_time = std_warning_times[best_f1_score_index]
+            # Get threshold at the best f1 score
+            best_f1_threshold = self.thresholds[best_f1_score_index]
+
+            unique_thresholds, avg_warning_times, std_warning_times = self.warning_time_vs_threshold(horizon)
+            # Find index where threshold is equal to the best f1 score threshold
+            
+            if self.alarm_type == 'sthr':
+                warning_time_index = np.where(unique_thresholds == best_f1_threshold)
+            else:
+                # TODO make better
+                warning_time_index = -1
+                for i in range(len(unique_thresholds)):
+                    unique_threshold_first = unique_thresholds[i][0]
+                    unique_threshold_second = unique_thresholds[i][1]
+                    unique_threshold_third = unique_thresholds[i][2]
+                    if unique_threshold_first == best_f1_threshold[0] and unique_threshold_second == best_f1_threshold[1] and unique_threshold_third == best_f1_threshold[2]:
+                        warning_time_index = i
+                        break
+
+            avg_warning_time = avg_warning_times[warning_time_index]
+            std_warning_time = std_warning_times[warning_time_index]
 
             return best_f1_score, true_alarm_rate, false_alarm_rate, avg_warning_time, std_warning_time
 

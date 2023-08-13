@@ -110,6 +110,23 @@ class DisruptionPredictorSM(DisruptionPredictor):
         # Trim the data to only include the risk and time columns
         return risk_at_time[['risk', 'time']]
     
+    def calculate_ettd_at_time(self, data):
+
+        ettd_at_time = data.copy()
+
+        # Take samples of risk at three different horizons
+        risk_at_time_10ms = self.calculate_risk_at_time(data, horizon=0.01)
+        risk_at_time_20ms = self.calculate_risk_at_time(data, horizon=0.02)
+        risk_at_time_100ms = self.calculate_risk_at_time(data, horizon=0.1)
+
+        # Calculate the expected time to disruption for each time slice
+        for i in range(len(ettd_at_time)):
+            risk_10ms = risk_at_time_10ms.iloc[i]['risk']
+            risk_20ms = risk_at_time_20ms.iloc[i]['risk']
+            risk_100ms = risk_at_time_100ms.iloc[i]['risk']
+
+
+    
 
 class DisruptionPredictorRF(DisruptionPredictor):
     """Disruption Predictors using RandomForestClassifier from sklearn"""
