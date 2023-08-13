@@ -207,7 +207,10 @@ def clump_many_to_one_statistics(unique_values_raw, clumping_values, epsilon=0.0
     # TODO
 
     # Actually trim down to the unique values
-    unique_values = np.unique(unique_values_raw)
+    try:
+        unique_values = np.unique(unique_values_raw, axis=0)
+    except:
+        unique_values = np.unique(unique_values_raw)
 
     # Initialize the average and standard deviation arrays
     avg_clump_values = np.zeros(len(unique_values))
