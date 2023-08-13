@@ -7,6 +7,7 @@ from Experiments import Experiment
 
 from manage_datasets import load_features_outcomes
 from auton_survival.metrics import survival_regression_metric
+from experiment_utils import make_shot_lifetime_curve
 
 DEFAULT_HORIZONS = np.linspace(0.01, 0.4, 5)
 # TODO fix horizons
@@ -417,6 +418,7 @@ def plot_risk_compare_models(experiment_list:list[Experiment], shot):
 
     times = experiment_list[0].get_time(shot) * 1000
     final_time = times[-1]
+    disruptive = (shot in experiment_list[0].get_disruptive_shot_list())
 
     # Make a list of easy to see colors for each experiment
     colors = ['b', 'r', 'g', 'c', 'm', 'y', 'k']
@@ -440,19 +442,42 @@ def plot_risk_compare_models(experiment_list:list[Experiment], shot):
 
     plt.legend()
 
-    disruptive = (shot in experiment_list[0].get_disruptive_shot_list())
+    
 
     if disruptive:
         plt.title(f'Disruption Risk vs. Time for Shot {shot} (Disrupted)')
     else:
         plt.title(f'Disruption Risk vs. Time for Shot {shot} (Not Disrupted)')
 
-def plot_ettd_compare_models():
+def plot_ettd_compare_models(experiment_list:list[Experiment], shot):
     """ NOT RIGOROUS """
 
+    plt.figure()
 
-    
-    pass
+    times = experiment_list[0].get_time(shot) * 1000
+    disruptive = (shot in experiment_list[0].get_disruptive_shot_list())
+
+    # Make a list of easy to see colors for each experiment
+    colors = ['b', 'r', 'g', 'c', 'm', 'y', 'k']
+
+    for i, experiment in enumerate(experiment_list):
+        color = colors[i % len(colors)]
+        lifetime_curve = make_shot_lifetime_curve(times, disruptive, experiment.predictor.trained_disruptive_window*1000)
+        plt.plot(times, lifetime_curve, label=experiment.name, color=color, linestyle='--')
+        ettd = experiment.get_ettd(shot)*1000
+        plt.plot(times, ettd, label=experiment.name, color=color, linestyle='-')
+
+    plt.xlim([times[0], times[-1]])
+
+    plt.xlabel('Time [ms]')
+    plt.ylabel('Expected Time To Disruption [ms]')
+
+    plt.legend()
+
+    if disruptive:
+        plt.title(f'Expected Time To Disruption vs. Time for Shot {shot} (Disrupted)')
+    else:
+        plt.title(f'Expected Time To Disruption vs. Time for Shot {shot} (Not Disrupted)')
 
 def plot_shot_trace(experiment:Experiment, shot):
     pass
