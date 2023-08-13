@@ -410,11 +410,51 @@ def plot_risk_compare_horizons(experiment:Experiment, shot, horizons=DEFAULT_HOR
 
     plt.legend()
 
-def plot_risk_compare_models(experiment_list:list[Experiment], shot, horizon):
+def plot_risk_compare_models(experiment_list:list[Experiment], shot):
+    """Assumes the particular shot's data is the same for all experiments"""
+
+    plt.figure()
+
+    times = experiment_list[0].get_time(shot) * 1000
+    final_time = times[-1]
+
+    # Make a list of easy to see colors for each experiment
+    colors = ['b', 'r', 'g', 'c', 'm', 'y', 'k']
+    
+    for i, experiment in enumerate(experiment_list):
+        color = colors[i % len(colors)]
+        risk = experiment.get_risk(shot)
+        plt.plot(times, risk, label=experiment.name, color=color)
+        trained_warning_time = experiment.predictor.trained_required_warning_time*1000
+        # Plot with a solid vertical line
+        plt.axvline(x=final_time-trained_warning_time, color=color, linestyle='-')
+        trained_disruptive_window = experiment.predictor.trained_disruptive_window*1000
+        plt.axvline(x=final_time-trained_disruptive_window, color=color, linestyle='--')
     pass
 
-def plot_expected_lifetime():
+    plt.xlim([times[0], times[-1]])
+    plt.ylim([0, 1])
+
+    plt.xlabel('Time [ms]')
+    plt.ylabel('Disruption Risk')
+
+    plt.legend()
+
+    disruptive = (shot in experiment_list[0].get_disruptive_shot_list())
+
+    if disruptive:
+        plt.title(f'Disruption Risk vs. Time for Shot {shot} (Disrupted)')
+    else:
+        plt.title(f'Disruption Risk vs. Time for Shot {shot} (Not Disrupted)')
+
+def plot_ettd_compare_models():
     """ NOT RIGOROUS """
+
+
+    
+    pass
+
+def plot_shot_trace(experiment:Experiment, shot):
     pass
 
 # Plots for showing the composition of the dataset
@@ -430,7 +470,7 @@ def plot_all_shot_durations(experiment:Experiment):
     plt.xlabel('Shot Duration [ms]')
     plt.ylabel('Number of Shots')
 
-    plt.title(f'Shot Durations for {experiment.dataset_path}')
+    plt.title(f'Shot Durations for {experiment.name}')
 
     plt.show()
 
