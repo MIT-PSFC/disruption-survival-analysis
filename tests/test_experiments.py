@@ -12,9 +12,8 @@ from disruption_survival_analysis.DisruptionPredictors import DisruptionPredicto
 #from disruption_survival_analysis.model_utils import load_model
 from disruption_survival_analysis.experiment_utils import label_shot_data, calculate_alarm_times, clump_many_to_one_statistics
 
-
-TEST_DEVICE = 'cmod'
-TEST_DATASET_PATH = 'random_flattop_256_shots_60%_disruptive'
+TEST_DEVICE = 'synthetic'
+TEST_DATASET_PATH = 'synthetic100'
 
 class TestSimpleFunctions(unittest.TestCase):
 
