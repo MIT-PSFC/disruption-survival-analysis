@@ -1,6 +1,6 @@
 import os
 import wandb
-from experiment_utils import make_experiment
+from Experiments import make_experiment
 from model_evaluation import evaluate_model
 
 # Set up WandB

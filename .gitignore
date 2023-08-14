@@ -183,5 +183,8 @@ data/d3d
 # WandB output files
 wandb
 
+# Sweep configs
+*_sweep.yaml
+
 # SLURM output files
 *.out
