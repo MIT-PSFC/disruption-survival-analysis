@@ -176,6 +176,9 @@ data/d3d
 *_test.csv
 *_train.csv
 *_val.csv
+*test.csv
+*train.csv
+*val.csv
 
 # Locally trained model pickles
 *.pkl
