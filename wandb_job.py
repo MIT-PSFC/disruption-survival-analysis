@@ -1,7 +1,7 @@
 import os
 import wandb
-from Experiments import make_experiment
-from model_evaluation import evaluate_model
+from disruption_survival_analysis.Experiments import make_experiment
+from disruption_survival_analysis.model_evaluation import evaluate_model
 
 # Set up WandB
 os.environ["WANDB__SERVICE_WAIT"] = "800"
