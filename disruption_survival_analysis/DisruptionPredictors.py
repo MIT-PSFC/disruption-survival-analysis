@@ -34,7 +34,17 @@ class DisruptionPredictor:
         self.features = None
 
     def fill_features(self, data):
-        # Get the list of columns minus shot, time, and time to disruption
+        """Get the list of columns minus shot, time, and time to disruption
+        
+        Parameters
+        ----------
+        data : pandas.DataFrame
+            The data to get the features from
+
+        Returns
+        -------
+        None
+        """
 
         features = list(data.columns)
         features.remove('shot')
