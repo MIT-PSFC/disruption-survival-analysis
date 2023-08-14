@@ -10,7 +10,7 @@ from sklearn.ensemble import RandomForestClassifier
 def evaluate_model(experiment:Experiment, config):
 
     # Get the metric we're evaluating the model's performance on
-    metric_type = config['01_metric']
+    metric_type = config['ab-metric']
 
     if metric_type == 'tslic':
         # Timeslice metric. Micro avgerage over entire dataset
@@ -39,8 +39,8 @@ def timeslice_eval(experiment:Experiment, config):
     model = experiment.predictor.model
 
     # Load validation/test data
-    device = config['00_device']
-    dataset_path = config['00_dataset_path']
+    device = config['aa-device']
+    dataset_path = config['aa-dataset-path']
 
     # Load either validation or test data
     x_set, y_set = load_features_outcomes(device, dataset_path, experiment.experiment_type)

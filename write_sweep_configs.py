@@ -112,17 +112,17 @@ def make_sweep_config(device, dataset_path, model, alarm_type, metric, required_
     # Write the parameter config
     parameters = {}
 
-    parameters["00_device"] = {"value": device,
+    parameters["aa-device"] = {"value": device,
                                 "distribution": "constant"}
-    parameters["00_dataset_path"] = {"value": dataset_path,
+    parameters["aa-dataset-path"] = {"value": dataset_path,
                                     "distribution": "constant"}
-    parameters["00_model_type"] = {"value": model,
+    parameters["aa-model-type"] = {"value": model,
                                     "distribution": "constant"}
-    parameters["01_alarm_type"] = {"value": alarm_type,
+    parameters["ab-alarm-type"] = {"value": alarm_type,
                                     "distribution": "constant"}
-    parameters["01_metric"] = {"value": metric,
+    parameters["ab-metric"] = {"value": metric,
                                 "distribution": "constant"}
-    parameters["01_required_warning_time"] = {"value": required_warning_time,
+    parameters["ab-required-warning-time"] = {"value": required_warning_time,
                                                 "distribution": "constant"}
     
     # Add the hyperparameters to the config
@@ -135,12 +135,12 @@ def make_sweep_config(device, dataset_path, model, alarm_type, metric, required_
 
 def write_sweep_config(sweep_config):
     # Write the sweep config to a file
-    device = sweep_config["parameters"]["00_device"]["value"]
-    dataset_path = sweep_config["parameters"]["00_dataset_path"]["value"]
-    model = sweep_config["parameters"]["00_model_type"]["value"]
-    alarm_type = sweep_config["parameters"]["01_alarm_type"]["value"]
-    metric = sweep_config["parameters"]["01_metric"]["value"]
-    required_warning_time = sweep_config["parameters"]["01_required_warning_time"]["value"]
+    device = sweep_config["parameters"]["aa-device"]["value"]
+    dataset_path = sweep_config["parameters"]["aa-dataset-path"]["value"]
+    model = sweep_config["parameters"]["aa-model-type"]["value"]
+    alarm_type = sweep_config["parameters"]["ab-alarm-type"]["value"]
+    metric = sweep_config["parameters"]["ab-metric"]["value"]
+    required_warning_time = sweep_config["parameters"]["ab-required-warning-time"]["value"]
 
     sweep_config_name = f"{model}_{alarm_type}_{metric}_{int(required_warning_time*1000)}ms_sweep"
 

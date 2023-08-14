@@ -17,4 +17,4 @@ except:
     # If anything goes wrong during training or validation, log a None value
     metric_val = None
 
-wandb.log({config['metric']: metric_val})
+wandb.log({config['ab-metric']: metric_val})

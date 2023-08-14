@@ -1,21 +1,21 @@
 wandb_version: 1
 
-00_device:
+aa-device:
   desc: null
   value: cmod
-00_dataset_path:
+aa-dataset-path:
   desc: null
   value: no_ufo_flattop_7736_shots_6%_disruptive
-00_model_type:
+aa-model-type:
   desc: null
   value: dsm
-01_alarm_type:
+ab-alarm-type:
   desc: null
   value: hyst
-01_metric:
+ab-metric:
   desc: null
   value: auroc
-01_required_warning_time:
+ab-required-warning-time:
   desc: null
   value: 0.02
 batch_size:

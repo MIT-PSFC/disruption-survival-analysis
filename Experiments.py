@@ -573,7 +573,7 @@ def make_experiment(config, experiment_type):
     # Create the model and predictor for the experiment
     model = get_model_for_experiment(config, experiment_type)
 
-    required_warning_time = config['01_required_warning_time']
+    required_warning_time = config['ab-required-warning-time']
 
     name = name_model(config)
 
@@ -585,8 +585,8 @@ def make_experiment(config, experiment_type):
         raise ValueError('Model type not recognized')
     
     # Load data for the experiment
-    all_data = load_dataset(config['00_device'], config['00_dataset_path'], experiment_type)
+    all_data = load_dataset(config['aa-device'], config['aa-dataset-path'], experiment_type)
 
-    experiment = Experiment(name, all_data, predictor, experiment_type, config['01_alarm_type'])
+    experiment = Experiment(name, all_data, predictor, experiment_type, config['ab-alarm-type'])
 
     return experiment
