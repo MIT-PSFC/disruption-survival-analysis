@@ -5,8 +5,7 @@ from sklearn.ensemble import RandomForestClassifier
 
 class DisruptionPredictor:
     """Analog to how a machine learning model would be seen by the plasma control system
-    Data goes in, disruption time comes out
-    This class does NOT store actual data, it only stores the model and features
+    Data goes in, risk or expected time to disruption comes out
     """
 
     def __init__(self, name, model, trained_required_warning_time, trained_disruptive_window):
@@ -33,6 +32,15 @@ class DisruptionPredictor:
 
         self.features = None
 
+        # 2D Dictionary of pandas arrays 
+        # First Key is the horizon in seconds
+        # Second Key is the shot number 
+        self.risk_at_times = {} # Risks at each time for each shot
+
+        # 1D Dictionary of pandas arrays
+        # Key is the shot number
+        self.ettd_at_times = {} # Expected time to disruption at each time for each shot
+
     def fill_features(self, data):
         """Get the list of columns minus shot, time, and time to disruption
         
@@ -51,11 +59,109 @@ class DisruptionPredictor:
         features.remove('time')
         features.remove('time_until_disrupt')
         self.features = features
+    
+    def get_risk(self, shot, shot_data, horizon=None):
+        """
+        Calculate the risk of disruption for a given shot
+
+        Parameters
+        ----------
+        shot : int
+            The shot number to calculate the risk for
+        shot_data : pandas.DataFrame
+            The data to calculate the risk for.
+        
+        Returns
+        -------
+        risk: pandas.DataFrame
+            Dataframe with a 'risk' column
+        """
+
+        risk_at_times = self.get_risk_at_times(shot, shot_data, horizon)
+
+        risk = risk_at_times['risk'].values
+
+        return risk
+    
+    def get_ettd(self, shot, shot_data):
+        """
+        Calculate the expected time to disruption for a given shot
+
+        Parameters
+        ----------
+        shot : int
+            The shot number to calculate the expected time to disruption for
+        shot_data : pandas.DataFrame
+            The data to calculate the expected time to disruption for
+        
+        Returns
+        -------
+        ettd : pandas.DataFrame
+            Dataframe with a 'ettd' column
+        """
+
+        ettd_at_times = self.get_ettd_at_times(shot, shot_data)
+
+        ettd = ettd_at_times['ettd'].values
+
+        return ettd
+
+
+    def get_risk_at_times(self, shot, shot_data, horizon=None):
+        """
+        Calculate the risk of disruption for a given shot at each time slice
+
+        Parameters
+        ----------
+        shot : int
+            The shot number to calculate the risk for
+        shot_data : pandas.DataFrame
+            The data to calculate the risk for.
+        
+        Returns
+        -------
+        risk_at_time : pandas.DataFrame
+            Dataframe with a 'risk' and 'time' column
+        """
+
+        if horizon is None:
+            horizon = self.trained_disruptive_window
+
+        # If the risk at this time has not already been calculated, calculate it
+        if horizon not in self.risk_at_times:
+            self.risk_at_times[horizon] = {}
+        if shot not in self.risk_at_times[horizon]:
+            self.risk_at_times[horizon][shot] = self._calculate_risk_at_times(shot_data, horizon)
+
+        return self.risk_at_times[horizon][shot]
+
+    def get_ettd_at_times(self, shot, shot_data):
+        """
+        Get the expected time to disruption for a given shot at each time slice
+
+        Parameters
+        ----------
+        shot : int
+            The shot number to calculate the expected time to disruption for
+        shot_data : pandas.DataFrame
+            The data to calculate the expected time to disruption for
+        
+        Returns
+        -------
+        ettd_at_time : pandas.DataFrame
+            Dataframe with a 'ettd' and 'time' column
+        """
+
+        # If the ettd at this time has not already been calculated, calculate it
+        if shot not in self.ettd_at_times:
+            self.ettd_at_times[shot] = self._calculate_ettd_at_times(shot, shot_data)
+
+        return self.ettd_at_times[shot]
 
     # Methods for calculating the risk at each time slice for a given shot
     # using different models
 
-    def calculate_risk_at_time(self, data, horizon=None):
+    def _calculate_risk_at_times(self, data, horizon):
         """
         Finds the risk of disruption for a given shot at each time slice
         when looking horizon seconds into the future
@@ -76,7 +182,7 @@ class DisruptionPredictor:
 
         raise NotImplementedError("calculate_risk() must be implemented by a subclass of DisruptionPredictor")
     
-    def calculate_ettd_at_time(self, data):
+    def _calculate_ettd_at_times(self, shot, data):
         """
         Calculates the expected time to disruption for a given shot at each time slice.
 
@@ -100,7 +206,7 @@ class DisruptionPredictorSM(DisruptionPredictor):
     def __init__(self, name, model:SurvivalModel, trained_required_warning_time, trained_horizon):
         super().__init__(name, model, trained_required_warning_time, trained_horizon)
 
-    def calculate_risk_at_time(self, data, horizon=None):
+    def _calculate_risk_at_times(self, data, horizon=None):
 
         if horizon is None:
             horizon = self.trained_disruptive_window
@@ -120,17 +226,17 @@ class DisruptionPredictorSM(DisruptionPredictor):
         # Trim the data to only include the risk and time columns
         return risk_at_time[['risk', 'time']]
     
-    def calculate_ettd_at_time(self, data):
+    def _calculate_ettd_at_time(self, shot, data):
 
         ettd_at_time = data.copy()
 
         # Take samples of risk at various horizons
-        risk_at_time_1ms = self.calculate_risk_at_time(data, horizon=0.001)
-        risk_at_time_10ms = self.calculate_risk_at_time(data, horizon=0.01)
-        risk_at_time_20ms = self.calculate_risk_at_time(data, horizon=0.02)
-        risk_at_time_100ms = self.calculate_risk_at_time(data, horizon=0.1)
-        risk_at_time_200ms = self.calculate_risk_at_time(data, horizon=0.2)
-        risk_at_time_1s = self.calculate_risk_at_time(data, horizon=1)
+        risk_at_time_1ms = self.get_risk_at_times(shot, data, horizon=0.001)
+        risk_at_time_10ms = self.get_risk_at_times(shot, data, horizon=0.01)
+        risk_at_time_20ms = self.get_risk_at_times(shot, data, horizon=0.02)
+        risk_at_time_100ms = self.get_risk_at_times(shot, data, horizon=0.1)
+        risk_at_time_200ms = self.get_risk_at_times(shot, data, horizon=0.2)
+        risk_at_time_1s = self.get_risk_at_times(shot, data, horizon=1)
 
         ettd_list = []
 
@@ -175,7 +281,7 @@ class DisruptionPredictorRF(DisruptionPredictor):
     def __init__(self, name, model:RandomForestClassifier, trained_required_warning_time, trained_class_time):
         super().__init__(name, model, trained_required_warning_time, trained_class_time)
 
-    def calculate_risk_at_time(self, data, horizon=None):
+    def _calculate_risk_at_time(self, shot, data, horizon=None):
 
         risk_at_time = data.copy()
 
@@ -187,10 +293,10 @@ class DisruptionPredictorRF(DisruptionPredictor):
 
         return risk_at_time[['risk', 'time']]
     
-    def calculate_ettd_at_time(self, data):
+    def _calculate_ettd_at_time(self, shot, data):
 
         ettd_at_time = data.copy()
-        risk_at_time = self.calculate_risk_at_time(data)
+        risk_at_time = self.get_risk_at_times(shot, data)
 
         # Calculate the expected time to disruption for each time slice
         # Using the 'disruptivity' value in 1/s
@@ -212,7 +318,7 @@ class DisruptionPredictorKM(DisruptionPredictor):
         # x and y should be numpy arrays
         return (len(x) * np.sum(x * y) - np.sum(x) * np.sum(y)) / (len(x) * np.sum(x**2) - np.sum(x)**2)
     
-    def calculate_risk_at_time(self, data, horizon=None, t_fit=None):
+    def _calculate_risk_at_time(self, shot, data, horizon=None, t_fit=None):
         # This disruption predictor takes present predicted disruption risk and a
         # linear least-square's fit over some previous time window to predict the
         # disruption risk at some future time
