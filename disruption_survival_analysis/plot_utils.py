@@ -85,26 +85,6 @@ def plot_time_to_disrupt(device, dataset, shot_number, risk_time, model, transfo
     ax.legend()
 
 
-def get_shot_features(device, dataset, shot_number, features=DEFAULT_FEATURES):
-
-    data = load_dataset(device, dataset)
-
-    shot = data[data['shot'] == shot_number]
-    shot = shot.sort_values('time')
-
-    # Determine if the shot was disrupted
-    disruptive = shot['time_until_disrupt'].notnull().any()
-
-    times = shot['time'].values
-    
-    shot = shot[features]
-
-    # Transform the features
-    shot = transformer.transform(shot)
-
-    return shot, times, disruptive
-
-
 def plot_survival(device, dataset, shot_number, survival_time, models, names, transformer):
     """ Given a database and a trained model, plot the predicted survival probability
     over a certain time horizon against the actual ip"""
