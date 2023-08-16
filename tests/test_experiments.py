@@ -47,10 +47,11 @@ class TestSimpleFunctions(unittest.TestCase):
         next_disruptive_shot = 0
         next_non_disruptive_shot = 0
         for shot in all_shots:
-            if shot == disruptive_shots[next_disruptive_shot]:
-                next_disruptive_shot += 1
-            elif shot == non_disruptive_shots[next_non_disruptive_shot]:
-                next_non_disruptive_shot += 1
+            if next_disruptive_shot < len(disruptive_shots) and shot == disruptive_shots[next_disruptive_shot]:
+                    next_disruptive_shot += 1
+            elif next_non_disruptive_shot < len(non_disruptive_shots) and next_non_disruptive_shot < len(non_disruptive_shots):
+                if shot == non_disruptive_shots[next_non_disruptive_shot]:
+                    next_non_disruptive_shot += 1
             else:
                 self.fail("Shot lists are not ordered consistently")
 

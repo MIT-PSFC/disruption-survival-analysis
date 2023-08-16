@@ -98,9 +98,9 @@ def make_training_sets(device, dataset_path, random_seed=0, debug=False):
 
     # Print the number of shots in each set
     if debug:
-        print('Training shots: {}'.format(len(train_shots)))
-        print('Test shots: {}'.format(len(test_shots)))
-        print('Validation shots: {}'.format(len(val_shots)))
+        print('Training shots: {}'.format(len(disrupt_train_shots)+len(non_disrupt_train_shots)))
+        print('Test shots: {}'.format(len(disrupt_test_shots)+len(non_disrupt_test_shots)))
+        print('Validation shots: {}'.format(len(disrupt_val_shots)+len(non_disrupt_val_shots)))
 
 def make_stacked_sets(device, dataset_path, dataset_category, stack_size):
     """Given some dataset, stack the features so each timeslice includes itself and the stack_size previous timeslices
