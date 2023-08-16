@@ -166,6 +166,7 @@ cython_debug/
 auton-survival
 estimators_demo_utils.py
 Survival Regression with Auton-Survival copy.ipynb
+reference
 
 # Data files from Alcator C-Mod and DIII-D
 data/cmod
@@ -175,6 +176,18 @@ data/d3d
 *_test.csv
 *_train.csv
 *_val.csv
+*test.csv
+*train.csv
+*val.csv
 
-# Locally trained model pikles
-models
+# Locally trained model pickles
+*.pkl
+
+# WandB output files
+wandb
+
+# Sweep configs
+*_sweep.yaml
+
+# SLURM output files
+*.out
