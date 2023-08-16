@@ -195,6 +195,20 @@ def calculate_alarm_times_ettd(ettd_at_time, thresholds):
     Calculates the alarm times for a given shot using the expected time to disruption.
     If the expected time to disruption output of the model drops below some threshold,
     a disruption is predicted.
+
+    Parameters
+    ----------
+    ettd_at_time : pandas.DataFrame
+        The expected time to disruption for each time slice in a single shot
+        Should be sorted by time
+    thresholds: list of float
+        An alarm is triggered if expected time to disruption < threshold
+
+    Returns
+    -------
+    alarm_times : list
+        The times of alarm for each threshold. 
+        If no alarm is triggered, returns None in that position
     """
 
     # Make array of alarm times the same length as thresholds, starting with all None
@@ -221,6 +235,27 @@ def calculate_alarm_times_ettd(ettd_at_time, thresholds):
 # Calculating evaluation metrics
 
 def timeslice_micro_average(device, dataset_path, model, experiment_type):
+    """
+    Calculates the micro-averaged metric for a given model on a given dataset
+    If the model is a survival model, calculates the IBS metric
+    If the model is a classifier, calculates the mean accuracy
+
+    Parameters
+    ----------
+    device : str
+        The device used for training and evaluation
+    dataset_path : str
+        The path to the dataset to use for evaluation
+    model : SurvivalModel or RandomForestClassifier
+        The model to evaluate
+    experiment_type : str
+        The type of experiment is being run, either 'val' or 'test'
+
+    Returns
+    -------
+    metric_val : float
+        The micro-averaged metric for the model on the dataset
+    """
     # Load either validation or test data
     x_set, y_set = load_features_outcomes(device, dataset_path, experiment_type)
 
@@ -246,6 +281,24 @@ def timeslice_micro_average(device, dataset_path, model, experiment_type):
     return metric_val
 
 def area_under_curve(x_vals, y_vals, x_cutoff=None):
+    """
+    Calculates the area under the curve for a given set of x and y values
+    If x_cutoff is specified, the area under the curve is calculated only up to x_cutoff
+
+    Parameters
+    ----------
+    x_vals : array-like
+        The x values for the curve
+    y_vals : array-like
+        The y values for the curve
+    x_cutoff : float
+        The x value to cutoff the curve at (will be evaluated as x < x_cutoff)
+    
+    Returns
+    -------
+    auc : float
+        The area under the curve
+    """
 
     # Limit the false alarm rate to be less than the x cutoff
     x_vals = x_vals[x_vals < x_cutoff]
@@ -260,7 +313,24 @@ def area_under_curve(x_vals, y_vals, x_cutoff=None):
     return auc
 
 def calculate_f1_scores(true_alarm_count_array, false_alarm_count_array, num_disruptive_shots):
-    # Calculate the f1 score for each threshold
+    """
+    Calculates the F1 scores for a given set of true alarm counts and false alarm counts
+
+    Parameters
+    ----------
+    true_alarm_count_array : array-like
+        The number of true alarms for each threshold
+    false_alarm_count_array : array-like
+        The number of false alarms for each threshold
+    num_disruptive_shots : int
+        The number of shots that disrupted
+
+    Returns
+    -------
+    f1_scores : array-like
+        The F1 score for each threshold
+    
+    """
     f1_scores = []
     for true_alarm_count, false_alarm_count in zip(true_alarm_count_array, false_alarm_count_array):
         missed_alarm_count = num_disruptive_shots - true_alarm_count

@@ -4,6 +4,8 @@ import pandas as pd
 from disruption_survival_analysis.experiment_utils import *
 from disruption_survival_analysis.manage_datasets import load_dataset
 
+# Labeling data tests
+
 class TestLabelShotData(unittest.TestCase):
     """Tests for the function label_shot_data"""
 
@@ -32,7 +34,7 @@ class TestLabelShotData(unittest.TestCase):
         shot_data = pd.DataFrame({'time': [0.1, 0.2, 0.3, 0.4, 0.5]})
 
         # Call the label_shot_data function as a non-disruptive shot
-        labels = label_shot_data(shot_data, False, 0)
+        labels = label_shot_data(shot_data, False, 0.2)
 
         # Check that the returned data is the same length as the input data
         self.assertEqual(len(labels), 5)
@@ -44,7 +46,7 @@ class TestMakeShotLifetimeCurve(unittest.TestCase):
     """Tests for the function make_shot_lifetime_curve"""
 
     def setUp(self):
-        data = load_dataset("synthetic", "test", "train")
+        self.data = load_dataset("synthetic", "test", "train")
 
     def test_curve_values_disruptive(self):
         """Test that the curve values are correct for disruptive shots"""
@@ -60,6 +62,8 @@ class TestMakeShotLifetimeCurve(unittest.TestCase):
         """Test that the curve has the correct length"""
 
         self.fail("Not implemented")
+
+# Alarm time tests
 
 class TestCalculateAlarmTimes(unittest.TestCase):
     """Tests for the function calculate_alarm_times"""
@@ -93,6 +97,22 @@ class TestCalculateAlarmTimesHysteresis(unittest.TestCase):
 
 class TestCalculateAlarmTimesEttd(unittest.TestCase):
     """Tests for the function calculate_alarm_times_ettd"""
+
+# Evaluation metric tests
+
+class TestTimesliceMicroAverage(unittest.TestCase):
+    """Tests for the function timeslice_micro_average"""
+
+class TestAreaUnderCurve(unittest.TestCase):
+    """Tests for the function area_under_curve"""
+
+class TestCalculateF1Scores(unittest.TestCase):
+    """Tests for the function calculate_f1_scores"""
+
+class TestExpectedTimeToDisruptionIntegral(unittest.TestCase):
+    """Tests for the function expected_time_to_disruption_integral"""
+
+# Misc function tests
 
 class TestClumpManyToOneStatistics(unittest.TestCase):
     """Tests for the function clump_many_to_one_statistics"""
@@ -155,13 +175,3 @@ class TestClumpManyToOneStatistics(unittest.TestCase):
 
         self.assertEqual(std_warning_times[0], np.std(first_warns))
         self.assertEqual(std_warning_times[1], np.std(second_warns))
-
-    def test_clump_many_to_one_statistics_TAR_vs_FAR(self):
-
-        # Load simple CPH model
-        
-
-        try:
-            false_alarm_rates, true_alarm_rates = self.experiment.true_alarm_rate_vs_false_alarm_rate(0.05, 0.02)
-        except:
-            self.fail("true_alarm_rate_vs_false_alarm_rate raised an exception unexpectedly!")
