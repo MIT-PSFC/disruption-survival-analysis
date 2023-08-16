@@ -1,11 +1,12 @@
 # Functions used by experiments but not actually part of the experiments
 
 import numpy as np
+import yaml
 
 from sklearn.ensemble import RandomForestClassifier
 from auton_survival.estimators import SurvivalModel
 from auton_survival.metrics import survival_regression_metric
-from manage_datasets import load_features_outcomes
+from disruption_survival_analysis.manage_datasets import load_features_outcomes
 
 
 # Labeling data
@@ -409,3 +410,36 @@ def clump_many_to_one_statistics(unique_values_raw, clumping_values, epsilon=0.0
         std_clump_values[i] = np.std(clumping_values_1D)
 
     return unique_values, avg_clump_values, std_clump_values
+
+def load_experiment_config(device, dataset, model_type, alarm_type, metric, required_warning_time):
+    """
+    Load an experiment config dictionary from a config file
+    Expects file to be one directory up from the current directory, in the 'models' folder
+
+    Parameters
+    ----------
+    device : str
+        The device to load the config for
+    dataset : str
+        The dataset to load the config for
+    model_type : str
+        The model type to load the config for.
+        Choices are 'cph', 'dcph', 'dcm', 'dsm', 'rf', 'km'
+
+    Returns
+    -------
+    experiment_config : dict
+        The experiment config dictionary
+    
+    """
+
+    # Get the path to the config file
+    file_name = f"{model_type}_{alarm_type}_{metric}_{int(required_warning_time*1000)}ms.yaml"
+
+    full_path = f"../models/{device}/{dataset}/{file_name}"
+
+    # Load the yaml file into a dictionary
+    with open(full_path, 'r') as f:
+        experiment_config = yaml.safe_load(f)
+
+    return experiment_config

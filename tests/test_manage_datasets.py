@@ -3,7 +3,7 @@
 import os
 import unittest
 
-from disruption_survival_analysis.manage_datasets import *
+from disruption_survival_analysis.manage_datasets import make_training_sets, make_stacked_sets, load_dataset, load_shot_list, load_disruptive_shot_list
 
 TEST_DEVICE = 'synthetic'
 TEST_DATASET_PATH = 'synthetic100'

@@ -3,14 +3,14 @@
 import numpy as np
 
 from sklearn.metrics import roc_auc_score
-from manage_datasets import load_dataset
-from experiment_utils import label_shot_data, calculate_alarm_times, calculate_alarm_times_hysteresis, calculate_alarm_times_ettd, timeslice_micro_average, area_under_curve, calculate_f1_scores, expected_time_to_disruption_integral, clump_many_to_one_statistics
-from model_utils import get_model_for_experiment, name_model
+from disruption_survival_analysis.manage_datasets import load_dataset
+from disruption_survival_analysis.experiment_utils import label_shot_data, calculate_alarm_times, calculate_alarm_times_hysteresis, calculate_alarm_times_ettd, timeslice_micro_average, area_under_curve, calculate_f1_scores, expected_time_to_disruption_integral, clump_many_to_one_statistics
+from disruption_survival_analysis.model_utils import get_model_for_experiment, name_model
 
 from auton_survival.estimators import SurvivalModel # CPH, DCPH, DSM, DCM, RSF
 from sklearn.ensemble import RandomForestClassifier
 
-from DisruptionPredictors import DisruptionPredictorSM, DisruptionPredictorRF
+from disruption_survival_analysis.DisruptionPredictors import DisruptionPredictorSM, DisruptionPredictorRF
 
 class Experiment:
     """ Class that holds onto data shared between multiple experiments """

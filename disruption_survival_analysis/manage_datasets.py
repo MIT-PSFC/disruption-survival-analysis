@@ -12,7 +12,6 @@ DROPPED_FEATURES = ['v_surf', 'dbetap_dt', 'dli_dt', 'dWmhd_dt', 'dn_dt', 'dip_d
 
 # Functions for making new datasets
 
-
 def make_training_sets(device, dataset_path, random_seed=0, debug=False):
     """
     Split the raw data into training, test, and validation sets,

@@ -13,7 +13,7 @@ from auton_survival.models.dsm import DeepRecurrentSurvivalMachines # DSM with r
 # Model used in DPRF
 from sklearn.ensemble import RandomForestClassifier
 
-from manage_datasets import load_features_outcomes, load_features_labels
+from disruption_survival_analysis.manage_datasets import load_features_outcomes, load_features_labels
 
 
 # Methods for training models

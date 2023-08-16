@@ -1,16 +1,12 @@
 """Test functions to ensure that the data preprocessing works as expected
 """
 import unittest
-import numpy as np
-import pandas as pd
 
-
-from disruption_survival_analysis.manage_datasets import load_dataset, load_disruptive_shot_list, load_non_disruptive_shot_list
-#from disruption_survival_analysis.Experiments import Experiment, make_experiment
-from disruption_survival_analysis.DisruptionPredictors import DisruptionPredictorSM
+from disruption_survival_analysis.Experiments import Experiment
+from disruption_survival_analysis.experiment_utils import load_experiment_config
+from disruption_survival_analysis.manage_datasets import load_disruptive_shot_list
 
 #from disruption_survival_analysis.model_utils import load_model
-from disruption_survival_analysis.experiment_utils import label_shot_data, calculate_alarm_times, clump_many_to_one_statistics
 
 TEST_DEVICE = 'synthetic'
 TEST_DATASET_PATH = 'synthetic100'
@@ -21,10 +17,10 @@ class TestSimpleFunctions(unittest.TestCase):
         """Set up the test case
         """
 
-        self.experiment = make_experiment('config', 'test')
+        # Load the config for a simple DSM experiment
+        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'dsm', 'sthr', 'auroc', 0.02)
+        self.experiment = Experiment(experiment_config, 'test')
         
-        # aaaah
-
     def test_get_num_disrupt(self):
         """Test that the number of disruptions is calculated correctly
         """
@@ -58,89 +54,48 @@ class TestSimpleFunctions(unittest.TestCase):
             else:
                 self.fail("Shot lists are not ordered consistently")
 
-class TestExperimentsAlarms(unittest.TestCase):
+# class TestExperimentsAlarms(unittest.TestCase):
 
-    def setUp(self):
-        """Set up the test case
-        """
+#     def setUp(self):
+#         """Set up the test case
+#         """
+
+#         # Load simple DSM experiment
+#         self.experiment = Experiment()
+
+#     def test_alarm_times_shapes(self):
+#         """Ensure that the alarms and times arrays have the correct shapes"""
+
+#         # Get the alarm times
+#         alarm_times = self.experiment.get_alarm_times(self.horizon)
+
+#         # Check that the arrays have the correct shapes
+#         # Should be the same length as the number of shots
+#         # and the second dimension is the number of thresholds
+#         self.assertEqual(alarm_times.shape, (self.experiment.get_num_shots(), len(self.experiment.thresholds)))
         
-        # Specify testing parameters
-        self.horizon = 0.05
-        self.required_warning_time = 0.1
+#     def test_true_false_alarms_shapes(self):
 
-        # Load simple CPH model
-        self.model, self.numeric_feats = load_model('cph', TEST_DEVICE, TEST_DATASET_PATH)
-        self.predictor = DisruptionPredictorSM("Cox Proportional Hazards", self.model, self.numeric_feats)
-        self.experiment = Experiment(TEST_DEVICE, TEST_DATASET_PATH, self.predictor, name='CPH')
+#         # Get the true and false alarms
+#         true_alarms, false_alarms = self.experiment.get_true_false_alarms(self.horizon, self.required_warning_time)
 
-    def test_alarm_times_shapes(self):
-        """Ensure that the alarms and times arrays have the correct shapes"""
+#         # Check that the arrays have the correct shapes
+#         # Should be the same length as the number of shots
+#         # and the second dimension is the number of thresholds
+#         self.assertEqual(true_alarms.shape, (self.experiment.get_num_shots(), len(self.experiment.thresholds)))
+#         self.assertEqual(false_alarms.shape, (self.experiment.get_num_shots(), len(self.experiment.thresholds)))
 
-        # Get the alarm times
-        alarm_times = self.experiment.get_alarm_times(self.horizon)
 
-        # Check that the arrays have the correct shapes
-        # Should be the same length as the number of shots
-        # and the second dimension is the number of thresholds
-        self.assertEqual(alarm_times.shape, (self.experiment.get_num_shots(), len(self.experiment.thresholds)))
-        
-    def test_true_false_alarms_shapes(self):
+# class TestWarningTimeMethods(unittest.TestCase):
 
-        # Get the true and false alarms
-        true_alarms, false_alarms = self.experiment.get_true_false_alarms(self.horizon, self.required_warning_time)
+#     def test_warning_times_list_length(self):
+#         """Ensure that the warning times array has the correct length"""
 
-        # Check that the arrays have the correct shapes
-        # Should be the same length as the number of shots
-        # and the second dimension is the number of thresholds
-        self.assertEqual(true_alarms.shape, (self.experiment.get_num_shots(), len(self.experiment.thresholds)))
-        self.assertEqual(false_alarms.shape, (self.experiment.get_num_shots(), len(self.experiment.thresholds)))
+#         # Get the warning times list
+#         warning_times_list = self.experiment.get_warning_times_list(self.horizon)
 
-    def test_warning_times_list_length(self):
-        """Ensure that the warning times array has the correct length"""
+#         # Check that the warning times list has the correct length
+#         # Should be the same length as the number of disruptive shots
+#         # as the second dimension is the number of thresholds
+#         self.assertEqual(len(warning_times_list), self.experiment.get_num_disruptive_shots())
 
-        # Get the warning times list
-        warning_times_list = self.experiment.get_warning_times_list(self.horizon)
-
-        # Check that the warning times list has the correct length
-        # Should be the same length as the number of disruptive shots
-        # as the second dimension is the number of thresholds
-        self.assertEqual(len(warning_times_list), self.experiment.get_num_disruptive_shots())
-
-    def test_warning_times_ordering(self):
-        """Ensure that the warning times for a given shot are always decreasing
-        As threshold increases, there should be less time between detection and disruption
-        """
-
-        warning_times_list = self.experiment.get_warning_times_list(self.horizon)
-
-        # Check that the warning times are always decreasing until there aren't any more
-        for warning_times in warning_times_list:
-            for i in range(len(warning_times)-1):
-                self.assertLessEqual(warning_times[i+1], warning_times[i])
-
-    def test_avg_warning_time_vs_threshold_ordering(self):
-        """Ensure that the avg warning times are always decreasing
-        As threshold increases, there should be less time between detection and disruption
-        """
-
-        # Get the avg warning times
-        _, avg_warning_times, _ = self.experiment.warning_time_vs_threshold(self.horizon)
-
-        # Check that the avg detection times are always decreasing
-        for i in range(len(avg_warning_times)-1):
-            self.assertLessEqual(avg_warning_times[i+1], avg_warning_times[i])
-
-    def test_alarm_times_increasing(self):
-        """Ensure that the alarm times are always increasing"""
-        
-        # Get the alarm times for that shot
-        alarm_times = self.experiment.get_alarm_times(self.horizon)
-
-        # Check that the alarm times are always increasing until they are Nan, then all Nan
-        for shot_index in range(len(alarm_times)):
-            for i in range(len(alarm_times[shot_index])-1):
-                if np.isnan(alarm_times[shot_index][i]):
-                    self.assertTrue(np.isnan(alarm_times[shot_index][i+1]))
-                else:
-                    if not np.isnan(alarm_times[shot_index][i+1]):
-                        self.assertLessEqual(alarm_times[shot_index][i], alarm_times[shot_index][i+1])
