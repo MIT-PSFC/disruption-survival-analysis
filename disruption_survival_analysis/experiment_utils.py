@@ -436,10 +436,15 @@ def load_experiment_config(device, dataset, model_type, alarm_type, metric, requ
     # Get the path to the config file
     file_name = f"{model_type}_{alarm_type}_{metric}_{int(required_warning_time*1000)}ms.yaml"
 
-    full_path = f"../models/{device}/{dataset}/{file_name}"
+    full_path = f"models/{device}/{dataset}/{file_name}"
 
-    # Load the yaml file into a dictionary
-    with open(full_path, 'r') as f:
-        experiment_config = yaml.safe_load(f)
+    # Load yaml file into dictionary
+    with open(full_path) as file:
+        config = yaml.load(file, Loader=yaml.FullLoader)
 
-    return experiment_config
+    # For each item in the config, replace it with the value
+    for key in config:
+        if type(config[key]) == dict:
+            config[key] = config[key]['value']
+
+    return config

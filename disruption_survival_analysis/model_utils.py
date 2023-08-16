@@ -127,6 +127,24 @@ def train_random_forest_model(model:RandomForestClassifier, device, dataset_path
 
 # Methods to be used by experiment utils
 def get_model_for_experiment(config, experiment_type):
+    """
+    Get the model to be used for the experiment
+
+    Parameters
+    ----------
+    config: dict
+        Dictionary of everything unique to this model.
+        Should contain the model type, the metric to be evaluated, which dataset to use, and the hyperparameters
+    experiment_type: str
+        The type of experiment to get the model for.
+        If 'val', then the model will be trained and returned.
+        If 'test', the model will first attempt to be loaded, but if it does not exist it will be trained, saved, and returned.
+
+    Returns
+    -------
+    model:
+        The model to be used for the experiment
+    """
 
     model_type = config['aa-model-type']
 
