@@ -212,6 +212,17 @@ def calculate_alarm_times_ettd(ettd_at_time, thresholds):
 
     return alarm_times
 
+# Calculating evaluation metrics
+
+def timeslice_eval():
+    pass
+
+def au_roc():
+
+def au_wtc():
+
+def max_f1():
+
 # Other functions
 
 def clump_many_to_one_statistics(unique_values_raw, clumping_values, epsilon=0.01):
