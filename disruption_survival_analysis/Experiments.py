@@ -2,37 +2,68 @@
 
 import numpy as np
 
-
 from sklearn.metrics import roc_auc_score
-from manage_datasets import load_dataset
+from manage_datasets import load_dataset, load_features_outcomes
 from experiment_utils import label_shot_data, calculate_alarm_times, calculate_alarm_times_hysteresis, calculate_alarm_times_ettd, clump_many_to_one_statistics
 from model_utils import get_model_for_experiment, name_model
 
 from auton_survival.estimators import SurvivalModel # CPH, DCPH, DSM, DCM, RSF
 from sklearn.ensemble import RandomForestClassifier
 
-from DisruptionPredictors import DisruptionPredictor, DisruptionPredictorSM, DisruptionPredictorRF
+from DisruptionPredictors import DisruptionPredictorSM, DisruptionPredictorRF
 
 class Experiment:
     """ Class that holds onto data shared between multiple experiments """
 
-    def __init__(self, name, all_data, predictor:DisruptionPredictor, experiment_type, alarm_type):
+    def __init__(self, config, experiment_type):
+        """
+        Make an experiment from a config dictionary. 
+        If the experiment type is 'test', then the experiment will be a test experiment.
+        If the experiment type is 'val', then the experiment will be a validation experiment.
 
-        # Replace the 'thresholds' with a tuple of (min, max, num) for hysteresis
+        Parameters
+        ----------
+        config : dict
+            Dictionary of everything unique to this experiment.
+            Should contain the model type, the metric to be evaluated, which dataset to use, and some model-specific hyperparameters
+        experiment_type : str
+            The type of experiment to make. Either 'test' or 'val'
+            
+        Returns
+        -------
+        experiment : Experiment
+            The experiment to be run
+        """
 
-        # all_data: all data, including shot, time, time_until_disrupt, and features fed to predictor
+        # Get some info from the config
+        self.device = config['aa-device']
+        self.dataset_path = config['aa-dataset-path']
 
-        self.predictor = predictor
-        self.name = name
-        self.all_data = all_data
+        # Set the type of experiment
         self.experiment_type = experiment_type
+        # Load data for experiment: all data, including shot, time, time_until_disrupt, and features fed to predictor
+        self.all_data = load_dataset(self.device, self.dataset_path, experiment_type)
 
-        self.alarm_type = alarm_type
+        # Create the model and predictor for the experiment
+        model = get_model_for_experiment(config, experiment_type)
+        required_warning_time = config['ab-required-warning-time']
+        self.name = name_model(config)
+
+        if isinstance(model, SurvivalModel):
+            self.predictor = DisruptionPredictorSM(self.name, model, required_warning_time, config['horizon'])
+        elif isinstance(model, RandomForestClassifier):
+            self.predictor = DisruptionPredictorRF(self.name, model, required_warning_time, config['class_time'])
+        else:
+            raise ValueError('Model type not recognized')
+        
+        # Get the alarm type from the config
+        self.alarm_type = config['ab-alarm-type']
+
         # Set the thresholds for usage in tpr/fpr calculations
-        if alarm_type == 'sthr':
+        if self.alarm_type == 'sthr':
             # Simple Threshold
             self.thresholds = np.linspace(0, 1, 100)
-        elif alarm_type == 'hyst':
+        elif self.alarm_type == 'hyst':
             # Hysteresis
             # Make list of tuples of (min, max, num) for hysteresis
             # where max goes from 0 to 1 and min goes from 0 to max
@@ -42,13 +73,11 @@ class Experiment:
                 for min in np.linspace(0, max, 4):
                     for num in range(1, 5):
                         self.thresholds.append((min, max, num))
-        elif alarm_type == 'ettd':
+        elif self.alarm_type == 'ettd':
             # Expected time to disruption
             self.thresholds = [0.1, 0.02] # Expected time to disruption thresholds in seconds
         else:
-            raise ValueError('Invalid alarm_type: ' + alarm_type)
-
-        # Data shared between experiments
+            raise ValueError('Invalid alarm_type: ' + self.alarm_type)
 
         # Dictionaries for true alarms, false alarms, and alarm times for various horizons
         # Alarm time key is the horizon in seconds
@@ -419,10 +448,76 @@ class Experiment:
     
     # Metrics methods
 
+    def evaluate_metric(self, metric_type, horizon=None, required_warning_time=None):
+        """
+        Evaluate a metric on the experiment
+
+        Parameters
+        ----------
+        metric_type : str
+            The type of metric to evaluate
+            Options are 'tslic', 'auroc', 'auwtc', 'maxf1', 'ettdi'
+        horizon : int, optional
+            The horizon to evaluate the metric at
+            If None, use the horizon the model was hyperparameter tuned for
+        required_warning_time : float, optional
+            The required warning time to evaluate the metric at
+            If None, use the required warning time the model was trained on
+        """
+
+        if metric_type == 'tslic':
+            # Timeslice metric. Micro avgerage over entire dataset
+            metric_val = self.timeslice_eval()
+        elif metric_type == 'auroc':
+            # Area under ROC curve
+            metric_val = self.au_true_alarm_rate_false_alarm_rate_curve(horizon, required_warning_time)
+        elif metric_type == 'auwtc':
+            # Area under warning time curve
+            metric_val = self.au_warning_time_false_alarm_rate_curve(horizon, required_warning_time)
+        elif metric_type == 'maxf1':
+            # Highest f1 score
+            metric_val = self.max_f1(horizon, required_warning_time, info=False)
+        elif metric_type == 'ettdi':
+            # Expected time to disruption error integral
+            metric_val = self.ettd_diff_integral()
+        else:
+            metric_val = None
+
+        return metric_val
+    
+    def timeslice_eval(self):
+
+        # Load either validation or test data
+        x_set, y_set = load_features_outcomes(self.device, self.dataset_path, self.experiment_type)
+
+        # Validation times are hardcoded for now
+        val_times = [0.1, 0.02]
+
+        # Evaluate the model on the validation set
+        try:
+            if isinstance(self.predictor.model, SurvivalModel):
+                predictions_val = self.predictor.model.predict_survival(x_set, val_times)
+                _, y_train = load_features_outcomes(self.device, self.dataset_path, 'train')
+                if np.isnan(predictions_val).any():
+                    return None
+                else:
+                    metric_val = survival_regression_metric('ibs', y_set, predictions_val, val_times, y_train)
+            elif isinstance(self.predictor.model, RandomForestClassifier):
+                metric_val = self.predictor.model.score(x_set, y_set)
+            else:
+                return None
+        except:
+            metric_val = None
+
+        return metric_val
+
+
     def au_true_alarm_rate_false_alarm_rate_curve(self, horizon=None, required_warning_time=None):
         """ Calculate the area under the ROC curve for a given horizon and required warning time"""
 
         false_alarm_rates, true_alarm_rates = self.true_alarm_rate_vs_false_alarm_rate(horizon, required_warning_time)
+
+        metric_val = 
 
         return np.trapz(true_alarm_rates, false_alarm_rates)
     
@@ -438,7 +533,7 @@ class Experiment:
         return np.trapz(warning_times, false_alarm_rates)
     
     def max_f1(self, horizon=None, required_warning_time=None, info=False):
-        """ Calculate the best f1 score in terms of true alarm rate and false alarm rate for a given horizon and required warning time"""
+        """ Calculate the maximum f1 score in terms of true alarm rate and false alarm rate for a given horizon and required warning time"""
 
         true_alarms, false_alarms = self.get_true_false_alarms(horizon, required_warning_time)
 
@@ -492,48 +587,9 @@ class Experiment:
 
     def ettd_diff_integral(self, horizon=None, required_warning_time=None):
         """ Calculate the integral of the difference between the expected time to disruption and the actual time to disruption,
-            for a given horizon and required warning time"""
+            for a given horizon and required warning time
+            
+            This implementation will need to heavily weight the shots that disrupted.
+            """
 
         raise NotImplementedError
-    
-def make_experiment(config, experiment_type):
-    """
-    Make an experiment from a config dictionary. 
-    If the experiment type is 'test', then the experiment will be a test experiment.
-    If the experiment type is 'val', then the experiment will be a validation experiment.
-
-    Parameters
-    ----------
-    config : dict
-        Dictionary of everything unique to this experiment.
-        Should contain the model type, the metric to be evaluated, which dataset to use, and some model-specific hyperparameters
-    experiment_type : str
-        The type of experiment to make. Either 'test' or 'val'
-        
-    Returns
-    -------
-    experiment : Experiment
-        The experiment to be run
-
-    """
-
-    # Create the model and predictor for the experiment
-    model = get_model_for_experiment(config, experiment_type)
-
-    required_warning_time = config['ab-required-warning-time']
-
-    name = name_model(config)
-
-    if isinstance(model, SurvivalModel):
-        predictor = DisruptionPredictorSM(name, model, required_warning_time, config['horizon'])
-    elif isinstance(model, RandomForestClassifier):
-        predictor = DisruptionPredictorRF(name, model, required_warning_time, config['class_time'])
-    else:
-        raise ValueError('Model type not recognized')
-    
-    # Load data for the experiment
-    all_data = load_dataset(config['aa-device'], config['aa-dataset-path'], experiment_type)
-
-    experiment = Experiment(name, all_data, predictor, experiment_type, config['ab-alarm-type'])
-
-    return experiment
