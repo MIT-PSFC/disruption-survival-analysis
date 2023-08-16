@@ -1,0 +1,77 @@
+wandb_version: 1
+
+aa-dataset-path:
+  desc: null
+  value: synthetic100
+aa-device:
+  desc: null
+  value: synthetic
+aa-model-type:
+  desc: null
+  value: dsm
+ab-alarm-type:
+  desc: null
+  value: sthr
+ab-metric:
+  desc: null
+  value: auroc
+ab-required-warning-time:
+  desc: null
+  value: 0.02
+batch_size:
+  desc: null
+  value: 154
+distribution:
+  desc: null
+  value: Weibull
+epochs:
+  desc: null
+  value: 121
+horizon:
+  desc: null
+  value: 0.3725413281939355
+k:
+  desc: null
+  value: 1
+layer_depth:
+  desc: null
+  value: 5
+layer_width:
+  desc: null
+  value: 96
+learning_rate:
+  desc: null
+  value: 1.6180799473401205e-05
+max_features:
+  desc: null
+  value: log2
+temperature:
+  desc: null
+  value: 0.9343098983686056
+_wandb:
+  desc: null
+  value:
+    python_version: 3.10.8
+    cli_version: 0.15.8
+    framework: torch
+    is_jupyter_run: false
+    is_kaggle_kernel: false
+    start_time: 1691976316.183686
+    t:
+      1:
+      - 1
+      - 5
+      - 53
+      - 55
+      2:
+      - 1
+      - 5
+      - 53
+      - 55
+      3:
+      - 23
+      - 37
+      4: 3.10.8
+      5: 0.15.8
+      8:
+      - 5

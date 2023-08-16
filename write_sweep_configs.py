@@ -67,11 +67,11 @@ model_hyperparameters = {
 }
 
 # Base project name
-project_name = "2023-08-11 Big Refactor"
+project_name = "2023-08-16 Tests"
 # Datasets to use
-devices = ["cmod"]
-dataset_paths = ["no_ufo_flattop_7736_shots_6%_disruptive", 
-                 "no_ufo_flattop_7736_shots_6%_disruptive/stack_4"]
+devices = ["synthetic"]
+dataset_paths = ["synthetic100", 
+                 "synthetic100/stack_5"]
 
 # List of models to include in this sweep
 # cph, dcph, dcm, dsm, rf, km

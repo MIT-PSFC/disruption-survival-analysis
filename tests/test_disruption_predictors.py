@@ -1,6 +1,6 @@
 import unittest
 
-from disruption_survival_analysis.DisruptionPredictors import *
+from disruption_survival_analysis.DisruptionPredictors import DisruptionPredictor, DisruptionPredictorSM, DisruptionPredictorRF, DisruptionPredictorKM
 
 class TestDisruptionPredictor(unittest.TestCase):
     """Tests for the base class DisruptionPredictor"""
