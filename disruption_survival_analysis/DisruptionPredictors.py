@@ -120,7 +120,7 @@ class DisruptionPredictor:
         
         Returns
         -------
-        risk_at_time : pandas.DataFrame
+        risk_at_times : pandas.DataFrame
             Dataframe with a 'risk' and 'time' column
         """
 
@@ -148,7 +148,7 @@ class DisruptionPredictor:
         
         Returns
         -------
-        ettd_at_time : pandas.DataFrame
+        ettd_at_times : pandas.DataFrame
             Dataframe with a 'ettd' and 'time' column
         """
 
@@ -176,7 +176,7 @@ class DisruptionPredictor:
 
         Returns
         -------
-        risk_at_time : pandas.DataFrame
+        risk_at_times : pandas.DataFrame
             The risk of disruption for each time slice
         """
 
@@ -194,7 +194,7 @@ class DisruptionPredictor:
         
         Returns
         -------
-        ettd_at_time : pandas.DataFrame
+        ettd_at_times : pandas.DataFrame
             The expected time to disruption for each time slice
         """
     
@@ -211,24 +211,24 @@ class DisruptionPredictorSM(DisruptionPredictor):
         if horizon is None:
             horizon = self.trained_disruptive_window
 
-        risk_at_time = data.copy()
+        risk_at_times = data.copy()
 
         if self.features is None:
             self.fill_features(data)
 
         # Iterate through the data and calculate the risk for each time slice
         try:
-            risk_at_time['risk'] = self.model.predict_risk(data[self.features], horizon)
+            risk_at_times['risk'] = self.model.predict_risk(data[self.features], horizon)
         except:
             # DSM expects horizons in a list
-            risk_at_time['risk'] = self.model.predict_risk(data[self.features], [horizon])
+            risk_at_times['risk'] = self.model.predict_risk(data[self.features], [horizon])
 
         # Trim the data to only include the risk and time columns
-        return risk_at_time[['risk', 'time']]
+        return risk_at_times[['risk', 'time']]
     
-    def _calculate_ettd_at_time(self, shot, data):
+    def _calculate_ettd_at_times(self, shot, data):
 
-        ettd_at_time = data.copy()
+        ettd_at_times = data.copy()
 
         # Take samples of risk at various horizons
         risk_at_time_1ms = self.get_risk_at_times(shot, data, horizon=0.001)
@@ -241,7 +241,7 @@ class DisruptionPredictorSM(DisruptionPredictor):
         ettd_list = []
 
         # Calculate the expected time to disruption for each time slice
-        for i in range(len(ettd_at_time)):
+        for i in range(len(ettd_at_times)):
             risk_1ms = risk_at_time_1ms.iloc[i]['risk']
             risk_10ms = risk_at_time_10ms.iloc[i]['risk']
             risk_20ms = risk_at_time_20ms.iloc[i]['risk']
@@ -270,10 +270,10 @@ class DisruptionPredictorSM(DisruptionPredictor):
 
             ettd_list.append(ettd)
         
-        ettd_at_time['ettd'] = ettd_list
+        ettd_at_times['ettd'] = ettd_list
         
         # Trim the data to only include the ettd and time columns
-        return ettd_at_time[['ettd', 'time']]
+        return ettd_at_times[['ettd', 'time']]
             
 class DisruptionPredictorRF(DisruptionPredictor):
     """Disruption Predictors using RandomForestClassifier from sklearn"""
@@ -281,31 +281,31 @@ class DisruptionPredictorRF(DisruptionPredictor):
     def __init__(self, name, model:RandomForestClassifier, trained_required_warning_time, trained_class_time):
         super().__init__(name, model, trained_required_warning_time, trained_class_time)
 
-    def _calculate_risk_at_time(self, shot, data, horizon=None):
+    def _calculate_risk_at_times(self, shot, data, horizon=None):
 
-        risk_at_time = data.copy()
+        risk_at_times = data.copy()
 
         if self.features is None:
             self.fill_features(data)
 
         # Iterate through the data and calculate the risk for each time slice
-        risk_at_time['risk'] = self.model.predict_proba(data[self.features])[:,1]
+        risk_at_times['risk'] = self.model.predict_proba(data[self.features])[:,1]
 
-        return risk_at_time[['risk', 'time']]
+        return risk_at_times[['risk', 'time']]
     
-    def _calculate_ettd_at_time(self, shot, data):
+    def _calculate_ettd_at_times(self, shot, data):
 
-        ettd_at_time = data.copy()
-        risk_at_time = self.get_risk_at_times(shot, data)
+        ettd_at_times = data.copy()
+        risk_at_times = self.get_risk_at_times(shot, data)
 
         # Calculate the expected time to disruption for each time slice
         # Using the 'disruptivity' value in 1/s
-        for i in range(len(ettd_at_time)):
-            risk = risk_at_time.iloc[i]['risk']
+        for i in range(len(ettd_at_times)):
+            risk = risk_at_times.iloc[i]['risk']
             ettd = (1 / risk) * self.trained_disruptive_window
-            ettd_at_time.iloc[i]['ettd'] = ettd
+            ettd_at_times.iloc[i]['ettd'] = ettd
 
-        return ettd_at_time[['ettd', 'time']]
+        return ettd_at_times[['ettd', 'time']]
     
 class DisruptionPredictorKM(DisruptionPredictor):
     """Kaplan-Meier Disruption predictor like Tinguely et al. 2019"""
@@ -318,7 +318,7 @@ class DisruptionPredictorKM(DisruptionPredictor):
         # x and y should be numpy arrays
         return (len(x) * np.sum(x * y) - np.sum(x) * np.sum(y)) / (len(x) * np.sum(x**2) - np.sum(x)**2)
     
-    def _calculate_risk_at_time(self, shot, data, horizon=None, t_fit=None):
+    def _calculate_risk_at_times(self, shot, data, horizon=None, t_fit=None):
         # This disruption predictor takes present predicted disruption risk and a
         # linear least-square's fit over some previous time window to predict the
         # disruption risk at some future time
@@ -335,35 +335,35 @@ class DisruptionPredictorKM(DisruptionPredictor):
         if t_fit is None:
             t_fit = 0.1
 
-        risk_at_time = data.copy()
+        risk_at_times = data.copy()
 
         # reindex the data to start at 0
-        risk_at_time.index = range(len(risk_at_time))
+        risk_at_times.index = range(len(risk_at_times))
 
         # Iterate through the data and calculate the initial risk for each time slice
-        risk_at_time['initial_risk'] = self.model.predict_proba(data[self.features])[:,1]
+        risk_at_times['initial_risk'] = self.model.predict_proba(data[self.features])[:,1]
 
         # Initialize risk column to all zeros
-        risk_at_time['risk'] = 0
+        risk_at_times['risk'] = 0
 
         # This is a bit of a slow implementation, can speed up later if needed
 
         fit_times = []
         fit_points = []
 
-        fit_times.append(risk_at_time.at[0, 'time'])
-        fit_points.append(risk_at_time.at[0, 'initial_risk'])
+        fit_times.append(risk_at_times.at[0, 'time'])
+        fit_points.append(risk_at_times.at[0, 'initial_risk'])
 
         # Iterate through the data and calculate the slope for each time slice
         # Slope is calculated using a linear fit over the previous t_fit seconds
-        for i in range(1, len(risk_at_time)):
+        for i in range(1, len(risk_at_times)):
 
             # Get the time for the new time slice
-            new_time = risk_at_time.at[i, 'time']
+            new_time = risk_at_times.at[i, 'time']
 
             # Add the new time to the fit
             fit_times.append(new_time)
-            fit_points.append(risk_at_time.at[i, 'initial_risk'])
+            fit_points.append(risk_at_times.at[i, 'initial_risk'])
 
             # If the new time is outside the time window, remove the oldest point
             if new_time - fit_times[0] > t_fit:
@@ -374,12 +374,12 @@ class DisruptionPredictorKM(DisruptionPredictor):
             slope = self.linear_slope(np.array(fit_times), np.array(fit_points))
 
             # Extrapolate the risk into the future using the slope
-            risk_at_time.at[i, 'risk'] = risk_at_time.at[i, 'initial_risk'] + slope * horizon
+            risk_at_times.at[i, 'risk'] = risk_at_times.at[i, 'initial_risk'] + slope * horizon
         
         # Replace all NaNs with the initial risk
-        risk_at_time.fillna(risk_at_time['initial_risk'], inplace=True)
+        risk_at_times.fillna(risk_at_times['initial_risk'], inplace=True)
 
-        return risk_at_time[['risk', 'time']]
+        return risk_at_times[['risk', 'time']]
 
             
 
