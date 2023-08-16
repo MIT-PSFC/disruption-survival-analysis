@@ -50,22 +50,29 @@ def make_training_sets(device, dataset_path, random_seed=0, debug=False):
     # Remove shots shorter than 0.5 seconds
     data = data.groupby('shot').filter(lambda x: x['time'].max() - x['time'].min() > 0.5)
 
-    # Find the unique shots in the dataset
-    shots = data['shot'].unique()
+    # Find the shots that have a disruption
+    disrupt_shots = load_disruptive_shot_list(device, dataset_path, 'raw')
+    # Find the shots that do not have a disruption
+    non_disrupt_shots = load_non_disruptive_shot_list(device, dataset_path, 'raw')
 
-    # Shuffle the shots
     np.random.seed(random_seed)
-    np.random.shuffle(shots)
+    # Shuffle the disruptive and non-disruptive shots
+    np.random.shuffle(disrupt_shots)
+    np.random.shuffle(non_disrupt_shots)
 
-    # Split the shots into training, test, and validation sets
-    train_shots = shots[:int(len(shots)*0.6)]
-    test_shots = shots[int(len(shots)*0.6):int(len(shots)*0.8)]
-    val_shots = shots[int(len(shots)*0.8):]
+    # Split each set of shots into training, test, and validation sets
+    disrupt_train_shots = disrupt_shots[:int(len(disrupt_shots)*0.6)]
+    disrupt_test_shots = disrupt_shots[int(len(disrupt_shots)*0.6):int(len(disrupt_shots)*0.8)]
+    disrupt_val_shots = disrupt_shots[int(len(disrupt_shots)*0.8):]
+
+    non_disrupt_train_shots = non_disrupt_shots[:int(len(non_disrupt_shots)*0.6)]
+    non_disrupt_test_shots = non_disrupt_shots[int(len(non_disrupt_shots)*0.6):int(len(non_disrupt_shots)*0.8)]
+    non_disrupt_val_shots = non_disrupt_shots[int(len(non_disrupt_shots)*0.8):]
 
     # Split the data into training, test, and validation sets
-    train_data = data[data['shot'].isin(train_shots)]
-    test_data = data[data['shot'].isin(test_shots)]
-    val_data = data[data['shot'].isin(val_shots)]
+    train_data = data[data['shot'].isin(disrupt_train_shots) | data['shot'].isin(non_disrupt_train_shots)]
+    test_data = data[data['shot'].isin(disrupt_test_shots) | data['shot'].isin(non_disrupt_test_shots)]
+    val_data = data[data['shot'].isin(disrupt_val_shots) | data['shot'].isin(non_disrupt_val_shots)]
 
     # Get the features
     features = [col for col in data.columns if col not in ['shot', 'time_until_disrupt', 'time']]

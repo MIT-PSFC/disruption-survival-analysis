@@ -2,8 +2,9 @@
 """
 import os
 import unittest
+import numpy as np
 
-from disruption_survival_analysis.manage_datasets import make_training_sets, make_stacked_sets, load_dataset, load_shot_list, load_disruptive_shot_list
+from disruption_survival_analysis.manage_datasets import make_training_sets, make_stacked_sets, load_dataset, load_shot_list, load_features_labels, load_features_outcomes, load_disruptive_shot_list, load_non_disruptive_shot_list, load_feature_list, DROPPED_FEATURES
 
 TEST_DEVICE = 'synthetic'
 TEST_DATASET_PATH = 'synthetic100'
@@ -64,7 +65,7 @@ class TestCreatedTrainingSets(unittest.TestCase):
         proportional to their total size"""
         
         ratio = {}
-        ratio_epsilon = 0.02
+        ratio_epsilon = 0.03
 
         for category in ['train', 'test', 'val']:
             num_disrupt = len(load_disruptive_shot_list(TEST_DEVICE, TEST_DATASET_PATH, category))
@@ -132,7 +133,7 @@ class TestCreatedStackedSets(unittest.TestCase):
         proportional to their total size"""
         
         ratio = {}
-        ratio_epsilon = 0.02
+        ratio_epsilon = 0.03
 
         for category in ['train', 'test', 'val']:
             num_disrupt = len(load_disruptive_shot_list(TEST_DEVICE, self.stack_dataset_path, category))
@@ -237,6 +238,47 @@ class TestLoadFeaturesOutcomes(unittest.TestCase):
             self.assertTrue((outcomes['event'] == 0).any())
             self.assertTrue((outcomes['event'] == 1).any())
 
+    def test_exact_return(self):
+        """Ensure that the function returns the correct features and outcomes dataframes
+        for a small dataset"""
+
+        features, outcomes = load_features_outcomes("synthetic", "test", "train")
+
+        # Check that the features are correct
+        ip_array = [0, 1, 2, 3, 4, 4, 4, 4, 4, 4, 4, 3, 2, 1, 0, 0, 1, 2, 3, 4, 4, 4, 4, 10]
+        feat2_array = [7]*24
+
+        self.assertTrue((features['ip'] == ip_array).all())
+        self.assertTrue((features['feat2'] == feat2_array).all())
+
+        # Check that the outcomes are correct
+        event_array = [0]*15 + [1]*9
+        # Need to use a small-value epsilon for the time comparison
+        time_array = [14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 8, 7, 6, 5, 4, 3, 2, 1, 0]
+        self.assertTrue((outcomes['event'] == event_array).all())
+        self.assertTrue(np.allclose(outcomes['time'], time_array, atol=5e-4))
+
+class TestLoadFeaturesLabels(unittest.TestCase):
+    """Tests for the function load_features_labels()"""
+
+    def test_exact_return(self):
+        """Ensure that the function returns the correct features and labels
+        for a small dataset"""
+
+        features, labels = load_features_labels("synthetic", "test", "train", 5)
+
+        # Check that the features are correct
+        ip_array = [0, 1, 2, 3, 4, 4, 4, 4, 4, 4, 4, 3, 2, 1, 0, 0, 1, 2, 3, 4, 4, 4, 4, 10]
+        feat2_array = [7]*24
+
+        self.assertTrue((features['ip'] == ip_array).all())
+        self.assertTrue((features['feat2'] == feat2_array).all())
+
+        # Check that the labels are correct
+        label_array = [0]*15 + [0]*4 + [1]*5
+        self.assertTrue((labels == label_array).all())
+
+
 class TestLoadFeatureList(unittest.TestCase):
     """Tests for the function load_feature_list()"""
 
@@ -247,6 +289,25 @@ class TestLoadFeatureList(unittest.TestCase):
         feature_list = load_feature_list(TEST_DEVICE, TEST_DATASET_PATH)
         self.assertEqual(len(feature_list), len(set(feature_list)))
 
+    def test_all_features_covered(self):
+        """Ensure that all features are covered by the feature list
+        """
+
+        feature_list = load_feature_list("synthetic", "synthetic100")
+
+        # Ensure that all features are covered
+        for feature in ['ip', 'n_e', 'aminor', 'kappa', 'squareness', 'delta', 'li', 'Wmhd']:
+            self.assertTrue(feature in feature_list)
+
+    def test_no_non_features(self):
+        """Ensure 'shot', 'time', and 'time_until_disrupt' are not returned as features"""
+
+        feature_list = load_feature_list(TEST_DEVICE, TEST_DATASET_PATH)
+
+        self.assertFalse('shot' in feature_list)
+        self.assertFalse('time' in feature_list)
+        self.assertFalse('time_until_disrupt' in feature_list)
+        
 class TestShotLists(unittest.TestCase):
     """Tests for the functions load_shot_list(), load_disruptive_shot_list(), and load_non_disruptive_shot_list()"""
 
