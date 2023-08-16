@@ -3,8 +3,8 @@
 import numpy as np
 
 from sklearn.metrics import roc_auc_score
-from manage_datasets import load_dataset, load_features_outcomes
-from experiment_utils import label_shot_data, calculate_alarm_times, calculate_alarm_times_hysteresis, calculate_alarm_times_ettd, clump_many_to_one_statistics
+from manage_datasets import load_dataset
+from experiment_utils import label_shot_data, calculate_alarm_times, calculate_alarm_times_hysteresis, calculate_alarm_times_ettd, timeslice_micro_average, area_under_curve, calculate_f1_scores, expected_time_to_disruption_integral, clump_many_to_one_statistics
 from model_utils import get_model_for_experiment, name_model
 
 from auton_survival.estimators import SurvivalModel # CPH, DCPH, DSM, DCM, RSF
@@ -65,14 +65,14 @@ class Experiment:
             self.thresholds = np.linspace(0, 1, 100)
         elif self.alarm_type == 'hyst':
             # Hysteresis
-            # Make list of tuples of (min, max, num) for hysteresis
-            # where max goes from 0 to 1 and min goes from 0 to max
-            # and num goes from 1 to 4
+            # Make list of tuples of (min, max, time) for hysteresis
+            # where max goes from 0.1 to 1 and min goes from 0 to max
+            # and trigger time goes from 0 to 80 ms
             self.thresholds = []
-            for max in np.linspace(0, 1, 10):
+            for max in np.linspace(0.1, 1, 9):
                 for min in np.linspace(0, max, 4):
-                    for num in range(1, 5):
-                        self.thresholds.append((min, max, num))
+                    for time in np.linspace(0, 0.08, 4):
+                        self.thresholds.append((min, max, time))
         elif self.alarm_type == 'ettd':
             # Expected time to disruption
             self.thresholds = [0.1, 0.02] # Expected time to disruption thresholds in seconds
@@ -463,133 +463,84 @@ class Experiment:
         required_warning_time : float, optional
             The required warning time to evaluate the metric at
             If None, use the required warning time the model was trained on
+
+        Returns
+        -------
+        metric_val : float
+            The value of the metric
         """
 
         if metric_type == 'tslic':
             # Timeslice metric. Micro avgerage over entire dataset
-            metric_val = self.timeslice_eval()
+            metric_val = timeslice_micro_average(self.device, self.dataset_path, self.predictor.model, self.experiment_type)
         elif metric_type == 'auroc':
             # Area under ROC curve
-            metric_val = self.au_true_alarm_rate_false_alarm_rate_curve(horizon, required_warning_time)
+            false_alarm_rates, true_alarm_rates = self.true_alarm_rate_vs_false_alarm_rate(horizon, required_warning_time)
+            metric_val = area_under_curve(false_alarm_rates, true_alarm_rates)
         elif metric_type == 'auwtc':
             # Area under warning time curve
-            metric_val = self.au_warning_time_false_alarm_rate_curve(horizon, required_warning_time)
+            false_alarm_rates, warning_times, _ = self.warning_time_vs_false_alarm_rate(horizon, required_warning_time)
+            metric_val = area_under_curve(false_alarm_rates, warning_times)
         elif metric_type == 'maxf1':
-            # Highest f1 score
-            metric_val = self.max_f1(horizon, required_warning_time, info=False)
+            # Highest f1 score over all the thresholds
+            true_alarms, false_alarms = self.get_true_false_alarms(horizon, required_warning_time)
+
+            true_alarm_count_array = np.sum(true_alarms, axis=0)
+            false_alarm_count_array = np.sum(false_alarms, axis=0)
+
+            num_disruptive_shots = self.get_num_disruptive_shots()
+
+            f1_scores = calculate_f1_scores(true_alarm_count_array, false_alarm_count_array, num_disruptive_shots)
+
+            metric_val = np.max(f1_scores)
+
         elif metric_type == 'ettdi':
             # Expected time to disruption error integral
-            metric_val = self.ettd_diff_integral()
+            metric_val = expected_time_to_disruption_integral()
         else:
             metric_val = None
 
         return metric_val
     
-    def timeslice_eval(self):
-
-        # Load either validation or test data
-        x_set, y_set = load_features_outcomes(self.device, self.dataset_path, self.experiment_type)
-
-        # Validation times are hardcoded for now
-        val_times = [0.1, 0.02]
-
-        # Evaluate the model on the validation set
-        try:
-            if isinstance(self.predictor.model, SurvivalModel):
-                predictions_val = self.predictor.model.predict_survival(x_set, val_times)
-                _, y_train = load_features_outcomes(self.device, self.dataset_path, 'train')
-                if np.isnan(predictions_val).any():
-                    return None
-                else:
-                    metric_val = survival_regression_metric('ibs', y_set, predictions_val, val_times, y_train)
-            elif isinstance(self.predictor.model, RandomForestClassifier):
-                metric_val = self.predictor.model.score(x_set, y_set)
-            else:
-                return None
-        except:
-            metric_val = None
-
-        return metric_val
-
-
-    def au_true_alarm_rate_false_alarm_rate_curve(self, horizon=None, required_warning_time=None):
-        """ Calculate the area under the ROC curve for a given horizon and required warning time"""
-
-        false_alarm_rates, true_alarm_rates = self.true_alarm_rate_vs_false_alarm_rate(horizon, required_warning_time)
-
-        metric_val = 
-
-        return np.trapz(true_alarm_rates, false_alarm_rates)
-    
-    def au_warning_time_false_alarm_rate_curve(self, horizon=None, required_warning_time=None, FAR_lim=0.05):
-        """ Calculate the area under the average warning time vs false alarm rate curve for a given horizon and required warning time"""
-
-        false_alarm_rates, warning_times, _ = self.warning_time_vs_false_alarm_rate(horizon, required_warning_time)
-
-        # Limit the false alarm rate to be less than FAR_lim
-        warning_times = warning_times[false_alarm_rates < FAR_lim]
-        false_alarm_rates = false_alarm_rates[false_alarm_rates < FAR_lim]
-
-        return np.trapz(warning_times, false_alarm_rates)
-    
-    def max_f1(self, horizon=None, required_warning_time=None, info=False):
-        """ Calculate the maximum f1 score in terms of true alarm rate and false alarm rate for a given horizon and required warning time"""
+    def max_f1_info(self, horizon=None, required_warning_time=None):
+        # Get related info for the ebst f1 score
 
         true_alarms, false_alarms = self.get_true_false_alarms(horizon, required_warning_time)
 
-        num_true_alarms = np.sum(true_alarms, axis=0)
-        num_false_alarms = np.sum(false_alarms, axis=0)
+        true_alarm_count_array = np.sum(true_alarms, axis=0)
+        false_alarm_count_array = np.sum(false_alarms, axis=0)
 
+        num_disruptive_shots = self.get_num_disruptive_shots()
 
-        # Calculate the f1 score for each threshold
-        f1_scores = []
-        for true_alarm_count, false_alarm_count in zip(num_true_alarms, num_false_alarms):
-            missed_alarm_count = self.get_num_disruptive_shots() - true_alarm_count
-            f1_score = true_alarm_count/(true_alarm_count + 0.5*(missed_alarm_count + false_alarm_count))
-            f1_scores.append(f1_score)
+        f1_scores = calculate_f1_scores(true_alarm_count_array, false_alarm_count_array, num_disruptive_shots)
 
-        # Find the best f1 score
-        best_f1_score = np.max(f1_scores)
+        # Find the index of the best f1 score
+        best_f1_score_index = np.argmax(f1_scores)
 
-        if info == False:
-            return best_f1_score
+        # Get the true alarm rate, false alarm rate, and warning time at the best f1 score
+        true_alarm_rate = true_alarm_count_array[best_f1_score_index]/num_disruptive_shots
+        false_alarm_rate = false_alarm_count_array[best_f1_score_index]/num_disruptive_shots
+        
+        # Get threshold at the best f1 score
+        best_f1_threshold = self.thresholds[best_f1_score_index]
+
+        unique_thresholds, avg_warning_times, std_warning_times = self.warning_time_vs_threshold(horizon)
+        # Find index where threshold is equal to the best f1 score threshold
+        
+        if self.alarm_type == 'sthr':
+            warning_time_index = np.where(unique_thresholds == best_f1_threshold)
         else:
-            # Find the index of the best f1 score
-            best_f1_score_index = np.argmax(f1_scores)
+            # TODO make better
+            warning_time_index = -1
+            for i in range(len(unique_thresholds)):
+                unique_threshold_first = unique_thresholds[i][0]
+                unique_threshold_second = unique_thresholds[i][1]
+                unique_threshold_third = unique_thresholds[i][2]
+                if unique_threshold_first == best_f1_threshold[0] and unique_threshold_second == best_f1_threshold[1] and unique_threshold_third == best_f1_threshold[2]:
+                    warning_time_index = i
+                    break
 
-            # Get the true alarm rate, false alarm rate, and warning time at the best f1 score
-            true_alarm_rate = num_true_alarms[best_f1_score_index]/self.get_num_disruptive_shots()
-            false_alarm_rate = num_false_alarms[best_f1_score_index]/self.get_num_non_disruptive_shots()
-            
-            # Get threshold at the best f1 score
-            best_f1_threshold = self.thresholds[best_f1_score_index]
+        avg_warning_time = avg_warning_times[warning_time_index]
+        std_warning_time = std_warning_times[warning_time_index]
 
-            unique_thresholds, avg_warning_times, std_warning_times = self.warning_time_vs_threshold(horizon)
-            # Find index where threshold is equal to the best f1 score threshold
-            
-            if self.alarm_type == 'sthr':
-                warning_time_index = np.where(unique_thresholds == best_f1_threshold)
-            else:
-                # TODO make better
-                warning_time_index = -1
-                for i in range(len(unique_thresholds)):
-                    unique_threshold_first = unique_thresholds[i][0]
-                    unique_threshold_second = unique_thresholds[i][1]
-                    unique_threshold_third = unique_thresholds[i][2]
-                    if unique_threshold_first == best_f1_threshold[0] and unique_threshold_second == best_f1_threshold[1] and unique_threshold_third == best_f1_threshold[2]:
-                        warning_time_index = i
-                        break
-
-            avg_warning_time = avg_warning_times[warning_time_index]
-            std_warning_time = std_warning_times[warning_time_index]
-
-            return best_f1_score, true_alarm_rate, false_alarm_rate, avg_warning_time, std_warning_time
-
-    def ettd_diff_integral(self, horizon=None, required_warning_time=None):
-        """ Calculate the integral of the difference between the expected time to disruption and the actual time to disruption,
-            for a given horizon and required warning time
-            
-            This implementation will need to heavily weight the shots that disrupted.
-            """
-
-        raise NotImplementedError
+        return true_alarm_rate, false_alarm_rate, avg_warning_time, std_warning_time
