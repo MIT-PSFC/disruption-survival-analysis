@@ -2,6 +2,12 @@
 
 import numpy as np
 
+from sklearn.ensemble import RandomForestClassifier
+from auton_survival.estimators import SurvivalModel
+from auton_survival.metrics import survival_regression_metric
+from manage_datasets import load_features_outcomes
+
+
 # Labeling data
 
 def label_shot_data(shot_data, disrupt, disruptive_window):
@@ -214,14 +220,62 @@ def calculate_alarm_times_ettd(ettd_at_time, thresholds):
 
 # Calculating evaluation metrics
 
-def timeslice_eval():
+def timeslice_micro_average(device, dataset_path, model, experiment_type):
+    # Load either validation or test data
+    x_set, y_set = load_features_outcomes(device, dataset_path, experiment_type)
+
+    # Validation times are hardcoded for now
+    val_times = [0.1, 0.02]
+
+    # Evaluate the model on the validation set
+    try:
+        if isinstance(model, SurvivalModel):
+            predictions_val = model.predict_survival(x_set, val_times)
+            _, y_train = load_features_outcomes(device, dataset_path, 'train')
+            if np.isnan(predictions_val).any():
+                return None
+            else:
+                metric_val = survival_regression_metric('ibs', y_set, predictions_val, val_times, y_train)
+        elif isinstance(model, RandomForestClassifier):
+            metric_val = model.score(x_set, y_set)
+        else:
+            return None
+    except:
+        metric_val = None
+
+    return metric_val
+
+def area_under_curve(x_vals, y_vals, x_cutoff=None):
+
+    # Limit the false alarm rate to be less than the x cutoff
+    x_vals = x_vals[x_vals < x_cutoff]
+    y_vals = y_vals[x_vals < x_cutoff]
+
+    # Sort the values by x
+    x_vals, y_vals = zip(*sorted(zip(x_vals, y_vals)))
+
+    # Calculate the area under the curve
+    auc = np.trapz(y_vals, x_vals)
+
+    return auc
+
+def calculate_f1_scores(true_alarm_count_array, false_alarm_count_array, num_disruptive_shots):
+    # Calculate the f1 score for each threshold
+    f1_scores = []
+    for true_alarm_count, false_alarm_count in zip(true_alarm_count_array, false_alarm_count_array):
+        missed_alarm_count = num_disruptive_shots - true_alarm_count
+        f1_score = true_alarm_count/(true_alarm_count + 0.5*(missed_alarm_count + false_alarm_count))
+        f1_scores.append(f1_score)
+
+    return f1_scores
+
+def expected_time_to_disruption_integral():
+    """ Calculate the integral of the difference between the expected time to disruption and the actual time to disruption,
+            for a given horizon and required warning time
+            
+            This implementation will need to heavily weight the shots that disrupted.
+            """
     pass
-
-def au_roc():
-
-def au_wtc():
-
-def max_f1():
 
 # Other functions
 
