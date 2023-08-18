@@ -163,10 +163,10 @@ class Experiment:
     def get_predictor_ettd(self, shot):
         return self.predictor.get_ettd(shot, self.get_shot_data(shot))
 
-    # ROC AUC methods
+    # Area Under ROC methods
 
-    def roc_auc_single(self, horizons, shot):
-        """ Returns the ROC AUC on a shot basis over many horizons 
+    def auroc_single(self, horizons, shot):
+        """ Returns the area under ROC curve on a shot basis over many horizons 
         ONLY defined for disruptive shots
         """
 
@@ -178,31 +178,31 @@ class Experiment:
         # Get the features for the shot
         shot_data = self.all_data[self.all_data['shot'] == shot]
         
-        roc_auc_list = []   # List of ROC AUCs corresponding to each horizon
+        auroc_list = []   # List of ROC AUCs corresponding to each horizon
         for horizon in horizons:
             # Set up true labels and predicted risk scores
             y_true = label_shot_data(shot_data, disruptive, horizon)
             y_pred = self.predictor.get_risk(shot, shot_data, horizon=horizon)
 
-            roc_auc_list.append(roc_auc_score(y_true, y_pred))
+            auroc_list.append(roc_auc_score(y_true, y_pred))
 
-        return roc_auc_list
+        return auroc_list
     
-    def roc_auc_macro(self, horizons):
+    def auroc_macro(self, horizons):
         """ Returns the ROC AUC for the dataset averaged over all disruptive shots """
     
         # Get a list of all disruptive shots in the dataset
         shot_list = self.get_disruptive_shot_list()
 
         # Iterate through all shots and calculate the ROC AUC for each
-        roc_auc_array = np.zeros((len(shot_list), len(horizons)))
+        auroc_array = np.zeros((len(shot_list), len(horizons)))
         for i, shot in enumerate(shot_list):
-            roc_auc_array[i,:] = self.roc_auc_single(horizons, shot)
+            auroc_array[i,:] = self.auroc_single(horizons, shot)
 
         # Average the ROC AUCs over all shots
-        return np.mean(roc_auc_array, axis=0), np.std(roc_auc_array, axis=0)
+        return np.mean(auroc_array, axis=0), np.std(auroc_array, axis=0)
     
-    def roc_auc_micro_all(self, horizons, disrupt_only=False):
+    def auroc_micro_all(self, horizons, disrupt_only=False):
         """ Returns the ROC AUC on a timeslice basis over many horizons"""
 
         # Get list of shots to use
@@ -211,7 +211,7 @@ class Experiment:
         else:
             shot_list = self.get_shot_list()
 
-        roc_auc_list = []   # List of ROC AUCs corresponding to each horizon
+        auroc_list = []   # List of ROC AUCs corresponding to each horizon
         for horizon in horizons:
             y_true = []
             y_pred = []
@@ -227,9 +227,9 @@ class Experiment:
                 y_true.extend(new_labels)
                 y_pred.extend(new_predictions)
 
-            roc_auc_list.append(roc_auc_score(y_true, y_pred))
+            auroc_list.append(roc_auc_score(y_true, y_pred))
 
-        return roc_auc_list
+        return auroc_list
     
     # True Alarms, False Alarms methods
 
