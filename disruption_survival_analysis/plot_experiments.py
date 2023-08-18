@@ -19,8 +19,15 @@ GOOD_WARNING_TIME = 0.1 # Also from Ryan, would be very nice to have 100ms to re
 # Plots for timeslice-level model performance
 
 def plot_auroc_vs_horizon_micro(experiment_list:list[Experiment], horizons=DEFAULT_HORIZONS):
-    """ Averaged over a single shot
+    """
+    Plot the micro average Area Under ROC Curve vs. horizon for each experiment
 
+    Parameters:
+    ----------
+    experiment_list: list[Experiment]
+        List of experiments to plot
+    horizons: list[float]
+        List of horizons to evaluate the experiments at
     """
 
     horizons_ms = horizons*1000
@@ -28,7 +35,7 @@ def plot_auroc_vs_horizon_micro(experiment_list:list[Experiment], horizons=DEFAU
     plt.figure()
 
     for experiment in experiment_list:
-        roc_auc = experiment.roc_auc_micro_all(horizons)
+        auroc = experiment.auroc_micro_all(horizons)
         plt.plot(horizons_ms, roc_auc, label=experiment.name)
 
     plt.xlim([horizons_ms[0], horizons_ms[-1]])
