@@ -6,6 +6,14 @@ hyperparameter_ranges = {
         "min": 64,
         "max": 256,
     },
+    "class_time": { # Time in seconds before a disruption labeled as 'disruptive
+        "min": 0.001,
+        "max": 0.5,
+    },
+    "criterion": { # Function to measure quality of a split
+        "values": ["gini", "entropy", "log_loss"],
+        "distribution": "categorical"
+    },
     "epochs": { # Default: 50
         "min": 50,
         "max": 200,
@@ -40,7 +48,19 @@ hyperparameter_ranges = {
         "values": ["sqrt", "log2"],
         "distribution": "categorical"
     },
-    "horizon": {
+    "min_samples_leaf": { # Minimum number of samples for each node ceil(value * n_samples)
+        "min": 0.0001,
+        "max":0.9
+    },
+    "min_samples_split": { # Minimum number of samples for each split ceil(value * n_samples)
+        "min": 0.0001,
+        "max": 0.9
+    },
+    "n_estimators": { # Number of trees in the forest. Default: 100
+        "min": 50,
+        "max": 200
+    },
+    "horizon": { # How many seconds into the future to predict
         "min": 0.001,
         "max": 0.5,
     },
@@ -57,33 +77,38 @@ model_hyperparameters = {
     "dsm": ["batch_size", 
             "distribution", 
             "epochs",
-            "horizon", 
+            "horizon",
             "k", 
             "layer_depth", 
             "layer_width",
             "learning_rate", 
             "max_features",
             "temperature"],
+    "rf": ["class_time",
+           "criterion",
+           "max_features",
+           "min_samples_leaf",
+           "min_samples_split",
+           "n_estimators"]
 }
 
 # Base project name
 project_name = "2023-08-16 Tests"
 # Datasets to use
 devices = ["synthetic"]
-dataset_paths = ["synthetic100", 
-                 "synthetic100/stack_5"]
+dataset_paths = ["synthetic100"]
 
 # List of models to include in this sweep
 # cph, dcph, dcm, dsm, rf, km
-models = ["cph", "dsm"]
+models = ["dsm", "rf"]
 
 # List of alarm types to use
 # sthr, hyst, ettd, ethy
-alarm_types = ["sthr", "hyst", "ettd"]
+alarm_types = ["sthr", "hyst"]
 
 # List of validation metrics to use
 # auroc, auwtc, maxf1, etint
-metrics = ["auroc", "auwtc", "maxf1"]
+metrics = ["auroc"]
 
 # List of required warning times to train on (in seconds)
 required_warning_times = [0.1, 0.02]

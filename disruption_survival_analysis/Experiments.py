@@ -4,7 +4,7 @@ import numpy as np
 
 from sklearn.metrics import roc_auc_score
 from disruption_survival_analysis.manage_datasets import load_dataset
-from disruption_survival_analysis.experiment_utils import label_shot_data, calculate_alarm_times, calculate_alarm_times_hysteresis, calculate_alarm_times_ettd, timeslice_micro_average, area_under_curve, calculate_f1_scores, expected_time_to_disruption_integral, clump_many_to_one_statistics
+from disruption_survival_analysis.experiment_utils import label_shot_data, calculate_alarm_times, calculate_alarm_times_hysteresis, calculate_alarm_times_ettd, timeslice_micro_avg, area_under_curve, calculate_f1_scores, expected_time_to_disruption_integral, clump_many_to_one_statistics
 from disruption_survival_analysis.model_utils import get_model_for_experiment, name_model
 
 from auton_survival.estimators import SurvivalModel # CPH, DCPH, DSM, DCM, RSF
@@ -125,6 +125,10 @@ class Experiment:
         shot_data = self.all_data[self.all_data['shot'] == shot]
         return shot_data['time'].values
     
+    def get_shot_data(self, shot):
+        """ Returns the data for a given shot """
+        return self.all_data[self.all_data['shot'] == shot]
+
     def get_shot_duration(self, shot):
         """ Returns the duration of a given shot """
         shot_data = self.all_data[self.all_data['shot'] == shot]
@@ -151,11 +155,37 @@ class Experiment:
             shot_durations.append(self.get_shot_duration(shot))
         return np.array(shot_durations)
 
-    # ROC AUC methods
+    # Get info from the predictor
 
-    def roc_auc_single(self, horizons, shot):
-        """ Returns the ROC AUC on a shot basis over many horizons 
-        ONLY defined for disruptive shots
+    def get_predictor_risk(self, shot, horizon=None):
+        return self.predictor.get_risk(shot, self.get_shot_data(shot), horizon=horizon)
+    
+    def get_predictor_risk_at_times(self, shot, horizon=None):
+        return self.predictor.get_risk_at_times(shot, self.get_shot_data(shot), horizon=horizon)
+    
+    def get_predictor_ettd(self, shot):
+        return self.predictor.get_ettd(shot, self.get_shot_data(shot))
+    
+    def get_predictor_ettd_at_times(self, shot):
+        return self.predictor.get_ettd_at_times(shot, self.get_shot_data(shot))
+
+    # Area Under ROC on a timeslice basis
+
+    def auroc_timeslice_shot(self, horizons, shot):
+        """ Calculates the area under ROC curve evaluated on a timeslice basis for a single shot.
+        Only defined for disruptive shots, raises ValueError if shot is not disruptive.
+
+        Parameters
+        ----------
+        horizons : list of floats
+            List of horizons in seconds to calculate ROC AUC for
+        shot : int
+            Shot number to calculate ROC AUC for
+        
+        Returns
+        -------
+        auroc_list : list of floats
+            List of ROC AUCs corresponding to each horizon
         """
 
         # Determine if shot was disruptive
@@ -164,34 +194,65 @@ class Experiment:
             raise ValueError('Shot was not disruptive, cannot calculate ROC AUC because only one class present in y_true.')
 
         # Get the features for the shot
-        shot_data = self.all_data[self.all_data['shot'] == shot]
+        shot_data = self.get_shot_data(shot)
         
-        roc_auc_list = []   # List of ROC AUCs corresponding to each horizon
+        auroc_list = []   # List of ROC AUCs corresponding to each horizon
         for horizon in horizons:
             # Set up true labels and predicted risk scores
             y_true = label_shot_data(shot_data, disruptive, horizon)
-            y_pred = self.predictor.get_risk(shot, shot_data, horizon=horizon)
+            y_pred = self.get_predictor_risk(shot, horizon=horizon)
 
-            roc_auc_list.append(roc_auc_score(y_true, y_pred))
+            auroc_list.append(roc_auc_score(y_true, y_pred))
 
-        return roc_auc_list
+        return auroc_list
     
-    def roc_auc_macro(self, horizons):
-        """ Returns the ROC AUC for the dataset averaged over all disruptive shots """
+    def auroc_timeslice_shot_avg(self, horizons):
+        """ Calculates the area under ROC curve evaluated on a timeslice basis
+        for each individual shot, averaged over all shots.
+        Only defined for disruptive shots, since this metric needs more than one class
+        in the 'truth' array, and non-disruptive shots only have one class.
+        
+        Parameters:
+        -----------
+        horizons : list
+            List of horizons to evaluate ROC AUC at
+        
+        Returns:
+        --------
+        avg_auroc_array : array
+            Array of average ROC AUCs for each horizon
+        std_auroc_array : array
+            Array of standard deviations of ROC AUCs for each horizon
+        """
     
         # Get a list of all disruptive shots in the dataset
         shot_list = self.get_disruptive_shot_list()
 
         # Iterate through all shots and calculate the ROC AUC for each
-        roc_auc_array = np.zeros((len(shot_list), len(horizons)))
+        auroc_array = np.zeros((len(shot_list), len(horizons)))
         for i, shot in enumerate(shot_list):
-            roc_auc_array[i,:] = self.roc_auc_single(horizons, shot)
+            auroc_array[i,:] = self.auroc_timeslice_shot(horizons, shot)
 
         # Average the ROC AUCs over all shots
-        return np.mean(roc_auc_array, axis=0), np.std(roc_auc_array, axis=0)
+        avg_auroc_array = np.mean(auroc_array, axis=0)
+        std_auroc_array = np.std(auroc_array, axis=0)
+        return avg_auroc_array, std_auroc_array
     
-    def roc_auc_micro_all(self, horizons, disrupt_only=False):
-        """ Returns the ROC AUC on a timeslice basis over many horizons"""
+    def auroc_timeslice_all(self, horizons, disrupt_only=True):
+        """ Calculates the area under ROC curve evaluated on a timeslice basis over many horizons.
+
+        Parameters:
+        -----------
+        horizons : list
+            List of horizons to evaluate ROC AUC at
+        disrupt_only : bool
+            If True, only use disruptive shots in the dataset
+
+        Returns:
+        --------
+        auroc_list : list
+            List of ROC AUCs corresponding to each horizon
+        """
 
         # Get list of shots to use
         if disrupt_only:
@@ -199,25 +260,25 @@ class Experiment:
         else:
             shot_list = self.get_shot_list()
 
-        roc_auc_list = []   # List of ROC AUCs corresponding to each horizon
+        auroc_list = []   # List of ROC AUCs corresponding to each horizon
         for horizon in horizons:
             y_true = []
             y_pred = []
 
             for shot in shot_list:
                 # Get the features for the shot
-                shot_data = self.all_data[self.all_data['shot'] == shot]
+                shot_data = self.get_shot_data(shot)
                 # Determine if shot was disruptive
                 disruptive = shot in self.get_disruptive_shot_list()
                 # Set up true labels and predicted risk scores
                 new_labels = label_shot_data(shot_data, disruptive, horizon)
-                new_predictions = self.predictor.get_risk(shot, shot_data, horizon=horizon)
+                new_predictions = self.get_predictor_risk(shot, horizon=horizon)
                 y_true.extend(new_labels)
                 y_pred.extend(new_predictions)
 
-            roc_auc_list.append(roc_auc_score(y_true, y_pred))
+            auroc_list.append(roc_auc_score(y_true, y_pred))
 
-        return roc_auc_list
+        return auroc_list
     
     # True Alarms, False Alarms methods
 
@@ -251,11 +312,9 @@ class Experiment:
 
             # Iterate through shots
             for i, shot in enumerate(shot_list):
-                shot_data = self.all_data[self.all_data['shot'] == shot]
-
                 # Get the alarm times given by the model
-                risk_at_time = self.predictor.get_risk_at_times(shot, shot_data, horizon)
-                alarm_times_calced = calculate_alarm_times(risk_at_time, self.thresholds)
+                risk_at_times = self.get_predictor_risk_at_times(shot, horizon)
+                alarm_times_calced = calculate_alarm_times(risk_at_times, self.thresholds)
 
                 # Save the alarm times
                 alarm_times[i,:] = alarm_times_calced
@@ -265,11 +324,9 @@ class Experiment:
 
             # Iterate through shots
             for i, shot in enumerate(shot_list):
-                shot_data = self.all_data[self.all_data['shot'] == shot]
-
                 # Get the alarm times given by the model
-                risk_at_time = self.predictor.get_risk_at_times(shot, shot_data, horizon)
-                alarm_times_calced = calculate_alarm_times_hysteresis(risk_at_time, self.thresholds)
+                risk_at_times = self.get_predictor_risk_at_times(shot, horizon)
+                alarm_times_calced = calculate_alarm_times_hysteresis(risk_at_times, self.thresholds)
 
                 # Save the alarm times
                 alarm_times[i,:] = alarm_times_calced
@@ -278,11 +335,9 @@ class Experiment:
             # Expected Time to Disruption
 
             # Iterate through shots
-            for i, shot in enumerate(shot_list):
-                shot_data = self.all_data[self.all_data['shot'] == shot]
-                
+            for i, shot in enumerate(shot_list):                
                 # Get the expected time to disruption of the shot
-                expected_lifetime = self.predictor.get_ettd_at_times(shot, shot_data)
+                expected_lifetime = self.get_predictor_ettd_at_times(shot)
                 alarm_times_calced = calculate_alarm_times_ettd(expected_lifetime, self.thresholds)
 
                 # Save the alarm times
@@ -403,7 +458,7 @@ class Experiment:
         warning_times_list = []
         for disruptive_shot in disruptive_shots:
             # Get the time of disruption for this shot
-            shot_data = self.all_data[self.all_data['shot'] == disruptive_shot]
+            shot_data = self.get_shot_data(disruptive_shot)
             disrupt_time = shot_data['time'].iloc[-1]
             # Find the index of the shot in the shot list
             shot_index = np.where(shot_list == disruptive_shot)[0][0]
@@ -472,7 +527,7 @@ class Experiment:
 
         if metric_type == 'tslic':
             # Timeslice metric. Micro avgerage over entire dataset
-            metric_val = timeslice_micro_average(self.device, self.dataset_path, self.predictor.model, self.experiment_type)
+            metric_val = timeslice_micro_avg(self.device, self.dataset_path, self.predictor.model, self.experiment_type)
         elif metric_type == 'auroc':
             # Area under ROC curve
             false_alarm_rates, true_alarm_rates = self.true_alarm_rate_vs_false_alarm_rate(horizon, required_warning_time)
@@ -480,7 +535,7 @@ class Experiment:
         elif metric_type == 'auwtc':
             # Area under warning time curve
             false_alarm_rates, warning_times, _ = self.warning_time_vs_false_alarm_rate(horizon, required_warning_time)
-            metric_val = area_under_curve(false_alarm_rates, warning_times)
+            metric_val = area_under_curve(false_alarm_rates, warning_times, x_cutoff=0.05)
         elif metric_type == 'maxf1':
             # Highest f1 score over all the thresholds
             true_alarms, false_alarms = self.get_true_false_alarms(horizon, required_warning_time)

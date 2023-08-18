@@ -1,0 +1,24 @@
+aa-dataset-path:
+  value: synthetic100
+aa-device:
+  value: synthetic
+aa-model-type:
+  value: rf
+ab-alarm-type:
+  value: hyst
+ab-metric:
+  value: auroc
+ab-required-warning-time:
+  value: 0.02
+class_time:
+  value: 0.05
+criterion:
+  value: gini
+max_features:
+  value: sqrt
+min_samples_leaf:
+  value: 0.0001
+min_samples_split:
+  value: 0.0001
+n_estimators:
+  value: 100
