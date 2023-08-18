@@ -1,8 +1,6 @@
 import os
 import wandb
-from disruption_survival_analysis.Experiments import make_experiment
-from disruption_survival_analysis.model_evaluation import evaluate_model
-
+from disruption_survival_analysis.Experiments import Experiment
 # Set up WandB
 os.environ["WANDB__SERVICE_WAIT"] = "800"
 run = wandb.init()
@@ -11,8 +9,8 @@ config = wandb.config
 
 # Create the experiment and try to get the evaluation metric
 try:
-    experiment = make_experiment(config, 'val')
-    metric_val = evaluate_model(experiment, config)
+    experiment = Experiment(config, 'val')
+    metric_val = experiment.evaluate_metric(config['ab-metric'])
 except:
     # If anything goes wrong during training or validation, log a None value
     metric_val = None

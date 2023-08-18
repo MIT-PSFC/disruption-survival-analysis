@@ -324,7 +324,7 @@ def load_features_labels(device, dataset_path, dataset_category, disruptive_wind
     labels = (data['time_until_disrupt'] < disruptive_window).astype(int)
 
     # remove NOT_FEATURES from data
-    data.drop(NOT_FEATURES, axis=1)
+    data = data.drop(NOT_FEATURES, axis=1)
 
     return data, labels
 

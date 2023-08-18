@@ -235,7 +235,7 @@ def calculate_alarm_times_ettd(ettd_at_time, thresholds):
 
 # Calculating evaluation metrics
 
-def timeslice_micro_average(device, dataset_path, model, experiment_type):
+def timeslice_micro_avg(device, dataset_path, model, experiment_type):
     """
     Calculates the micro-averaged metric for a given model on a given dataset
     If the model is a survival model, calculates the IBS metric
@@ -302,11 +302,15 @@ def area_under_curve(x_vals, y_vals, x_cutoff=None):
     """
 
     # Limit the false alarm rate to be less than the x cutoff
-    x_vals = x_vals[x_vals < x_cutoff]
-    y_vals = y_vals[x_vals < x_cutoff]
+    if x_cutoff is not None:
+        y_vals = y_vals[x_vals < x_cutoff]
+        x_vals = x_vals[x_vals < x_cutoff]
+        
 
     # Sort the values by x
-    x_vals, y_vals = zip(*sorted(zip(x_vals, y_vals)))
+    sorted_indices = np.argsort(x_vals)
+    x_vals = x_vals[sorted_indices]
+    y_vals = y_vals[sorted_indices]
 
     # Calculate the area under the curve
     auc = np.trapz(y_vals, x_vals)

@@ -258,6 +258,15 @@ class TestLoadFeaturesOutcomes(unittest.TestCase):
         self.assertTrue((outcomes['event'] == event_array).all())
         self.assertTrue(np.allclose(outcomes['time'], time_array, atol=5e-4))
 
+    def test_no_non_features(self):
+        """Ensure that time, shot, and time_until_disrupt are not in the features"""
+
+        features, _ = load_features_outcomes("synthetic", "synthetic100", "train")
+
+        self.assertTrue('time' not in features.columns)
+        self.assertTrue('shot' not in features.columns)
+        self.assertTrue('time_until_disrupt' not in features.columns)
+
 class TestLoadFeaturesLabels(unittest.TestCase):
     """Tests for the function load_features_labels()"""
 
@@ -277,6 +286,15 @@ class TestLoadFeaturesLabels(unittest.TestCase):
         # Check that the labels are correct
         label_array = [0]*15 + [0]*4 + [1]*5
         self.assertTrue((labels == label_array).all())
+
+    def test_no_non_features(self):
+        """Ensure that time, shot, and time_until_disrupt are not in the features"""
+
+        features, _ = load_features_labels("synthetic", "synthetic100", "train", 5)
+
+        self.assertTrue('time' not in features.columns)
+        self.assertTrue('shot' not in features.columns)
+        self.assertTrue('time_until_disrupt' not in features.columns)
 
 
 class TestLoadFeatureList(unittest.TestCase):
