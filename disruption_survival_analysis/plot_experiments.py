@@ -18,8 +18,8 @@ GOOD_WARNING_TIME = 0.1 # Also from Ryan, would be very nice to have 100ms to re
 
 # Plots for timeslice-level model performance
 
-def plot_auroc_micro_all_vs_horizon(experiment_list:list[Experiment], horizons=DEFAULT_HORIZONS, disrupt_only=True):
-    """ Plot the full-dataset micro average Area Under ROC Curve vs. horizon for each experiment.
+def plot_auroc_timeslice_all_vs_horizon(experiment_list:list[Experiment], horizons=DEFAULT_HORIZONS, disrupt_only=True):
+    """ Plot the full-dataset timeslice-level Area Under ROC Curve vs. horizon for each experiment.
 
     Parameters:
     ----------
@@ -36,7 +36,7 @@ def plot_auroc_micro_all_vs_horizon(experiment_list:list[Experiment], horizons=D
     plt.figure()
 
     for experiment in experiment_list:
-        auroc = experiment.auroc_micro_all(horizons, disrupt_only)
+        auroc = experiment.auroc_timeslice_all(horizons, disrupt_only)
         plt.plot(horizons_ms, auroc, label=experiment.name)
 
     plt.xlim([horizons_ms[0], horizons_ms[-1]])
@@ -45,18 +45,18 @@ def plot_auroc_micro_all_vs_horizon(experiment_list:list[Experiment], horizons=D
     plt.xticks(horizons_ms)
 
     plt.xlabel('Horizon [ms]')
-    plt.ylabel('Micro Average Area Under ROC Curve')
+    plt.ylabel('Timeslice Area Under ROC Curve')
 
     if disrupt_only:
-        plt.title('Disruptive-Only Micro Average ROC AUC vs. Horizon')
+        plt.title('Disruptive-Only Timeslice Area Under ROC Curve vs. Horizon')
     else:
-        plt.title('All shot Micro Average ROC AUC vs. Horizon')
+        plt.title('All shot Timeslice Area Under ROC Curve vs. Horizon')
 
     plt.legend()
     plt.show()
 
-def plot_auroc_micro_shot_avg_vs_horizon(experiment_list:list[Experiment], horizons=DEFAULT_HORIZONS):
-    """ Plot the shot-averaged micro average Area Under ROC Curve vs. horizon for each experiment.
+def plot_auroc_timeslice_shot_avg_vs_horizon(experiment_list:list[Experiment], horizons=DEFAULT_HORIZONS):
+    """ Plot the shot-averaged timeslice Area Under ROC Curve vs. horizon for each experiment.
     Only includes disruptive shots, because a micro average over a non-disruptive shot cannot be done (only one class in truth value).
 
     Parameters:
@@ -72,7 +72,7 @@ def plot_auroc_micro_shot_avg_vs_horizon(experiment_list:list[Experiment], horiz
     plt.figure()
     
     for experiment in experiment_list:
-        auroc_avg, auroc_std = experiment.auroc_micro_shot_avg(horizons)
+        auroc_avg, auroc_std = experiment.auroc_timeslice_shot_avg(horizons)
         plt.errorbar(horizons_ms, auroc_avg, yerr=auroc_std, label=experiment.name, fmt='o-', capsize=5)
 
     plt.xlim([horizons_ms[0], horizons_ms[-1]])
@@ -81,9 +81,9 @@ def plot_auroc_micro_shot_avg_vs_horizon(experiment_list:list[Experiment], horiz
     plt.xticks(horizons_ms)
 
     plt.xlabel('Horizon [ms]')
-    plt.ylabel('Shot-Level Micro Average Area Under ROC Curve')
+    plt.ylabel('Shot-Average Timeslice Area Under ROC Curve')
 
-    plt.title('Shot-Level Micro Average Area Under ROC Curve vs. Horizon')
+    plt.title('Shot-Average Timeslice Area Under ROC Curve vs. Horizon')
 
     plt.legend()
     plt.show()

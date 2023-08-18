@@ -171,7 +171,7 @@ class Experiment:
 
     # Area Under ROC on a timeslice basis
 
-    def auroc_micro_shot(self, horizons, shot):
+    def auroc_timeslice_shot(self, horizons, shot):
         """ Calculates the area under ROC curve evaluated on a timeslice basis for a single shot.
         Only defined for disruptive shots, raises ValueError if shot is not disruptive.
 
@@ -206,7 +206,7 @@ class Experiment:
 
         return auroc_list
     
-    def auroc_micro_shot_avg(self, horizons):
+    def auroc_timeslice_shot_avg(self, horizons):
         """ Calculates the area under ROC curve evaluated on a timeslice basis
         for each individual shot, averaged over all shots.
         Only defined for disruptive shots, since this metric needs more than one class
@@ -231,14 +231,14 @@ class Experiment:
         # Iterate through all shots and calculate the ROC AUC for each
         auroc_array = np.zeros((len(shot_list), len(horizons)))
         for i, shot in enumerate(shot_list):
-            auroc_array[i,:] = self.auroc_micro_shot(horizons, shot)
+            auroc_array[i,:] = self.auroc_timeslice_shot(horizons, shot)
 
         # Average the ROC AUCs over all shots
         avg_auroc_array = np.mean(auroc_array, axis=0)
         std_auroc_array = np.std(auroc_array, axis=0)
         return avg_auroc_array, std_auroc_array
     
-    def auroc_micro_all(self, horizons, disrupt_only=True):
+    def auroc_timeslice_all(self, horizons, disrupt_only=True):
         """ Calculates the area under ROC curve evaluated on a timeslice basis over many horizons.
 
         Parameters:
