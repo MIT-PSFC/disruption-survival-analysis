@@ -155,13 +155,19 @@ class Experiment:
             shot_durations.append(self.get_shot_duration(shot))
         return np.array(shot_durations)
 
-    # Getting info from the predictor
+    # Get info from the predictor
 
     def get_predictor_risk(self, shot, horizon=None):
         return self.predictor.get_risk(shot, self.get_shot_data(shot), horizon=horizon)
     
+    def get_predictor_risk_at_times(self, shot, horizon=None):
+        return self.predictor.get_risk_at_times(shot, self.get_shot_data(shot), horizon=horizon)
+    
     def get_predictor_ettd(self, shot):
         return self.predictor.get_ettd(shot, self.get_shot_data(shot))
+    
+    def get_predictor_ettd_at_times(self, shot):
+        return self.predictor.get_ettd_at_times(shot, self.get_shot_data(shot))
 
     # Area Under ROC methods
 
@@ -182,7 +188,7 @@ class Experiment:
         for horizon in horizons:
             # Set up true labels and predicted risk scores
             y_true = label_shot_data(shot_data, disruptive, horizon)
-            y_pred = self.predictor.get_risk(shot, shot_data, horizon=horizon)
+            y_pred = self.get_predictor_risk(shot, horizon=horizon)
 
             auroc_list.append(roc_auc_score(y_true, y_pred))
 
@@ -223,7 +229,7 @@ class Experiment:
                 disruptive = shot in self.get_disruptive_shot_list()
                 # Set up true labels and predicted risk scores
                 new_labels = label_shot_data(shot_data, disruptive, horizon)
-                new_predictions = self.predictor.get_risk(shot, shot_data, horizon=horizon)
+                new_predictions = self.get_predictor_risk(shot, horizon=horizon)
                 y_true.extend(new_labels)
                 y_pred.extend(new_predictions)
 
@@ -263,11 +269,9 @@ class Experiment:
 
             # Iterate through shots
             for i, shot in enumerate(shot_list):
-                shot_data = self.all_data[self.all_data['shot'] == shot]
-
                 # Get the alarm times given by the model
-                risk_at_time = self.predictor.get_risk_at_times(shot, shot_data, horizon)
-                alarm_times_calced = calculate_alarm_times(risk_at_time, self.thresholds)
+                risk_at_times = self.get_predictor_risk_at_times(shot, horizon)
+                alarm_times_calced = calculate_alarm_times(risk_at_times, self.thresholds)
 
                 # Save the alarm times
                 alarm_times[i,:] = alarm_times_calced
@@ -277,11 +281,9 @@ class Experiment:
 
             # Iterate through shots
             for i, shot in enumerate(shot_list):
-                shot_data = self.all_data[self.all_data['shot'] == shot]
-
                 # Get the alarm times given by the model
-                risk_at_time = self.predictor.get_risk_at_times(shot, shot_data, horizon)
-                alarm_times_calced = calculate_alarm_times_hysteresis(risk_at_time, self.thresholds)
+                risk_at_times = self.get_predictor_risk_at_times(shot, horizon)
+                alarm_times_calced = calculate_alarm_times_hysteresis(risk_at_times, self.thresholds)
 
                 # Save the alarm times
                 alarm_times[i,:] = alarm_times_calced
@@ -290,11 +292,9 @@ class Experiment:
             # Expected Time to Disruption
 
             # Iterate through shots
-            for i, shot in enumerate(shot_list):
-                shot_data = self.all_data[self.all_data['shot'] == shot]
-                
+            for i, shot in enumerate(shot_list):                
                 # Get the expected time to disruption of the shot
-                expected_lifetime = self.predictor.get_ettd_at_times(shot, shot_data)
+                expected_lifetime = self.get_predictor_ettd_at_times(shot)
                 alarm_times_calced = calculate_alarm_times_ettd(expected_lifetime, self.thresholds)
 
                 # Save the alarm times
