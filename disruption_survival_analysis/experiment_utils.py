@@ -235,7 +235,7 @@ def calculate_alarm_times_ettd(ettd_at_time, thresholds):
 
 # Calculating evaluation metrics
 
-def timeslice_micro_average(device, dataset_path, model, experiment_type):
+def timeslice_micro_avg(device, dataset_path, model, experiment_type):
     """
     Calculates the micro-averaged metric for a given model on a given dataset
     If the model is a survival model, calculates the IBS metric

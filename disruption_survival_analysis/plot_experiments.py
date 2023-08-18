@@ -18,9 +18,46 @@ GOOD_WARNING_TIME = 0.1 # Also from Ryan, would be very nice to have 100ms to re
 
 # Plots for timeslice-level model performance
 
-def plot_auroc_vs_horizon_micro(experiment_list:list[Experiment], horizons=DEFAULT_HORIZONS):
+def plot_auroc_micro_all_vs_horizon(experiment_list:list[Experiment], horizons=DEFAULT_HORIZONS, disrupt_only=True):
+    """ Plot the full-dataset micro average Area Under ROC Curve vs. horizon for each experiment.
+
+    Parameters:
+    ----------
+    experiment_list: list[Experiment]
+        List of experiments to plot
+    horizons: list[float]
+        List of horizons to evaluate the experiments at
+    disrupt_only: bool
+        Whether to only include disruptive shots in the evaluation
     """
-    Plot the micro average Area Under ROC Curve vs. horizon for each experiment
+
+    horizons_ms = horizons*1000
+
+    plt.figure()
+
+    for experiment in experiment_list:
+        auroc = experiment.auroc_micro_all(horizons, disrupt_only)
+        plt.plot(horizons_ms, auroc, label=experiment.name)
+
+    plt.xlim([horizons_ms[0], horizons_ms[-1]])
+    plt.ylim([0.5, 1])
+
+    plt.xticks(horizons_ms)
+
+    plt.xlabel('Horizon [ms]')
+    plt.ylabel('Micro Average Area Under ROC Curve')
+
+    if disrupt_only:
+        plt.title('Disruptive-Only Micro Average ROC AUC vs. Horizon')
+    else:
+        plt.title('All shot Micro Average ROC AUC vs. Horizon')
+
+    plt.legend()
+    plt.show()
+
+def plot_auroc_micro_shot_avg_vs_horizon(experiment_list:list[Experiment], horizons=DEFAULT_HORIZONS):
+    """ Plot the shot-averaged micro average Area Under ROC Curve vs. horizon for each experiment.
+    Only includes disruptive shots, because a micro average over a non-disruptive shot cannot be done (only one class in truth value).
 
     Parameters:
     ----------
@@ -33,10 +70,10 @@ def plot_auroc_vs_horizon_micro(experiment_list:list[Experiment], horizons=DEFAU
     horizons_ms = horizons*1000
 
     plt.figure()
-
+    
     for experiment in experiment_list:
-        auroc = experiment.auroc_micro_all(horizons)
-        plt.plot(horizons_ms, roc_auc, label=experiment.name)
+        auroc_avg, auroc_std = experiment.auroc_micro_shot_avg(horizons)
+        plt.errorbar(horizons_ms, auroc_avg, yerr=auroc_std, label=experiment.name, fmt='o-', capsize=5)
 
     plt.xlim([horizons_ms[0], horizons_ms[-1]])
     plt.ylim([0.5, 1])
@@ -44,35 +81,9 @@ def plot_auroc_vs_horizon_micro(experiment_list:list[Experiment], horizons=DEFAU
     plt.xticks(horizons_ms)
 
     plt.xlabel('Horizon [ms]')
-    plt.ylabel('Micro Average Area Under ROC Curve')
+    plt.ylabel('Shot-Level Micro Average Area Under ROC Curve')
 
-    plt.title('Micro Average ROC AUC vs. Horizon')
-
-    plt.legend()
-    plt.show()
-
-def plot_auroc_vs_horizon_macro(experiment_list:list[Experiment], horizons=DEFAULT_HORIZONS):
-    """ Averaged over all shots
-    
-    """
-
-    horizons_ms = horizons*1000
-
-    plt.figure()
-    
-    for experiment in experiment_list:
-        roc_auc, roc_auc_std = experiment.auroc_macro(horizons)
-        plt.errorbar(horizons_ms, roc_auc, yerr=roc_auc_std, label=experiment.name, fmt='o-', capsize=5)
-
-    plt.xlim([horizons_ms[0], horizons_ms[-1]])
-    plt.ylim([0.5, 1])
-
-    plt.xticks(horizons_ms)
-
-    plt.xlabel('Horizon [ms]')
-    plt.ylabel('Macro Average Area Under ROC Curve')
-
-    plt.title('Macro Average ROC AUC vs. Horizon')
+    plt.title('Shot-Level Micro Average Area Under ROC Curve vs. Horizon')
 
     plt.legend()
     plt.show()
@@ -118,7 +129,7 @@ def plot_roc_curve(experiment_list:list[Experiment], horizon=None, required_warn
     plt.legend()
     plt.show()
 
-def plot_warning_time_vs_FAR(experiment_list:list[Experiment], horizon=None, required_warning_time=MINIMUM_WARNING_TIME, min_far=None, max_far=None, min_warning_time=None, max_warning_time=None):
+def plot_warning_time_vs_false_alarm_rate(experiment_list:list[Experiment], horizon=None, required_warning_time=MINIMUM_WARNING_TIME, min_far=None, max_far=None, min_warning_time=None, max_warning_time=None):
     """ Averaged over all shots
     """
 
