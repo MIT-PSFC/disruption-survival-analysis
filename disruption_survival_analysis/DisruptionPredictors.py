@@ -281,7 +281,7 @@ class DisruptionPredictorRF(DisruptionPredictor):
     def __init__(self, name, model:RandomForestClassifier, trained_required_warning_time, trained_class_time):
         super().__init__(name, model, trained_required_warning_time, trained_class_time)
 
-    def _calculate_risk_at_times(self, shot, data, horizon=None):
+    def _calculate_risk_at_times(self, shot, data, trained_disruptive_window=None):
 
         risk_at_times = data.copy()
 
