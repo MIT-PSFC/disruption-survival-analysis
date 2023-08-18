@@ -80,16 +80,17 @@ def make_model(config:dict):
                                 learning_rate=learning_rate, 
                                 epochs=epochs)
     elif model_type == 'rf':
-        n_estimators = config['n_estimators'] 
         criterion = config['criterion']
-        min_samples_split = config['min_samples_split']
-        min_samples_leaf = config['min_samples_leaf']
         max_features = config['max_features']
+        n_estimators = config['n_estimators'] 
+        min_samples_leaf = config['min_samples_leaf']
+        min_samples_split = config['min_samples_split']
         model = RandomForestClassifier(n_estimators=n_estimators,
                                         criterion=criterion,
                                         min_samples_split=min_samples_split,
                                         min_samples_leaf=min_samples_leaf,
-                                        max_features=max_features)
+                                        max_features=max_features,
+                                        random_state=0)
     else:
         raise ValueError(f"Model type \"{model_type}\" not recognized")
 
@@ -120,9 +121,9 @@ def train_recurrent_model(model_string, x_tr, t_tr, e_tr, x_val, t_val, e_val):
     #model.fit(x_tr, y_tr['time'], y_tr['event'], learning_rate=param['learning_rate'])
     pass
 
-def train_random_forest_model(model:RandomForestClassifier, device, dataset_path, disruptive_window):
+def train_random_forest_model(model:RandomForestClassifier, device, dataset_path, class_time):
 
-    x_train, labels_train = load_features_labels(device, dataset_path, 'train', disruptive_window)
+    x_train, labels_train = load_features_labels(device, dataset_path, 'train', class_time)
     model.fit(x_train, labels_train)
 
 # Methods to be used by experiment utils
@@ -158,8 +159,8 @@ def get_model_for_experiment(config, experiment_type):
 
         # Fit the model to the training data
         if isinstance(model, RandomForestClassifier):
-            disruptive_window = config['disruptive_window']
-            train_random_forest_model(model, device, dataset_path, disruptive_window)
+            class_time = config['class_time']
+            train_random_forest_model(model, device, dataset_path, class_time)
         elif isinstance(model, SurvivalModel):
             train_survival_model(model, device, dataset_path)
         else:
@@ -178,8 +179,8 @@ def get_model_for_experiment(config, experiment_type):
 
             # Fit the model to the training data
             if isinstance(model, RandomForestClassifier):
-                disruptive_window = config['disruptive_window']
-                train_random_forest_model(model, device, dataset_path, disruptive_window)
+                class_time = config['class_time']
+                train_random_forest_model(model, device, dataset_path, class_time)
             elif isinstance(model, SurvivalModel):
                 train_survival_model(model, device, dataset_path)
             else:

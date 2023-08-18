@@ -7,7 +7,7 @@ from disruption_survival_analysis.Experiments import Experiment
 TEST_DEVICE = 'synthetic'
 TEST_DATASET = 'synthetic100'
 
-TEST_MODEL_TYPES = ['rf']
+TEST_MODEL_TYPES = ['dsm', 'rf']
 TEST_ALARM_TYPES = ['sthr', 'hyst']
 TEST_METRICS = ['auroc']
 TEST_MIN_WARNING_TIMES = [0.02]
@@ -41,4 +41,4 @@ class TestPlotExperiments(unittest.TestCase):
 
         plot_auroc_timeslice_shot_avg_vs_horizon(self.experiments)
 
-        
+

@@ -151,7 +151,7 @@ def plot_warning_time_vs_false_alarm_rate(experiment_list:list[Experiment], hori
     if min_warning_time is None:
         min_warning_time = 0
     if max_warning_time is None:
-        max_warning_time = MAX_WARNING_TIME_MS
+        max_warning_time = 2000
 
     # Put a line at the required warning time
     plt.plot([min_far, max_far], [required_warning_time*1000, required_warning_time*1000], 'k--')

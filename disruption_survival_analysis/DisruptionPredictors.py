@@ -281,7 +281,7 @@ class DisruptionPredictorRF(DisruptionPredictor):
     def __init__(self, name, model:RandomForestClassifier, trained_required_warning_time, trained_class_time):
         super().__init__(name, model, trained_required_warning_time, trained_class_time)
 
-    def _calculate_risk_at_times(self, shot, data, trained_disruptive_window=None):
+    def _calculate_risk_at_times(self, data, trained_disruptive_window=None):
 
         risk_at_times = data.copy()
 
@@ -318,7 +318,7 @@ class DisruptionPredictorKM(DisruptionPredictor):
         # x and y should be numpy arrays
         return (len(x) * np.sum(x * y) - np.sum(x) * np.sum(y)) / (len(x) * np.sum(x**2) - np.sum(x)**2)
     
-    def _calculate_risk_at_times(self, shot, data, horizon=None, t_fit=None):
+    def _calculate_risk_at_times(self, data, horizon=None, t_fit=None):
         # This disruption predictor takes present predicted disruption risk and a
         # linear least-square's fit over some previous time window to predict the
         # disruption risk at some future time
