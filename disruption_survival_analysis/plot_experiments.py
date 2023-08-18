@@ -3,11 +3,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from Experiments import Experiment
+from disruption_survival_analysis.Experiments import Experiment
 
-from manage_datasets import load_features_outcomes
-from auton_survival.metrics import survival_regression_metric
-from experiment_utils import make_shot_lifetime_curve
+from disruption_survival_analysis.experiment_utils import make_shot_lifetime_curve
 
 DEFAULT_HORIZONS = np.linspace(0.01, 0.4, 5)
 # TODO fix horizons
@@ -386,7 +384,7 @@ def plot_risk_compare_models(experiment_list:list[Experiment], shot):
     
     for i, experiment in enumerate(experiment_list):
         color = colors[i % len(colors)]
-        risk = experiment.get_risk(shot)
+        risk = experiment.get_predictor_risk(shot)
         plt.plot(times, risk, label=experiment.name, color=color)
         trained_warning_time = experiment.predictor.trained_required_warning_time*1000
         # Plot with a solid vertical line
@@ -402,8 +400,6 @@ def plot_risk_compare_models(experiment_list:list[Experiment], shot):
     plt.ylabel('Disruption Risk')
 
     plt.legend()
-
-    
 
     if disruptive:
         plt.title(f'Disruption Risk vs. Time for Shot {shot} (Disrupted)')
@@ -425,7 +421,7 @@ def plot_ettd_compare_models(experiment_list:list[Experiment], shot):
         color = colors[i % len(colors)]
         lifetime_curve = make_shot_lifetime_curve(times, disruptive, experiment.predictor.trained_disruptive_window*1000)
         plt.plot(times, lifetime_curve, color=color, linestyle='--')
-        ettd_ms = experiment.get_ettd(shot)*1000
+        ettd_ms = experiment.get_predictor_ettd(shot)*1000
         plt.plot(times, ettd_ms, label=experiment.name, color=color, linestyle='-')
 
     plt.xlim([times[0], times[-1]])

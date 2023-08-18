@@ -125,6 +125,10 @@ class Experiment:
         shot_data = self.all_data[self.all_data['shot'] == shot]
         return shot_data['time'].values
     
+    def get_shot_data(self, shot):
+        """ Returns the data for a given shot """
+        return self.all_data[self.all_data['shot'] == shot]
+
     def get_shot_duration(self, shot):
         """ Returns the duration of a given shot """
         shot_data = self.all_data[self.all_data['shot'] == shot]
@@ -150,6 +154,14 @@ class Experiment:
         for shot in self.get_non_disruptive_shot_list():
             shot_durations.append(self.get_shot_duration(shot))
         return np.array(shot_durations)
+
+    # Getting info from the predictor
+
+    def get_predictor_risk(self, shot, horizon=None):
+        return self.predictor.get_risk(shot, self.get_shot_data(shot), horizon=horizon)
+    
+    def get_predictor_ettd(self, shot):
+        return self.predictor.get_ettd(shot, self.get_shot_data(shot))
 
     # ROC AUC methods
 
@@ -480,7 +492,7 @@ class Experiment:
         elif metric_type == 'auwtc':
             # Area under warning time curve
             false_alarm_rates, warning_times, _ = self.warning_time_vs_false_alarm_rate(horizon, required_warning_time)
-            metric_val = area_under_curve(false_alarm_rates, warning_times)
+            metric_val = area_under_curve(false_alarm_rates, warning_times, x_cutoff=0.05)
         elif metric_type == 'maxf1':
             # Highest f1 score over all the thresholds
             true_alarms, false_alarms = self.get_true_false_alarms(horizon, required_warning_time)
