@@ -354,8 +354,9 @@ def expected_time_to_disruption_integral():
 
 # Other functions
 
-def clump_many_to_one_statistics(unique_values_raw, clumping_values, epsilon=0.01):
+def unique_y_mapping(unique_values_raw, y_values, epsilon=0.01):
     """
+    TODO: fix this naming.
     For example, The way this is calculated, the warning times and true alarm rates and false alarm rates are all given by particular thresholds
     As such, we can easily compare them to the thresholds, since each value corresponds to one threshold
     However, when comparing them to eachother, this becomes difficult because there is not necessarily a one-to-one correspondence
