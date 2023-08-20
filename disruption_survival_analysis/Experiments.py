@@ -623,7 +623,7 @@ class Experiment:
         true_outcomes = []
         for shot_data in shot_data_list:
             shot_predictions = {}
-            feature_data = shot_data[feature_names].values
+            feature_data = shot_data[feature_names]
             # Predict risk depending on the model type
             if isinstance(self.predictor.model, SurvivalModel):
                 try:
@@ -660,12 +660,8 @@ class Experiment:
 
         # NOW: Find the false positive rate and average warning times
 
-        # 1. Determine all the unique predicted risks. These will be our thresholds for a simple threshold alarm
-        all_predicted_risks = []
-        for prediction in predictions:
-            all_predicted_risks.extend(prediction['risk'])
-        
-        unique_predicted_risks = np.unique(all_predicted_risks) # This should also leave the array sorted
+        # 1. Create thresholds for simple threshold alarm.
+        thresholds = np.linspace(0, 1, 100)
 
         # 2. For each unique predicted risk, find the false alarm rate and average warning time
         # Average warning time is only defined for disruptive shots
@@ -674,7 +670,7 @@ class Experiment:
         all_false_alarm_rates = []
         all_warning_times = []
 
-        for threshold in unique_predicted_risks:
+        for threshold in thresholds:
             alarms = 0
             true_alarms = 0
             warning_times = []

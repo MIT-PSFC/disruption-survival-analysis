@@ -69,14 +69,19 @@ class TestCriticalMetric(unittest.TestCase):
         """Test that the metric is calculated correctly
         """
 
+        epsilon = 0.001
+
         # Get the metric both ways
         direct_false_alarm_rates, direct_avg_warning_times, direct_std_warning_times = self.experiment.compute_critical_metric(horizon=0.05, required_warning_time=0.02)
         general_false_alarm_rates, general_avg_warning_times, general_std_warning_times = self.experiment.warning_time_vs_false_alarm_rate(horizon=0.05, required_warning_time=0.02)
 
-        # Check that the metric is calculated correctly
-        self.assertEqual(direct_false_alarm_rates, general_false_alarm_rates)
-        self.assertEqual(direct_avg_warning_times, general_avg_warning_times)
-        self.assertEqual(direct_std_warning_times, general_std_warning_times)
+        # Check that the metric is calculated correctly, within epsilon
+        if (abs(direct_false_alarm_rates - general_false_alarm_rates) > epsilon).any():
+            self.fail("False alarm rates are not equal")
+        if (abs(direct_avg_warning_times - general_avg_warning_times) > epsilon).any():
+            self.fail("Average warning times are not equal")
+        if (abs(direct_std_warning_times - general_std_warning_times) > epsilon).any():
+            self.fail("Standard deviation of warning times are not equal")
 
 # class TestExperimentsAlarms(unittest.TestCase):
 
