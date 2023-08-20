@@ -600,10 +600,144 @@ class Experiment:
 
         return true_alarm_rate, false_alarm_rate, avg_warning_time, std_warning_time
     
-
     # A self-contained single function to evaluate the only metric which is absolutely critical to the project
-    def compute_critical_metric(self):
+    def compute_critical_metric(self, horizon=None, required_warning_time=None):
         """ Compute the critical metric for the experiment
-        This metric is the average warning time vs false positive rate curve"""
+        This metric is the average warning time (y-axis, range) vs false positive rate (x-axis, domain)"""
 
-        # For each shot, make a dictionary of features, times, and whether or not the shot disrupted
+        # 0. Set up the predictions and outcomes to calculate the metric
+
+        # Group data by shot
+        shot_data_list = self.all_data.groupby('shot')
+        # Sort data by time
+        shot_data_list = [shot_data.sort_values('time') for _, shot_data in shot_data_list]
+
+        # Find the features in the data
+        feature_names = list(self.all_data.columns)
+        # Remove the 'shot', 'time', and 'time_until_disrupt' columns
+        feature_names.remove('shot')
+        feature_names.remove('time')
+        feature_names.remove('time_until_disrupt')
+
+        predictions = []
+        true_outcomes = []
+        for shot_data in shot_data_list:
+            shot_predictions = {}
+            feature_data = shot_data[feature_names].values
+            # Predict risk depending on the model type
+            if isinstance(self.predictor.model, SurvivalModel):
+                try:
+                    shot_predictions['risk'] = self.predictor.model.predict_risk(feature_data, horizon)
+                except:
+                    # DSM expects horizon in a list
+                    shot_predictions['risk'] = self.predictor.model.predict_risk(feature_data, [horizon])
+            elif isinstance(self.predictor.model, RandomForestClassifier):
+                shot_predictions['risk'] = self.predictor.model.predict_proba(feature_data)[:,1]
+            else:
+                raise ValueError('Model type not supported')
+            shot_predictions['time'] = shot_data['time'].values
+            predictions.append(shot_predictions)
+
+            # Determine the time of disruption and whether or not the shot actually disrupted
+            true_outcome = {}
+            if (shot_data['time_until_disrupt'] >= 0).any():
+                true_outcome['disruption_time'] = shot_data['time_until_disrupt'].values[0]
+                true_outcome['disrupted'] = True
+            elif (shot_data['time_until_disrupt'].isnull()).all():
+                true_outcome['disruption_time'] = np.nan
+                true_outcome['disrupted'] = False
+            else:
+                raise ValueError('Invalid shot data, mixed disruption and non-disruption data')
+            true_outcomes.append(true_outcome)
+
+        # At this point, we have the following setup:
+        # predictions is a list of dictionaries, each dictionary contains the following keys:
+        #   'risk': a numpy array of risk values
+        #   'time': a numpy array of time values
+        # true_outcomes is a list of dictionaries, each dictionary contains the following keys:
+        #   'disruption_time': the time of disruption
+        #   'disrupted': whether or not the shot actually disrupted
+
+        # NOW: Find the false positive rate and average warning times
+
+        # 1. Determine all the unique predicted risks. These will be our thresholds for a simple threshold alarm
+        all_predicted_risks = []
+        for prediction in predictions:
+            all_predicted_risks.extend(prediction['risk'])
+        
+        unique_predicted_risks = np.unique(all_predicted_risks) # This should also leave the array sorted
+
+        # 2. For each unique predicted risk, find the false alarm rate and average warning time
+        # Average warning time is only defined for disruptive shots
+
+        all_alarms = []
+        all_false_alarm_rates = []
+        all_warning_times = []
+
+        for threshold in unique_predicted_risks:
+            alarms = 0
+            true_alarms = 0
+            warning_times = []
+
+            # Iterate through each shot
+            for i, prediction in enumerate(predictions):
+                # Iterate through each predicted risk at time in the shot.
+                # Once an alarm is triggered, this loop gets broken out of, 
+                # because only one alarm can be triggered per shot at a given threshold.
+                for j, risk in enumerate(prediction['risk']):
+                    if risk >= threshold:
+                        # The risk exceeded the threshold. Determine if it was a true alarm.
+                        if true_outcomes[i]['disrupted']:
+                            # Shot was disruptive. Determine if the alarm was triggered in time
+                            warning_time = true_outcomes[i]['disruption_time'] - prediction['time'][j]
+                            if warning_time >= required_warning_time:
+                                # Alarm was triggered in time on a disruptive shot. True alarm.
+                                alarms += 1
+                                true_alarms += 1
+                                warning_times.append(warning_time)
+                            else:
+                                # Alarm was triggered too late. Missed alarm.
+                                # Do not increment alarms or true_alarms
+                                pass
+                        else:
+                            # Shot was not disruptive. False alarm.
+                            alarms += 1
+                        break
+
+            # Compute the false alarm rate and average warning time
+            false_alarms = alarms - true_alarms
+            false_alarm_rate = false_alarms / len(predictions)
+
+            # Add to the list of all alarms, false alarm rates, and list of warning times
+            all_alarms.append(alarms)
+            all_false_alarm_rates.append(false_alarm_rate)
+            all_warning_times.append(warning_times)
+
+        # 3. Make it so the false alarm rates are unique
+        # Since false alarm rate depends on the data of non-disruptive shots, 
+        # while average warning time depends on the data of disruptive shots,
+        # the false alarm rate can be the same for multiple thresholds, while the average warning time is different.
+        # This means a single value in the domain maps to multiple values in the range, which is not a function
+        # To fix this, we will average the warning times for each unique false alarm rate
+
+        unique_false_alarm_rates = np.unique(all_false_alarm_rates)
+        avg_warning_times = []
+        std_warning_times = []
+
+        for false_alarm_rate in unique_false_alarm_rates:
+            # Find all the average warning times for this false alarm rate
+            warning_times = []
+            for i, alarm in enumerate(all_alarms):
+                if all_false_alarm_rates[i] == false_alarm_rate:
+                    warning_times.extend(all_warning_times[i])
+            # Average the warning times
+            avg_warning_times.append(np.mean(warning_times))
+            std_warning_times.append(np.std(warning_times))
+
+        # 4. Return the false alarm rates and average warning times
+        return unique_false_alarm_rates, avg_warning_times, std_warning_times
+
+
+
+
+        
