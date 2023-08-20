@@ -601,9 +601,22 @@ class Experiment:
         return true_alarm_rate, false_alarm_rate, avg_warning_time, std_warning_time
     
     # A self-contained single function to evaluate the only metric which is absolutely critical to the project
-    def compute_critical_metric(self, horizon=None, required_warning_time=None):
+    def compute_critical_metric(self, horizon, required_warning_time):
         """ Compute the critical metric for the experiment
-        This metric is the average warning time (y-axis, range) vs false positive rate (x-axis, domain)"""
+        This metric is the average warning time (y-axis, range) vs false positive rate (x-axis, domain)
+        
+        Parameters
+        ----------
+        horizon : float
+            The horizon for the survival models to predict at
+        required_warning_time : float
+            The time before a disruption an alarm must be triggered for it to count as a 'true alarm'
+
+        Returns
+        -------
+        unique_false_alarm_rates, avg_warning_times, std_warning_times : np.array, np.array, np.array
+            The unique false alarm rates, average warning times, and standard deviation of warning times
+        """
 
         # 0. Set up the predictions and outcomes to calculate the metric
 
@@ -666,7 +679,6 @@ class Experiment:
         # 2. For each unique predicted risk, find the false alarm rate and average warning time
         # Average warning time is only defined for disruptive shots
 
-        all_alarms = []
         all_false_alarm_rates = []
         all_warning_times = []
 
@@ -705,7 +717,6 @@ class Experiment:
             false_alarm_rate = false_alarms / len(predictions)
 
             # Add to the list of all alarms, false alarm rates, and list of warning times
-            all_alarms.append(alarms)
             all_false_alarm_rates.append(false_alarm_rate)
             all_warning_times.append(warning_times)
 
@@ -721,9 +732,10 @@ class Experiment:
         std_warning_times = []
 
         for false_alarm_rate in unique_false_alarm_rates:
-            # Find all the average warning times for this false alarm rate
+            # all_warning_times is a list of lists, where each list is the warning times for a given false alarm rate
+            # for each unique false alarm rate, find the corresponding warning times and average them
             warning_times = []
-            for i, alarm in enumerate(all_alarms):
+            for i, _ in enumerate(all_false_alarm_rates):
                 if all_false_alarm_rates[i] == false_alarm_rate:
                     warning_times.extend(all_warning_times[i])
             # Average the warning times
