@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from disruption_survival_analysis.experiment_utils import label_shot_data, make_shot_lifetime_curve, calculate_alarm_times, clump_many_to_one_statistics
+from disruption_survival_analysis.experiment_utils import label_shot_data, make_shot_lifetime_curve, calculate_alarm_times, unique_domain_mapping
 from disruption_survival_analysis.manage_datasets import load_dataset, load_disruptive_shot_list, load_non_disruptive_shot_list
 
 # Labeling data tests
@@ -150,16 +150,16 @@ class TestExpectedTimeToDisruptionIntegral(unittest.TestCase):
 # Misc function tests
 
 class TestClumpManyToOneStatistics(unittest.TestCase):
-    """Tests for the function clump_many_to_one_statistics"""
+    """Tests for the function unique_domain_mapping"""
 
-    def test_clump_many_to_one_statistics_single_array(self):
+    def test_unique_domain_mapping_single_array(self):
 
         # Create numpy array of the warning times
         warning_times = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
 
         true_alarm_rates = [0.1, 0.1, 0.1, 0.2, 0.2, 0.2, 0.3, 0.3, 0.4]
 
-        unique_true_alarm_rates, avg_warning_times, std_warning_times = clump_many_to_one_statistics(true_alarm_rates, warning_times)
+        unique_true_alarm_rates, avg_warning_times, std_warning_times = unique_domain_mapping(true_alarm_rates, warning_times)
 
         self.assertEqual(len(unique_true_alarm_rates), 4)
         self.assertEqual(len(avg_warning_times), 4)
@@ -180,7 +180,7 @@ class TestClumpManyToOneStatistics(unittest.TestCase):
         self.assertEqual(std_warning_times[2], np.std([0.7, 0.8]))
         self.assertEqual(std_warning_times[3], 0)
 
-    def test_clump_many_to_one_statistics_double_array(self):
+    def test_unique_domain_mapping_double_array(self):
         
         # Create numpy arrays of the warning times
         array_1 = np.array([0.1, 0.2, 0.3])
@@ -193,7 +193,7 @@ class TestClumpManyToOneStatistics(unittest.TestCase):
 
         true_alarm_rates = [0.1, 0.5, 0.1]
 
-        unique_true_alarm_rates, avg_warning_times, std_warning_times = clump_many_to_one_statistics(true_alarm_rates, warning_times_list)
+        unique_true_alarm_rates, avg_warning_times, std_warning_times = unique_domain_mapping(true_alarm_rates, warning_times_list)
 
         self.assertEqual(len(unique_true_alarm_rates), 2)
         self.assertEqual(len(avg_warning_times), 2)
