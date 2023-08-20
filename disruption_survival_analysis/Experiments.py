@@ -4,7 +4,7 @@ import numpy as np
 
 from sklearn.metrics import roc_auc_score
 from disruption_survival_analysis.manage_datasets import load_dataset
-from disruption_survival_analysis.experiment_utils import label_shot_data, calculate_alarm_times, calculate_alarm_times_hysteresis, calculate_alarm_times_ettd, timeslice_micro_avg, area_under_curve, calculate_f1_scores, expected_time_to_disruption_integral, clump_many_to_one_statistics
+from disruption_survival_analysis.experiment_utils import label_shot_data, calculate_alarm_times, calculate_alarm_times_hysteresis, calculate_alarm_times_ettd, timeslice_micro_avg, area_under_curve, calculate_f1_scores, expected_time_to_disruption_integral, unique_domain_mapping
 from disruption_survival_analysis.model_utils import get_model_for_experiment, name_model
 
 from auton_survival.estimators import SurvivalModel # CPH, DCPH, DSM, DCM, RSF
@@ -422,7 +422,7 @@ class Experiment:
 
         true_alarm_rates, false_alarm_rates = self.true_false_alarm_rates(horizon, required_warning_time)
 
-        unique_false_alarms, avg_true_alarm_rates, std_true_alarm_rates = clump_many_to_one_statistics(false_alarm_rates, true_alarm_rates)
+        unique_false_alarms, avg_true_alarm_rates, std_true_alarm_rates = unique_domain_mapping(false_alarm_rates, true_alarm_rates)
 
         return unique_false_alarms, avg_true_alarm_rates#, std_true_alarm_rates
      
@@ -433,7 +433,7 @@ class Experiment:
         missed_alarm_rates = 1 - np.sum(true_alarms, axis=0) / self.get_num_disruptive_shots()
         false_alarm_rates = np.sum(false_alarms, axis=0) / (self.get_num_shots() - self.get_num_disruptive_shots())
 
-        unique_false_alarms, avg_missed_alarm_rates, std_missed_alarm_rates = clump_many_to_one_statistics(false_alarm_rates, missed_alarm_rates)
+        unique_false_alarms, avg_missed_alarm_rates, std_missed_alarm_rates = unique_domain_mapping(false_alarm_rates, missed_alarm_rates)
 
         return unique_false_alarms, avg_missed_alarm_rates
 
@@ -484,7 +484,7 @@ class Experiment:
 
         warning_times_list = self.get_warning_times_list(horizon)
 
-        unique_thresholds, avg_warning_times, std_warning_times = clump_many_to_one_statistics(self.thresholds, warning_times_list)
+        unique_thresholds, avg_warning_times, std_warning_times = unique_domain_mapping(self.thresholds, warning_times_list)
 
         return unique_thresholds, avg_warning_times, std_warning_times
 
@@ -496,7 +496,7 @@ class Experiment:
         warning_times_list = self.get_warning_times_list(horizon)
         _, false_alarm_rates = self.true_false_alarm_rates(horizon, required_warning_time)
 
-        unique_false_alarm_rates, avg_warning_times, std_warning_times = unique_y_mapping(false_alarm_rates, warning_times_list)
+        unique_false_alarm_rates, avg_warning_times, std_warning_times = unique_domain_mapping(false_alarm_rates, warning_times_list)
 
         # TODO: Ignore zero false positve rate results???
         return unique_false_alarm_rates, avg_warning_times, std_warning_times

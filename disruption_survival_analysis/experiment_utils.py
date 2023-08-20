@@ -354,32 +354,32 @@ def expected_time_to_disruption_integral():
 
 # Other functions
 
-def unique_y_mapping(unique_values_raw, y_values, epsilon=0.01):
+def unique_domain_mapping(domain_values, range_values, epsilon=0.01):
     """
     TODO: fix this naming.
     For example, The way this is calculated, the warning times and true alarm rates and false alarm rates are all given by particular thresholds
     As such, we can easily compare them to the thresholds, since each value corresponds to one threshold
     However, when comparing them to eachother, this becomes difficult because there is not necessarily a one-to-one correspondence
     For instance, we could have a true alarm rate of 0.5 for both a threshold of 0.1 and 0.2, but the warning times could be different
-    This function clumps values together for each unique value
+    This function puts the range values together for each domain value
 
     Parameters
     ----------
-    unique_values_raw : numpy.ndarray
-        The unique values which dictate the clumping. Not necessarily unique at this point.
-    clumping_values : numpy.ndarray
-        The values to be clumped. Must be the same length as unique_values.
+    domain_values : numpy.ndarray
+        The values of the domain. Not necessarily unique at this point.
+    range_values : numpy.ndarray
+        The values of the range. Must be the same length as unique_values.
     epsilon : float
-        The maximum difference between two unique values to be considered the same
+        The maximum difference between two domain values to be considered the same
 
     Returns
     -------
-    unique_true_alarm_rates : numpy.ndarray
-        The unique true alarm rates
-    avg_warning_times : numpy.ndarray
-        The average clumped value for each unique value
-    std_warning_times : numpy.ndarray
-        The standard deviation of the clumped values for each unique value
+    unique_values : numpy.ndarray
+        The unique values in the range, sorted.
+    avg_range_values : numpy.ndarray
+        The average range value for each unique value
+    std_range_values : numpy.ndarray
+        The standard deviation of the range values for each unique value
     
     """
 
@@ -388,33 +388,33 @@ def unique_y_mapping(unique_values_raw, y_values, epsilon=0.01):
 
     # Actually trim down to the unique values
     try:
-        unique_values = np.unique(unique_values_raw, axis=0)
+        unique_values = np.unique(domain_values, axis=0)
     except:
-        unique_values = np.unique(unique_values_raw)
+        unique_values = np.unique(domain_values)
 
     # Initialize the average and standard deviation arrays
-    avg_clump_values = np.zeros(len(unique_values))
-    std_clump_values = np.zeros(len(unique_values))
+    avg_range_values = np.zeros(len(unique_values))
+    std_range_values = np.zeros(len(unique_values))
 
     # Go through each unique value and find the clumping values which correspond to it
     for i, unique_value in enumerate(unique_values):
         # Find the indices of the raw unqiue values that correspond to this particular unique value
-        indices = np.where(unique_values_raw == unique_value)
+        indices = np.where(domain_values == unique_value)
 
         # Get the clumping values that correspond to this unique value
         # TODO: polish up this list comprehension to be more readable
         try:
-            clumping_values_2D = [clumping_values[k][j] for k in range(len(clumping_values)) for j in indices]
+            range_values_2D = [range_values[k][j] for k in range(len(range_values)) for j in indices]
             # Flatten the list
-            clumping_values_1D = [item for sublist in clumping_values_2D for item in sublist]
+            range_values_1D = [item for sublist in range_values_2D for item in sublist]
         except:
-            clumping_values_1D = [clumping_values[j] for j in indices]
+            range_values_1D = [range_values[j] for j in indices]
 
         # Calculate the average and standard deviation of the clumped values
-        avg_clump_values[i] = np.mean(clumping_values_1D)
-        std_clump_values[i] = np.std(clumping_values_1D)
+        avg_range_values[i] = np.mean(range_values_1D)
+        std_range_values[i] = np.std(range_values_1D)
 
-    return unique_values, avg_clump_values, std_clump_values
+    return unique_values, avg_range_values, std_range_values
 
 def load_experiment_config(device, dataset, model_type, alarm_type, metric, required_warning_time):
     """
