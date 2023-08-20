@@ -496,7 +496,7 @@ class Experiment:
         warning_times_list = self.get_warning_times_list(horizon)
         _, false_alarm_rates = self.true_false_alarm_rates(horizon, required_warning_time)
 
-        unique_false_alarm_rates, avg_warning_times, std_warning_times = clump_many_to_one_statistics(false_alarm_rates, warning_times_list)
+        unique_false_alarm_rates, avg_warning_times, std_warning_times = unique_y_mapping(false_alarm_rates, warning_times_list)
 
         # TODO: Ignore zero false positve rate results???
         return unique_false_alarm_rates, avg_warning_times, std_warning_times
@@ -599,3 +599,11 @@ class Experiment:
         std_warning_time = std_warning_times[warning_time_index]
 
         return true_alarm_rate, false_alarm_rate, avg_warning_time, std_warning_time
+    
+
+    # A self-contained single function to evaluate the only metric which is absolutely critical to the project
+    def compute_critical_metric(self):
+        """ Compute the critical metric for the experiment
+        This metric is the average warning time vs false positive rate curve"""
+
+        # For each shot, make a dictionary of features, times, and whether or not the shot disrupted

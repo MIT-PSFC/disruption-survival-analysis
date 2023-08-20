@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from disruption_survival_analysis.experiment_utils import label_shot_data, make_shot_lifetime_curve, calculate_alarm_times, calculate_alarm_times_hysteresis, calculate_alarm_times_ettd, timeslice_micro_average, area_under_curve, calculate_f1_scores, expected_time_to_disruption_integral, clump_many_to_one_statistics
+from disruption_survival_analysis.experiment_utils import label_shot_data, make_shot_lifetime_curve, calculate_alarm_times, clump_many_to_one_statistics
 from disruption_survival_analysis.manage_datasets import load_dataset, load_disruptive_shot_list, load_non_disruptive_shot_list
 
 # Labeling data tests
