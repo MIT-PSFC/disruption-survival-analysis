@@ -65,14 +65,14 @@ class TestCriticalMetric(unittest.TestCase):
         experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'dsm', 'sthr', 'auroc', 0.02)
         self.experiment = Experiment(experiment_config, 'test')
 
-    def test_compute_metric(self):
-        """Test that the metric is calculated correctly
+    def test_get_metric(self):
+        """Test that the metric is obtained correctly
         """
 
         epsilon = 0.001
 
         # Get the metric both ways
-        direct_false_alarm_rates, direct_avg_warning_times, direct_std_warning_times = self.experiment.compute_critical_metric(horizon=0.05, required_warning_time=0.02)
+        direct_false_alarm_rates, direct_avg_warning_times, direct_std_warning_times = self.experiment.get_critical_metric(horizon=0.05, required_warning_time=0.02)
         general_false_alarm_rates, general_avg_warning_times, general_std_warning_times = self.experiment.warning_time_vs_false_alarm_rate(horizon=0.05, required_warning_time=0.02)
 
         # Check that the metric is calculated correctly, within epsilon
