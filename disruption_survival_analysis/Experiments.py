@@ -5,6 +5,7 @@ import numpy as np
 from sklearn.metrics import roc_auc_score
 from disruption_survival_analysis.manage_datasets import load_dataset
 from disruption_survival_analysis.experiment_utils import label_shot_data, calculate_alarm_times, calculate_alarm_times_hysteresis, calculate_alarm_times_ettd, timeslice_micro_avg, area_under_curve, calculate_f1_scores, expected_time_to_disruption_integral, unique_domain_mapping
+from disruption_survival_analysis.experiment_utils import SIMPLE_THRESHOLDS
 from disruption_survival_analysis.model_utils import get_model_for_experiment, name_model
 
 from auton_survival.estimators import SurvivalModel # CPH, DCPH, DSM, DCM, RSF
@@ -64,7 +65,7 @@ class Experiment:
         # Set the thresholds for usage in tpr/fpr calculations
         if self.alarm_type == 'sthr':
             # Simple Threshold
-            self.thresholds = np.linspace(0, 1, 100)
+            self.thresholds = SIMPLE_THRESHOLDS
         elif self.alarm_type == 'hyst':
             # Hysteresis
             # Make list of tuples of (min, max, time) for hysteresis
