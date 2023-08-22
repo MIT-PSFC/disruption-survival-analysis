@@ -8,6 +8,8 @@ from auton_survival.estimators import SurvivalModel
 from auton_survival.metrics import survival_regression_metric
 from disruption_survival_analysis.manage_datasets import load_features_outcomes
 
+SIMPLE_THRESHOLDS = np.linspace(0.00, 0.99, 100)
+
 
 # Labeling data
 

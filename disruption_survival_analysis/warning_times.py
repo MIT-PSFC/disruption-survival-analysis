@@ -1,5 +1,7 @@
 import numpy as np
 
+from disruption_survival_analysis.experiment_utils import SIMPLE_THRESHOLDS
+
 def compute_critical_metric(predictions, true_outcomes, required_warning_time):
     """ Compute the critical metric for a given set of predictions and true outcomes.
         The critical metric is the average warning time for a given false alarm rate.
@@ -27,7 +29,7 @@ def compute_critical_metric(predictions, true_outcomes, required_warning_time):
     """
 
     # 1. Create thresholds for simple threshold alarm.
-    thresholds = np.linspace(0, 1, 100)
+    thresholds = SIMPLE_THRESHOLDS
 
     # 2. For each unique predicted risk, find the false alarm rate and average warning time
     # Average warning time is only defined for disruptive shots
@@ -46,12 +48,12 @@ def compute_critical_metric(predictions, true_outcomes, required_warning_time):
             # Once an alarm is triggered, this loop gets broken out of, 
             # because only one alarm can be triggered per shot at a given threshold.
             for j, risk in enumerate(prediction['risk']):
-                if risk >= threshold:
+                if risk > threshold:
                     # The risk exceeded the threshold. Determine if it was a true alarm.
                     if true_outcomes[i]['disrupted']:
                         # Shot was disruptive. Determine if the alarm was triggered in time
                         warning_time = true_outcomes[i]['disruption_time'] - prediction['time'][j]
-                        if warning_time >= required_warning_time:
+                        if warning_time > required_warning_time:
                             # Alarm was triggered in time on a disruptive shot. True alarm.
                             alarms += 1
                             true_alarms += 1
