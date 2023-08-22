@@ -404,7 +404,7 @@ class Experiment:
             # Fill in true and false alarms
             # True alarm is when shot is disruptive and warning time is greater than required warning time
             # False alarm is when shot is not disruptive but an alarm time is still given
-            true_alarms[i,:] = (disrupt & (warning_times >= required_warning_time)).astype(int)
+            true_alarms[i,:] = (disrupt & (warning_times > required_warning_time)).astype(int)
             false_alarms[i,:] = (~disrupt & ~np.isnan(alarm_times[i,:])).astype(int)
             
         return true_alarms, false_alarms
