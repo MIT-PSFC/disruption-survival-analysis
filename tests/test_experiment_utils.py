@@ -149,7 +149,7 @@ class TestExpectedTimeToDisruptionIntegral(unittest.TestCase):
 
 # Misc function tests
 
-class TestClumpManyToOneStatistics(unittest.TestCase):
+class TestUniqueDomainMapping(unittest.TestCase):
     """Tests for the function unique_domain_mapping"""
 
     def test_unique_domain_mapping_single_array(self):

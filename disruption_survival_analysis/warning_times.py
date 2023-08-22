@@ -28,8 +28,16 @@ def compute_critical_metric(predictions, true_outcomes, required_warning_time):
     
     """
 
-    # 1. Create thresholds for simple threshold alarm.
+    # 1. Set Up
+
+    # Create thresholds for simple threshold alarm.
     thresholds = SIMPLE_THRESHOLDS
+
+    # Count the number of negatives in the true outcomes
+    num_negatives = 0
+    for true_outcome in true_outcomes:
+        if not true_outcome['disrupted']:
+            num_negatives += 1
 
     # 2. For each unique predicted risk, find the false alarm rate and average warning time
     # Average warning time is only defined for disruptive shots
@@ -69,7 +77,7 @@ def compute_critical_metric(predictions, true_outcomes, required_warning_time):
 
         # Compute the false alarm rate and average warning time
         false_alarms = alarms - true_alarms
-        false_alarm_rate = false_alarms / len(predictions)
+        false_alarm_rate = false_alarms / num_negatives
 
         # Add to the list of all alarms, false alarm rates, and list of warning times
         all_false_alarm_rates.append(false_alarm_rate)

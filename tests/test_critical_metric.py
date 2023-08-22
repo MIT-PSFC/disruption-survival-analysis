@@ -33,13 +33,13 @@ class TestComputeCriticalMetric(unittest.TestCase):
         false_alarm_rates, avg_warning_times, std_warning_times = compute_critical_metric(predictions, true_outcomes, required_warning_time)
 
         # Check that the false alarm rates are correct
-        # There should only be two false alarm rates, either 0 or 0.5
+        # There should only be two false alarm rates, either 0 or 1
         if len(false_alarm_rates) != 2:
             raise ValueError('There should only be two false alarm rates')
         if false_alarm_rates[0] != 0.0:
             raise ValueError('The first false alarm rate should be 0.0')
-        if false_alarm_rates[1] != 0.5:
-            raise ValueError('The second false alarm rate should be 0.5')
+        if false_alarm_rates[1] != 1:
+            raise ValueError('The second false alarm rate should be 1')
         
         # Check that the average warning times are correct
         # There should be two average warning times, since there are two false alarm rates
@@ -79,6 +79,6 @@ class TestComputeCriticalMetric(unittest.TestCase):
         false_alarm_rates, avg_warning_times, std_warning_times = compute_critical_metric(predictions, true_outcomes, required_warning_time)
 
         # Check the output
-        assert np.allclose(false_alarm_rates, np.array([0, 0.33333333]))
+        assert np.allclose(false_alarm_rates, np.array([0, 1]))
         assert np.allclose(avg_warning_times, np.array([1.5, 1.875]))
         assert np.allclose(std_warning_times, np.array([0.5, 0.33072]))
