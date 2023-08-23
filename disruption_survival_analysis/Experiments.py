@@ -443,10 +443,9 @@ class Experiment:
     # Warning Times Methods
 
     def get_warning_times_list(self, horizon=None):
-        """Get a list of warning times for each disruptive shot at a given horizon.
+        """Get a list of warning times for each threshold given a horizon.
         This is a list of arrays of variable length,
-        but the arrays will line up such that each index corresponds to the same threshold.
-        The list is ordered to be consistent with the list of disruptive shots.
+        The list is ordered to be consistent with the list of thresholds.
         """
         
         # Get list of all shots
@@ -458,7 +457,7 @@ class Experiment:
         alarm_times = self.get_alarm_times(horizon)
 
         # Create list to store warning times
-        warning_times_list = []
+        warning_times_shot_list = []
         for disruptive_shot in disruptive_shots:
             # Get the time of disruption for this shot
             shot_data = self.get_shot_data(disruptive_shot)
@@ -469,16 +468,29 @@ class Experiment:
             shot_alarm_times = alarm_times[shot_index]
 
             # Calculate the warning times for this shot
-            warning_times = np.array([disrupt_time - alarm_time for alarm_time in shot_alarm_times])
+            warning_times = [disrupt_time - alarm_time for alarm_time in shot_alarm_times]
+            
+            # Convert to numpy array
+            warning_times = np.array(warning_times)
 
             # The only way a NaN will show up in the warning times is if the alarm time was None or Nan
             # If alarm time was None, that means no alarm was raised for this disruptive shot
-            # Replace with zero to indicate that there was no warning of disruption
-            warning_times = np.array([0 if (warning_time is None) or (np.isnan(warning_time)) else warning_time for warning_time in warning_times])
+            # We don't want to include 'no alarm' times in the average warning times, so remove them 
+            warning_times = warning_times[~np.isnan(warning_times)]
 
-            warning_times_list.append(warning_times)
+            warning_times_shot_list.append(warning_times)
 
-        return warning_times_list
+        warning_times_threshold_list = []
+        for threshold_index in range(len(self.thresholds)):
+            warning_times_threshold = []
+            for warning_times_shot in warning_times_shot_list:
+                try:
+                    warning_times_threshold.append(warning_times_shot[threshold_index])
+                except:
+                    pass
+            warning_times_threshold_list.append(warning_times_threshold)
+
+        return warning_times_threshold_list
 
     def warning_time_vs_threshold(self, horizon=None):
         """ Get statistics on warning time vs threshold for a given horizon 

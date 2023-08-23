@@ -155,7 +155,7 @@ class TestUniqueDomainMapping(unittest.TestCase):
     def test_unique_domain_mapping_single_array(self):
 
         # Create numpy array of the warning times
-        warning_times = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
+        warning_times = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 
         true_alarm_rates = [0.1, 0.1, 0.1, 0.2, 0.2, 0.2, 0.3, 0.3, 0.4]
 
@@ -183,8 +183,37 @@ class TestUniqueDomainMapping(unittest.TestCase):
     def test_unique_domain_mapping_double_array(self):
         
         # Create numpy arrays of the warning times
-        array_1 = np.array([0.1, 0.2, 0.3])
-        array_2 = np.array([0.4, 0.5, 0.6])
+        array_1 = [0.1, 0.2, 0.3]
+        array_2 = [0.4, 0.5, 0.6]
+        array_3 = [0.7, 0.8, 0.9]
+
+        warning_times_list = [array_1, array_2, array_3]
+
+        true_alarm_rates = [0.1, 0.5, 0.1]
+
+        unique_true_alarm_rates, avg_warning_times, std_warning_times = unique_domain_mapping(true_alarm_rates, warning_times_list)
+
+        self.assertEqual(len(unique_true_alarm_rates), 2)
+        self.assertEqual(len(avg_warning_times), 2)
+        self.assertEqual(len(std_warning_times), 2)
+
+        self.assertEqual(unique_true_alarm_rates[0], 0.1)
+        self.assertEqual(unique_true_alarm_rates[1], 0.5)
+
+        first_warns = [0.1, 0.2, 0.3, 0.7, 0.8, 0.9]
+        second_warns = [0.4, 0.5, 0.6]
+
+        self.assertEqual(avg_warning_times[0], np.mean(first_warns))
+        self.assertEqual(avg_warning_times[1], np.mean(second_warns))
+
+        self.assertEqual(std_warning_times[0], np.std(first_warns))
+        self.assertEqual(std_warning_times[1], np.std(second_warns))
+
+    def test_unique_domain_mapping_double_array_uneven(self):
+        
+        # Create numpy arrays of the warning times
+        array_1 = np.array([0.1, 0.2])
+        array_2 = np.array([0.3, 0.4, 0.5, 0.6])
         array_3 = np.array([0.7, 0.8, 0.9])
 
         warning_times_list = [array_1, array_2, array_3]
@@ -202,8 +231,8 @@ class TestUniqueDomainMapping(unittest.TestCase):
         self.assertEqual(unique_true_alarm_rates[0], 0.1)
         self.assertEqual(unique_true_alarm_rates[1], 0.5)
 
-        first_warns = [0.1, 0.3, 0.4, 0.6, 0.7, 0.9]
-        second_warns = [0.2, 0.5, 0.8]
+        first_warns = [0.1, 0.2, 0.7, 0.8, 0.9]
+        second_warns = [0.3, 0.4, 0.5, 0.6]
 
         self.assertEqual(avg_warning_times[0], np.mean(first_warns))
         self.assertEqual(avg_warning_times[1], np.mean(second_warns))
