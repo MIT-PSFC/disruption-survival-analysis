@@ -461,7 +461,7 @@ class Experiment:
         for disruptive_shot in disruptive_shots:
             # Get the time of disruption for this shot
             shot_data = self.get_shot_data(disruptive_shot)
-            disrupt_time = shot_data['time'].iloc[-1]
+            disrupt_time = shot_data['time_until_disrupt'].iloc[0]
             # Find the index of the shot in the shot list
             shot_index = np.where(shot_list == disruptive_shot)[0][0]
             # Get the alarm times for this shot
