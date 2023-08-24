@@ -8,6 +8,8 @@ from auton_survival.estimators import SurvivalModel
 from auton_survival.metrics import survival_regression_metric
 from disruption_survival_analysis.manage_datasets import load_features_outcomes
 
+SIMPLE_THRESHOLDS = np.linspace(0.00, 0.99, 100)
+
 
 # Labeling data
 
@@ -354,9 +356,9 @@ def expected_time_to_disruption_integral():
 
 # Other functions
 
-def unique_domain_mapping(domain_values, range_values, epsilon=0.01):
+def unique_domain_mapping(domain_values, range_values):
     """
-    TODO: fix this naming.
+    Maps a range of values to a domain of values, where the domain values are unique
     For example, The way this is calculated, the warning times and true alarm rates and false alarm rates are all given by particular thresholds
     As such, we can easily compare them to the thresholds, since each value corresponds to one threshold
     However, when comparing them to eachother, this becomes difficult because there is not necessarily a one-to-one correspondence
@@ -369,22 +371,17 @@ def unique_domain_mapping(domain_values, range_values, epsilon=0.01):
         The values of the domain. Not necessarily unique at this point.
     range_values : numpy.ndarray
         The values of the range. Must be the same length as unique_values.
-    epsilon : float
-        The maximum difference between two domain values to be considered the same
 
     Returns
     -------
-    unique_values : numpy.ndarray
+    unique_values : list
         The unique values in the range, sorted.
-    avg_range_values : numpy.ndarray
+    avg_range_values : list
         The average range value for each unique value
-    std_range_values : numpy.ndarray
+    std_range_values : list
         The standard deviation of the range values for each unique value
     
     """
-
-    # Within these unique values, if they are within epsilon of eachother, eliminate one
-    # TODO
 
     # Actually trim down to the unique values
     try:
@@ -393,26 +390,23 @@ def unique_domain_mapping(domain_values, range_values, epsilon=0.01):
         unique_values = np.unique(domain_values)
 
     # Initialize the average and standard deviation arrays
-    avg_range_values = np.zeros(len(unique_values))
-    std_range_values = np.zeros(len(unique_values))
+    avg_range_values = []
+    std_range_values = []
 
     # Go through each unique value and find the clumping values which correspond to it
-    for i, unique_value in enumerate(unique_values):
-        # Find the indices of the raw unqiue values that correspond to this particular unique value
-        indices = np.where(domain_values == unique_value)
-
-        # Get the clumping values that correspond to this unique value
-        # TODO: polish up this list comprehension to be more readable
-        try:
-            range_values_2D = [range_values[k][j] for k in range(len(range_values)) for j in indices]
-            # Flatten the list
-            range_values_1D = [item for sublist in range_values_2D for item in sublist]
-        except:
-            range_values_1D = [range_values[j] for j in indices]
-
-        # Calculate the average and standard deviation of the clumped values
-        avg_range_values[i] = np.mean(range_values_1D)
-        std_range_values[i] = np.std(range_values_1D)
+    for unique_value in unique_values:
+        
+        grouped_range_values = []
+        for i, _ in enumerate(domain_values):
+            if domain_values[i] == unique_value:
+                # Add to grouped range values depending on if items are list or not
+                try:
+                    grouped_range_values.extend(range_values[i])
+                except:
+                    grouped_range_values.append(range_values[i])
+        # Average the warning times
+        avg_range_values.append(np.mean(grouped_range_values))
+        std_range_values.append(np.std(grouped_range_values))
 
     return unique_values, avg_range_values, std_range_values
 
