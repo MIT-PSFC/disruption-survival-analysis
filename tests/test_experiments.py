@@ -84,6 +84,29 @@ class TestCriticalMetric(unittest.TestCase):
             if (abs(direct_std_warning_times[i] - general_std_warning_times[i]) > epsilon).any():
                 self.fail("Standard deviation of warning times are not equal")
 
+
+class TestWarningTimesList(unittest.TestCase):
+
+    def setUp(self):
+        """Set up the test case
+        """
+
+        # Load simple DSM experiment
+        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'dsm', 'sthr', 'auroc', 0.02)
+        self.experiment = Experiment(experiment_config, 'test')
+
+    def test_no_negative_warning_times(self):
+        """Ensure that there are no negative warning times
+        """
+
+        # Get the warning times list
+        warning_times_list = self.experiment.get_warning_times_list(horizon=0.05)
+
+        # Check that there are no negative warning times
+        for warning_times in warning_times_list:
+            for warning_time in warning_times:
+                self.assertGreaterEqual(warning_time, 0)
+
 # class TestExperimentsAlarms(unittest.TestCase):
 
 #     def setUp(self):

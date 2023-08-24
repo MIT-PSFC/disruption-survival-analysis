@@ -470,6 +470,9 @@ class Experiment:
             # Calculate the warning times for this shot
             warning_times = [disrupt_time - alarm_time for alarm_time in shot_alarm_times]
             
+            # If warning time is negative, set it to NaN
+            warning_times = [warning_time if warning_time >= 0 else np.nan for warning_time in warning_times]
+
             # Convert to numpy array
             warning_times = np.array(warning_times)
 
@@ -509,6 +512,9 @@ class Experiment:
         """
 
         warning_times_list = self.get_warning_times_list(horizon)
+        # If warning time less than required warning time, remove it
+        warning_times_list = [[warning_time for warning_time in warning_times if warning_time > required_warning_time] for warning_times in warning_times_list]
+
         _, false_alarm_rates = self.true_false_alarm_rates(horizon, required_warning_time)
 
         unique_false_alarm_rates, avg_warning_times, std_warning_times = unique_domain_mapping(false_alarm_rates, warning_times_list)
