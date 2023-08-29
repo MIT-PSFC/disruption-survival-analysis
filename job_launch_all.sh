@@ -4,7 +4,7 @@ project_name="test-multi-sweep"
 
 # Activate Python environment
 source /etc/profile
-source ~/Documents/disruption-survival-analysis/.venv/bin/activate
+source ~/projects/disruption-survival-analysis/.venv/bin/activate
 
 #wandb --version
 
@@ -34,5 +34,5 @@ do
     sed -i "s/--job-name=.*/--job-name=$sweep_id/g" job_instance.slurm
 
     # Launch the job
-    ./job_launch 0 $sweep_url
+    ./job_launch.sh 0 $sweep_url
 done
