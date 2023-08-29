@@ -86,14 +86,16 @@ class TestAllCombos(unittest.TestCase):
     def test_evaluate_single_metric(self):
         """Used to test a single metric for a single experiment"""
 
-        metric = 'auroc'
+        test_metric = 'auwtc'
+        
         model = 'cph'
         alarm_type = 'sthr'
+        model_metric = 'auroc'
         min_required_warning_time = 0.02
-        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, model, alarm_type, metric, min_required_warning_time)
+        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, model, alarm_type, model_metric, min_required_warning_time)
         experiment = Experiment(experiment_config, 'test')
 
-        experiment.evaluate_metric(metric)
+        experiment.evaluate_metric(test_metric)
 
 
 class TestCriticalMetric(unittest.TestCase):
