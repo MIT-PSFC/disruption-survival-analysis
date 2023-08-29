@@ -9,7 +9,7 @@ ab-alarm-type:
 ab-metric:
   value: auroc
 ab-required-warning-time:
-  value: 0.02
+  value: 0.1
 batch_size:
   value: 160
 distribution:

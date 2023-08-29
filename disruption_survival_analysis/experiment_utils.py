@@ -393,7 +393,7 @@ def unique_domain_mapping(domain_values, range_values):
     avg_range_values = []
     std_range_values = []
 
-    # Go through each unique value and find the clumping values which correspond to it
+    # Go through each domain value and find the unique values which correspond to it
     for unique_value in unique_values:
         
         grouped_range_values = []

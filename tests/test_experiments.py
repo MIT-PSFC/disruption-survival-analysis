@@ -55,6 +55,47 @@ class TestSimpleFunctions(unittest.TestCase):
             else:
                 self.fail("Shot lists are not ordered consistently")
 
+class TestAllCombos(unittest.TestCase):
+
+    # Test for every combination of model, alarm type, and metric
+    model_list = ['cph', 'dcph', 'dsm', 'rf', 'km']
+    alarm_type_list = ['sthr', 'hyst']
+    metric_list = ['auroc', 'auwtc']
+    min_required_warning_times = [0.02]
+
+    def test_evaluate_all_metrics(self):
+        """Test that all metrics can be evaluated for all experiments on the validation set"""
+
+        # Load all experiments of the various types
+        self.experiments = []
+        for model in self.model_list:
+            for alarm_type in self.alarm_type_list:
+                for metric in self.metric_list:
+                    for min_required_warning_time in self.min_required_warning_times:
+                        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, model, alarm_type, metric, min_required_warning_time)
+                        self.experiments.append(Experiment(experiment_config, 'test'))
+
+        # Evaluate the metrics for each experiment
+        for experiment in self.experiments:
+            for metric in self.metric_list:
+                try:
+                    experiment.evaluate_metric(metric)
+                except:
+                    self.fail(f"Failed to evaluate metric {metric} for experiment {experiment.name}")
+
+    def test_evaluate_single_metric(self):
+        """Used to test a single metric for a single experiment"""
+
+        metric = 'auroc'
+        model = 'cph'
+        alarm_type = 'sthr'
+        min_required_warning_time = 0.02
+        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, model, alarm_type, metric, min_required_warning_time)
+        experiment = Experiment(experiment_config, 'test')
+
+        experiment.evaluate_metric(metric)
+
+
 class TestCriticalMetric(unittest.TestCase):
 
     def setUp(self):
@@ -107,48 +148,4 @@ class TestWarningTimesList(unittest.TestCase):
             for warning_time in warning_times:
                 self.assertGreaterEqual(warning_time, 0)
 
-# class TestExperimentsAlarms(unittest.TestCase):
-
-#     def setUp(self):
-#         """Set up the test case
-#         """
-
-#         # Load simple DSM experiment
-#         self.experiment = Experiment()
-
-#     def test_alarm_times_shapes(self):
-#         """Ensure that the alarms and times arrays have the correct shapes"""
-
-#         # Get the alarm times
-#         alarm_times = self.experiment.get_alarm_times(self.horizon)
-
-#         # Check that the arrays have the correct shapes
-#         # Should be the same length as the number of shots
-#         # and the second dimension is the number of thresholds
-#         self.assertEqual(alarm_times.shape, (self.experiment.get_num_shots(), len(self.experiment.thresholds)))
-        
-#     def test_true_false_alarms_shapes(self):
-
-#         # Get the true and false alarms
-#         true_alarms, false_alarms = self.experiment.get_true_false_alarms(self.horizon, self.required_warning_time)
-
-#         # Check that the arrays have the correct shapes
-#         # Should be the same length as the number of shots
-#         # and the second dimension is the number of thresholds
-#         self.assertEqual(true_alarms.shape, (self.experiment.get_num_shots(), len(self.experiment.thresholds)))
-#         self.assertEqual(false_alarms.shape, (self.experiment.get_num_shots(), len(self.experiment.thresholds)))
-
-
-# class TestWarningTimeMethods(unittest.TestCase):
-
-#     def test_warning_times_list_length(self):
-#         """Ensure that the warning times array has the correct length"""
-
-#         # Get the warning times list
-#         warning_times_list = self.experiment.get_warning_times_list(self.horizon)
-
-#         # Check that the warning times list has the correct length
-#         # Should be the same length as the number of disruptive shots
-#         # as the second dimension is the number of thresholds
-#         self.assertEqual(len(warning_times_list), self.experiment.get_num_disruptive_shots())
 

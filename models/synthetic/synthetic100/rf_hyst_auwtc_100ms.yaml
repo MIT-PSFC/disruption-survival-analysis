@@ -7,9 +7,9 @@ aa-model-type:
 ab-alarm-type:
   value: hyst
 ab-metric:
-  value: auroc
+  value: auwtc
 ab-required-warning-time:
-  value: 0.02
+  value: 0.1
 class_time:
   value: 0.2505
 criterion:
