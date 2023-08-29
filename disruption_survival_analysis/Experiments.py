@@ -517,6 +517,8 @@ class Experiment:
 
         warning_times_list = self.get_warning_times_list(horizon)
         # If warning time less than required warning time, remove it
+        if required_warning_time == None:
+            required_warning_time = self.predictor.trained_required_warning_time
         warning_times_list = [[warning_time for warning_time in warning_times if warning_time > required_warning_time] for warning_times in warning_times_list]
 
         _, false_alarm_rates = self.true_false_alarm_rates(horizon, required_warning_time)

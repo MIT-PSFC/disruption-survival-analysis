@@ -408,6 +408,10 @@ def unique_domain_mapping(domain_values, range_values):
         avg_range_values.append(np.mean(grouped_range_values))
         std_range_values.append(np.std(grouped_range_values))
 
+    # Convert to numpy arrays
+    avg_range_values = np.array(avg_range_values)
+    std_range_values = np.array(std_range_values)
+
     return unique_values, avg_range_values, std_range_values
 
 def load_experiment_config(device, dataset, model_type, alarm_type, metric, required_warning_time):
