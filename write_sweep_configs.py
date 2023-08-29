@@ -22,6 +22,11 @@ hyperparameter_ranges = {
         "values": ["Weibull", "LogNormal"],
         "distribution": "categorical"
     },
+    "fit_time": { # Time in seconds to look in the past for linearly extrapolating the risk into the future
+        # In Alex's paper used 0.05, 0.1, 0.2
+        "min": 0.001,
+        "max": 0.3,
+    },
     "k": {
         "min": 1,
         "max": 6,
@@ -72,8 +77,13 @@ hyperparameter_ranges = {
 
 # Dictionary for which hyperparameters to sweep over for each model
 model_hyperparameters = {
-    "cph": ["l2", 
+    "cph": ["l2",
             "horizon"],
+    "dcph": ["batch_size",
+            "epochs",
+            "horizon",
+            "layer_depth",
+            "layer_width"],
     "dsm": ["batch_size", 
             "distribution", 
             "epochs",
@@ -89,18 +99,25 @@ model_hyperparameters = {
            "max_features",
            "min_samples_leaf",
            "min_samples_split",
-           "n_estimators"]
+           "n_estimators"],
+    "km": ["class_time",
+           "criterion",
+           "fit_time",
+           "max_features",
+           "min_samples_leaf",
+           "min_samples_split",
+           "n_estimators"],
 }
 
 # Base project name
-project_name = "2023-08-16 Tests"
+project_name = "2023-08-29 Tests"
 # Datasets to use
-devices = ["synthetic"]
-dataset_paths = ["synthetic100"]
+devices = ["cmod"]
+dataset_paths = ["no_ufo_flattop_7736_shots_6%_disruptive"]
 
 # List of models to include in this sweep
 # cph, dcph, dcm, dsm, rf, km
-models = ["dsm", "rf"]
+models = ["cph", "dcph", "dsm", "rf", "km"]
 
 # List of alarm types to use
 # sthr, hyst, ettd, ethy
@@ -108,7 +125,7 @@ alarm_types = ["sthr", "hyst"]
 
 # List of validation metrics to use
 # auroc, auwtc, maxf1, etint
-metrics = ["auroc"]
+metrics = ["auroc", "auwtc"]
 
 # List of required warning times to train on (in seconds)
 required_warning_times = [0.1, 0.02]
