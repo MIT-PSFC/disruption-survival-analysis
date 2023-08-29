@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=rf-tibs
+#SBATCH --job-name=cph_hyst_auroc_100ms_sweep
 #SBATCH -N 1 
 #SBATCH -n 1
 #SBATCH --cpus-per-task=1
