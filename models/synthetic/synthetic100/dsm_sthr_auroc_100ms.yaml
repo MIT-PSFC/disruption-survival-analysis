@@ -5,11 +5,11 @@ aa-device:
 aa-model-type:
   value: dsm
 ab-alarm-type:
-  value: hyst
+  value: sthr
 ab-metric:
   value: auroc
 ab-required-warning-time:
-  value: 0.02
+  value: 0.1
 batch_size:
   value: 160
 distribution:

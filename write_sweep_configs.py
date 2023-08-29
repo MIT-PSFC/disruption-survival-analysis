@@ -83,7 +83,8 @@ model_hyperparameters = {
             "epochs",
             "horizon",
             "layer_depth",
-            "layer_width"],
+            "layer_width",
+            "learning_rate"],
     "dsm": ["batch_size", 
             "distribution", 
             "epochs",
@@ -112,8 +113,10 @@ model_hyperparameters = {
 # Base project name
 project_name = "2023-08-29 Tests"
 # Datasets to use
-devices = ["cmod"]
-dataset_paths = ["no_ufo_flattop_7736_shots_6%_disruptive"]
+devices = ["synthetic"]
+dataset_paths = ["synthetic100"]
+#devices = ["cmod"]
+#dataset_paths = ["no_ufo_flattop_7736_shots_6%_disruptive"]
 
 # List of models to include in this sweep
 # cph, dcph, dcm, dsm, rf, km
@@ -189,6 +192,64 @@ def write_sweep_config(sweep_config):
     with open(f"models/{device}/{dataset_path}/{sweep_config_name}.yaml", "w") as f:
         yaml.dump(sweep_config, f)
 
+def write_synthetic_model_config(sweep_config):
+    # Write a config for the synthetic model (not rigorously hyperparameter tuned)
+    hyperparameters = sweep_config["parameters"]
+
+    # Get the model details from the sweep config
+    device = hyperparameters["aa-device"]["value"]
+    dataset_path = hyperparameters["aa-dataset-path"]["value"]
+    model = hyperparameters["aa-model-type"]["value"]
+    alarm_type = hyperparameters["ab-alarm-type"]["value"]
+    metric = hyperparameters["ab-metric"]["value"]
+    required_warning_time = hyperparameters["ab-required-warning-time"]["value"]
+
+    model_config_name = f"{model}_{alarm_type}_{metric}_{int(required_warning_time*1000)}ms"
+
+    # Remove the above stuff from the hyperparameters
+    del hyperparameters["aa-device"]
+    del hyperparameters["aa-dataset-path"]
+    del hyperparameters["aa-model-type"]
+    del hyperparameters["ab-alarm-type"]
+    del hyperparameters["ab-metric"]
+    del hyperparameters["ab-required-warning-time"]
+
+    # For what is remaining, randomly sample from the hyperparameter ranges
+    for hyperparameter in hyperparameters:
+        try:
+            distribution = hyperparameters[hyperparameter]["distribution"]
+        except KeyError:
+            distribution = "uniform"
+        
+        if distribution == "categorical":
+            # Just pick the first one
+            hyperparameters[hyperparameter] = hyperparameters[hyperparameter]["values"][0]
+        elif distribution == "uniform" or distribution == "log_uniform_values":
+            # Sample from a uniform distribution
+            min_value = hyperparameters[hyperparameter]["min"]
+            max_value = hyperparameters[hyperparameter]["max"]
+            # If the values are integers, keep them integers
+            if isinstance(min_value, int) and isinstance(max_value, int):
+                hyperparameters[hyperparameter] = int((min_value + max_value)/2)
+            else:
+                hyperparameters[hyperparameter] = (min_value + max_value)/2
+        else:
+            raise ValueError(f"Unknown distribution {distribution}")
+        
+    # Build new config dictionary
+    config = {}
+    config["aa-dataset-path"] = {"value": dataset_path}
+    config["aa-device"] = {"value": device}
+    config["aa-model-type"] = {"value": model}
+    config["ab-alarm-type"] = {"value": alarm_type}
+    config["ab-metric"] = {"value": metric}
+    config["ab-required-warning-time"] = {"value": required_warning_time}
+    for hyperparameter in hyperparameters:
+        config[hyperparameter] = {"value": hyperparameters[hyperparameter]}
+
+    with open(f"models/{device}/{dataset_path}/{model_config_name}.yaml", "w") as f:
+        yaml.dump(config, f)
+
 for device in devices:
     for dataset_path in dataset_paths:
         for model in models:
@@ -197,3 +258,6 @@ for device in devices:
                     for required_warning_time in required_warning_times:
                         sweep_config = make_sweep_config(device, dataset_path, model, alarm_type, metric, required_warning_time)
                         write_sweep_config(sweep_config)
+                        if device == "synthetic":
+                            write_synthetic_model_config(sweep_config)
+
