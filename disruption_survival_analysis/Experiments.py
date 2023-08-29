@@ -11,7 +11,7 @@ from disruption_survival_analysis.model_utils import get_model_for_experiment, n
 from auton_survival.estimators import SurvivalModel # CPH, DCPH, DSM, DCM, RSF
 from sklearn.ensemble import RandomForestClassifier
 
-from disruption_survival_analysis.DisruptionPredictors import DisruptionPredictorSM, DisruptionPredictorRF
+from disruption_survival_analysis.DisruptionPredictors import DisruptionPredictorSM, DisruptionPredictorRF, DisruptionPredictorKM
 
 from disruption_survival_analysis.warning_times import compute_critical_metric
 
@@ -52,10 +52,14 @@ class Experiment:
         required_warning_time = config['ab-required-warning-time']
         self.name = name_model(config)
 
-        if isinstance(model, SurvivalModel):
+        model_type = config['aa-model-type']
+
+        if model_type in ['cph', 'dcph', 'dsm'] and isinstance(model, SurvivalModel):
             self.predictor = DisruptionPredictorSM(self.name, model, required_warning_time, config['horizon'])
-        elif isinstance(model, RandomForestClassifier):
+        elif model_type in ['rf'] and isinstance(model, RandomForestClassifier):
             self.predictor = DisruptionPredictorRF(self.name, model, required_warning_time, config['class_time'])
+        elif model_type in ['km'] and isinstance(model, RandomForestClassifier):
+            self.predictor = DisruptionPredictorKM(self.name, model, required_warning_time, config['class_time'], config['fit_time'])
         else:
             raise ValueError('Model type not recognized')
         

@@ -79,7 +79,7 @@ def make_model(config:dict):
                                 batch_size=batch_size, 
                                 learning_rate=learning_rate, 
                                 epochs=epochs)
-    elif model_type == 'rf':
+    elif model_type == 'rf' or model_type == 'km':
         criterion = config['criterion']
         max_features = config['max_features']
         n_estimators = config['n_estimators'] 
