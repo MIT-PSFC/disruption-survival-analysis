@@ -1,6 +1,6 @@
 #!/bin/bash
 #Launch one wandb agent for each sweep config file in the directory
-project_name="test-multi-sweep"
+project_name="test-multi-sweep-2"
 
 # Activate Python environment
 source /etc/profile
@@ -8,7 +8,7 @@ source ~/projects/disruption-survival-analysis/.venv/bin/activate
 
 #wandb --version
 
-directory="models/synthetic/synthetic100"
+directory="models/cmod/no_ufo_flattop_7736_shots_6%_disruptive"
 
 # Get names of all sweep config files in directory
 files=$(ls $directory | grep "sweep")
