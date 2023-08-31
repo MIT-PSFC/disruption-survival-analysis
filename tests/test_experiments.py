@@ -2,6 +2,8 @@
 """
 import unittest
 
+import numpy as np
+
 from disruption_survival_analysis.Experiments import Experiment
 from disruption_survival_analysis.experiment_utils import load_experiment_config
 from disruption_survival_analysis.manage_datasets import load_disruptive_shot_list
@@ -131,18 +133,15 @@ class TestCriticalMetric(unittest.TestCase):
     def test_no_nan(self):
 
         # Get the metric
-        general_false_alarm_rates, general_avg_warning_times, _ = self.experiment.warning_time_vs_false_alarm_rate(horizon=0.05, required_warning_time=0.02)
+        general_false_alarm_rates, general_avg_warning_times, general_std_warning_times = self.experiment.warning_time_vs_false_alarm_rate(horizon=0.05, required_warning_time=0.02)    
 
-        # Check that the false alarm rates are monatonic increasing
-        for i in range(len(general_false_alarm_rates) - 1):
-            if general_false_alarm_rates[i] > general_false_alarm_rates[i+1]:
-                self.fail("False alarm rates are not monatonic increasing")
-        
-        # Check that the average warning times are monatonic increasing
-        for i in range(len(general_avg_warning_times) - 1):
-            if general_avg_warning_times[i] > general_avg_warning_times[i+1]:
-                self.fail("Average warning times are not monatonic increasing")
-
+        # Check that there are no NaNs
+        if (np.isnan(general_false_alarm_rates)).any():
+            self.fail("NaNs in false alarm rates")
+        if (np.isnan(general_avg_warning_times)).any():
+            self.fail("NaNs in average warning times")
+        if (np.isnan(general_std_warning_times)).any():
+            self.fail("NaNs in standard deviation of warning times")
 
 class TestWarningTimesList(unittest.TestCase):
 
