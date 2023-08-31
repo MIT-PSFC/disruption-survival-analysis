@@ -405,8 +405,16 @@ def unique_domain_mapping(domain_values, range_values):
                 except:
                     grouped_range_values.append(range_values[i])
         # Average the warning times
-        avg_range_values.append(np.mean(grouped_range_values))
-        std_range_values.append(np.std(grouped_range_values))
+        avg_range_value = np.mean(grouped_range_values)
+        std_range_value = np.std(grouped_range_values)
+        # If the grouped values are empty, set the average and standard deviation to 0
+        if np.isnan(avg_range_value):
+            avg_range_value = 0
+        if np.isnan(std_range_value):
+            std_range_value = 0
+        # Append to list
+        avg_range_values.append(avg_range_value)
+        std_range_values.append(std_range_value)
 
     # Convert to numpy arrays
     avg_range_values = np.array(avg_range_values)
