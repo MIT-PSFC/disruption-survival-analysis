@@ -105,7 +105,8 @@ class TestCriticalMetric(unittest.TestCase):
         """
 
         # Load simple DSM experiment
-        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'dsm', 'sthr', 'auroc', 0.02)
+        #experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'dsm', 'sthr', 'auroc', 0.02)
+        experiment_config = load_experiment_config('cmod', 'no_ufo_flattop_7736_shots_6%_disruptive', 'rf', 'sthr', 'auwtc', 0.02)
         self.experiment = Experiment(experiment_config, 'test')
 
     def test_get_metric(self):
@@ -126,6 +127,21 @@ class TestCriticalMetric(unittest.TestCase):
                 self.fail("Average warning times are not equal")
             if (abs(direct_std_warning_times[i] - general_std_warning_times[i]) > epsilon).any():
                 self.fail("Standard deviation of warning times are not equal")
+
+    def test_no_nan(self):
+
+        # Get the metric
+        general_false_alarm_rates, general_avg_warning_times, _ = self.experiment.warning_time_vs_false_alarm_rate(horizon=0.05, required_warning_time=0.02)
+
+        # Check that the false alarm rates are monatonic increasing
+        for i in range(len(general_false_alarm_rates) - 1):
+            if general_false_alarm_rates[i] > general_false_alarm_rates[i+1]:
+                self.fail("False alarm rates are not monatonic increasing")
+        
+        # Check that the average warning times are monatonic increasing
+        for i in range(len(general_avg_warning_times) - 1):
+            if general_avg_warning_times[i] > general_avg_warning_times[i+1]:
+                self.fail("Average warning times are not monatonic increasing")
 
 
 class TestWarningTimesList(unittest.TestCase):
