@@ -8,7 +8,7 @@ aa-device:
   value: cmod
 aa-model-type:
   desc: null
-  value: cph
+  value: km
 ab-alarm-type:
   desc: null
   value: sthr
@@ -18,12 +18,27 @@ ab-metric:
 ab-required-warning-time:
   desc: null
   value: 0.02
-horizon:
+class_time:
   desc: null
-  value: 0.05029308480771792
-l2:
+  value: 0.3347082146363465
+criterion:
   desc: null
-  value: 0.009977750716989966
+  value: entropy
+fit_time:
+  desc: null
+  value: 0.11608487329086271
+max_features:
+  desc: null
+  value: sqrt
+min_samples_leaf:
+  desc: null
+  value: 0.0023315642012393324
+min_samples_split:
+  desc: null
+  value: 0.006191461311433557
+n_estimators:
+  desc: null
+  value: 73
 _wandb:
   desc: null
   value:
@@ -32,7 +47,7 @@ _wandb:
     framework: torch
     is_jupyter_run: false
     is_kaggle_kernel: false
-    start_time: 1693529383.324537
+    start_time: 1693543427.192189
     t:
       1:
       - 1
