@@ -1,11 +1,11 @@
 wandb_version: 1
 
-aa-device:
-  desc: null
-  value: cmod
 aa-dataset-path:
   desc: null
   value: no_ufo_flattop_7736_shots_6%_disruptive
+aa-device:
+  desc: null
+  value: cmod
 aa-model-type:
   desc: null
   value: dsm
@@ -20,34 +20,34 @@ ab-required-warning-time:
   value: 0.02
 batch_size:
   desc: null
-  value: 72
+  value: 117
 distribution:
   desc: null
-  value: Weibull
+  value: LogNormal
 epochs:
   desc: null
-  value: 59
-horizon: 
+  value: 179
+horizon:
   desc: null
-  value: 0.05
+  value: 0.479568731063176
 k:
   desc: null
-  value: 6
+  value: 3
 layer_depth:
   desc: null
-  value: 2
+  value: 4
 layer_width:
   desc: null
-  value: 180
+  value: 148
 learning_rate:
   desc: null
-  value: 0.0002890452633392773
+  value: 2.4238120389092976e-05
 max_features:
   desc: null
   value: log2
 temperature:
   desc: null
-  value: 1.187740823140038
+  value: 0.6142251730474723
 _wandb:
   desc: null
   value:
@@ -56,7 +56,7 @@ _wandb:
     framework: torch
     is_jupyter_run: false
     is_kaggle_kernel: false
-    start_time: 1691123992.73575
+    start_time: 1693522766.85195
     t:
       1:
       - 1

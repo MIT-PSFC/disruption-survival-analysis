@@ -129,7 +129,7 @@ def plot_roc_curve(experiment_list:list[Experiment], horizon=None, required_warn
     plt.legend()
     plt.show()
 
-def plot_warning_time_vs_false_alarm_rate(experiment_list:list[Experiment], horizon=None, required_warning_time=MINIMUM_WARNING_TIME, min_far=None, max_far=None, min_warning_time=None, max_warning_time=None):
+def plot_warning_time_vs_false_alarm_rate(experiment_list:list[Experiment], horizon=None, required_warning_time=MINIMUM_WARNING_TIME, min_far=None, max_far=None, min_warning_time=None, max_warning_time=None, cutoff_far=None):
     """ Averaged over all shots
     """
 
@@ -158,6 +158,9 @@ def plot_warning_time_vs_false_alarm_rate(experiment_list:list[Experiment], hori
 
     plt.xlim([min_far, max_far])
     plt.ylim([min_warning_time, max_warning_time])
+
+    if cutoff_far is not None:
+        plt.axvline(x=cutoff_far, color='r', linestyle='--')
 
     plt.xlabel('False Alarm Rate')
     plt.ylabel('Warning Time [ms]')

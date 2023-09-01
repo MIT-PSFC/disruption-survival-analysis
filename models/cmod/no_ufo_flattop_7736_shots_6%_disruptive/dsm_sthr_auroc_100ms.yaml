@@ -8,7 +8,7 @@ aa-device:
   value: cmod
 aa-model-type:
   desc: null
-  value: cph
+  value: dsm
 ab-alarm-type:
   desc: null
   value: sthr
@@ -17,13 +17,37 @@ ab-metric:
   value: auroc
 ab-required-warning-time:
   desc: null
-  value: 0.02
+  value: 0.1
+batch_size:
+  desc: null
+  value: 171
+distribution:
+  desc: null
+  value: LogNormal
+epochs:
+  desc: null
+  value: 57
 horizon:
   desc: null
-  value: 0.05029308480771792
-l2:
+  value: 0.4904996564558172
+k:
   desc: null
-  value: 0.009977750716989966
+  value: 2
+layer_depth:
+  desc: null
+  value: 5
+layer_width:
+  desc: null
+  value: 96
+learning_rate:
+  desc: null
+  value: 2.4841234921788072e-05
+max_features:
+  desc: null
+  value: sqrt
+temperature:
+  desc: null
+  value: 1.4240634687867135
 _wandb:
   desc: null
   value:
@@ -32,7 +56,7 @@ _wandb:
     framework: torch
     is_jupyter_run: false
     is_kaggle_kernel: false
-    start_time: 1693529383.324537
+    start_time: 1693533854.475144
     t:
       1:
       - 1

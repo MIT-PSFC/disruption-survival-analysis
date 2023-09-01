@@ -17,13 +17,13 @@ ab-metric:
   value: auroc
 ab-required-warning-time:
   desc: null
-  value: 0.02
+  value: 0.1
 horizon:
   desc: null
-  value: 0.05029308480771792
+  value: 0.0021032634634400773
 l2:
   desc: null
-  value: 0.009977750716989966
+  value: 0.0005287929322062001
 _wandb:
   desc: null
   value:
@@ -32,7 +32,7 @@ _wandb:
     framework: torch
     is_jupyter_run: false
     is_kaggle_kernel: false
-    start_time: 1693529383.324537
+    start_time: 1693535268.142967
     t:
       1:
       - 1

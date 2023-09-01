@@ -20,7 +20,7 @@ ab-required-warning-time:
   value: 0.1
 class_time:
   desc: null
-  value: 0.22444335789550965
+  value: 0.07807116786446344
 criterion:
   desc: null
   value: entropy
@@ -29,13 +29,13 @@ max_features:
   value: log2
 min_samples_leaf:
   desc: null
-  value: 0.005971071036467365
+  value: 0.0036546564834680994
 min_samples_split:
   desc: null
-  value: 0.1042317452491144
+  value: 0.11775923848353163
 n_estimators:
   desc: null
-  value: 67
+  value: 80
 _wandb:
   desc: null
   value:
@@ -44,7 +44,7 @@ _wandb:
     framework: torch
     is_jupyter_run: false
     is_kaggle_kernel: false
-    start_time: 1693359810.766489
+    start_time: 1693539596.371619
     t:
       1:
       - 1
