@@ -1,8 +1,8 @@
 import numpy as np
 
-from disruption_survival_analysis.experiment_utils import SIMPLE_THRESHOLDS
+SIMPLE_THRESHOLDS = np.linspace(0, 1, 100)
 
-def compute_critical_metric(predictions, true_outcomes, required_warning_time):
+def compute_critical_metric(predictions, true_outcomes, required_warning_time, thresholds):
     """ Compute the critical metric for a given set of predictions and true outcomes.
         The critical metric is the average warning time for a given false alarm rate.
 
@@ -29,9 +29,6 @@ def compute_critical_metric(predictions, true_outcomes, required_warning_time):
     """
 
     # 1. Set Up
-
-    # Create thresholds for simple threshold alarm.
-    thresholds = SIMPLE_THRESHOLDS
 
     # Count the number of negatives in the true outcomes
     num_negatives = 0

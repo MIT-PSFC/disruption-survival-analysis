@@ -8,7 +8,7 @@ hyperparameter_ranges = {
     },
     "class_time": { # Time in seconds before a disruption labeled as 'disruptive
         "min": 0.001,
-        "max": 0.5,
+        "max": 0.2,
     },
     "criterion": { # Function to measure quality of a split
         "values": ["gini", "entropy", "log_loss"],
@@ -67,7 +67,7 @@ hyperparameter_ranges = {
     },
     "horizon": { # How many seconds into the future to predict
         "min": 0.001,
-        "max": 0.5,
+        "max": 0.2,
     },
     "temperature": {
         "min": 0.5,

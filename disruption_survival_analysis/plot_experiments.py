@@ -136,7 +136,7 @@ def plot_warning_time_vs_false_alarm_rate(experiment_list:list[Experiment], hori
     plt.figure()
 
     for experiment in experiment_list:
-        false_alarm_rates, warning_time_avg, warning_time_std = experiment.warning_time_vs_false_alarm_rate(horizon, required_warning_time)
+        false_alarm_rates, warning_time_avg, warning_time_std = experiment.warning_time_vs_false_alarm_rate(horizon, required_warning_time=None)
         warning_time_avg_ms = [i * 1000 for i in warning_time_avg]
         warning_time_std_ms = [i * 1000 for i in warning_time_std]
         # TODO: reintroduce error bars
