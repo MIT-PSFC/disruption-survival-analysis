@@ -165,7 +165,8 @@ class Experiment:
     # Get info from the predictor
 
     def get_predictor_risk(self, shot, horizon=None):
-        return self.predictor.get_risk(shot, self.get_shot_data(shot), horizon=horizon)
+        data = self.get_shot_data(shot)
+        return self.predictor.get_risk(shot, data, horizon=horizon)
     
     def get_predictor_risk_at_times(self, shot, horizon=None):
         return self.predictor.get_risk_at_times(shot, self.get_shot_data(shot), horizon=horizon)
