@@ -4,13 +4,16 @@ from disruption_survival_analysis.plot_experiments import *
 from disruption_survival_analysis.experiment_utils import load_experiment_config
 from disruption_survival_analysis.Experiments import Experiment
 
-TEST_DEVICE = 'synthetic'
-TEST_DATASET = 'synthetic100'
+#TEST_DEVICE = 'synthetic'
+#TEST_DATASET = 'synthetic100'
 
-TEST_MODEL_TYPES = ['dsm', 'rf']
-TEST_ALARM_TYPES = ['sthr', 'hyst']
+TEST_DEVICE = 'cmod'
+TEST_DATASET = 'preliminary_dataset_no_ufo'
+
+TEST_MODEL_TYPES = ['dsm']
+TEST_ALARM_TYPES = ['sthr']
 TEST_METRICS = ['auroc']
-TEST_MIN_WARNING_TIMES = [0.02]
+TEST_MIN_WARNING_TIMES = [0.1]
 
 
 class TestPlotExperiments(unittest.TestCase):
