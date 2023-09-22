@@ -289,10 +289,10 @@ def plot_disruptive_vs_non_disruptive_shot_durations(experiment:Experiment):
 
     plt.figure()
 
-    plt.hist(disruptive_shot_durations_ms, bins=50, label='Disruptive')
     plt.hist(non_disruptive_shot_durations_ms, bins=50, label='Non-Disruptive')
+    plt.hist(disruptive_shot_durations_ms, bins=50, label='Disruptive')
 
-    plt.xlim([500, max(max(disruptive_shot_durations_ms), max(non_disruptive_shot_durations_ms))])
+    plt.xlim([min(min(disruptive_shot_durations_ms), min(non_disruptive_shot_durations_ms)), max(max(disruptive_shot_durations_ms), max(non_disruptive_shot_durations_ms))])
 
     plt.xlabel('Shot Duration [ms]')
     plt.ylabel('Number of Shots')
