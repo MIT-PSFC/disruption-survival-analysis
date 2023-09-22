@@ -304,6 +304,34 @@ def area_under_curve(x_vals, y_vals, x_cutoff=None):
 
     # Limit the false alarm rate to be less than the x cutoff
     if x_cutoff is not None:
+        # First, find the index of the values that are directly above and below the cutoff
+        # This is done by finding the index of the first value that is above the cutoff
+        # and then subtracting 1
+
+        upper_index = None
+        # Find the index of the first value that is above the cutoff
+        for i, x_val in enumerate(x_vals):
+            if x_val > x_cutoff:
+                upper_index = i
+                break
+        # If the index is 0, then all the values are above the cutoff
+        # In this case, return 0
+        if upper_index is None or upper_index == 0:
+            return 0
+        # Otherwise, subtract 1 to get the index of the value directly below the cutoff
+        else:
+            lower_index = upper_index - 1
+
+        # Now, interpolate the y values between the two indices
+        # First, calculate the slope
+        slope = (y_vals[upper_index] - y_vals[lower_index])/(x_vals[upper_index] - x_vals[lower_index])
+        # Then, calculate the y value at the cutoff
+        y_cutoff = slope*(x_cutoff - x_vals[lower_index]) + y_vals[lower_index]
+
+        # Add the cutoff values to the x and y values
+        x_vals = np.append(x_vals, x_cutoff)
+        y_vals = np.append(y_vals, y_cutoff)
+
         y_vals = y_vals[x_vals < x_cutoff]
         x_vals = x_vals[x_vals < x_cutoff]
         
