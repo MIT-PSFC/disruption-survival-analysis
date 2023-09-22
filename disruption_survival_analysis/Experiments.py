@@ -132,6 +132,15 @@ class Experiment:
         shot_data = self.all_data[self.all_data['shot'] == shot]
         return shot_data['time'].values
     
+    def get_disruption_time(self, shot):
+        """ Returns the disruption time for a given shot """
+        if shot not in self.get_disruptive_shot_list():
+            raise ValueError('Shot was not disruptive, cannot get disruption time.')
+        else:
+            shot_data = self.all_data[self.all_data['shot'] == shot]
+            disruption_time = shot_data['time'].iloc[0] + shot_data['time_until_disrupt'].iloc[0]
+            return disruption_time
+    
     def get_shot_data(self, shot):
         """ Returns the data for a given shot """
         return self.all_data[self.all_data['shot'] == shot]
@@ -402,10 +411,13 @@ class Experiment:
 
             # If the shot is disruptive, find the time of disruption
             # Even if the shot is non-disruptive, we will determine a warning time for the false alarm calculation
-            disruption_time = self.get_shot_data(shot)['time'].max()
-            # Warning time is disruption time minus alarm time
-            warning_times = disruption_time - alarm_times[i,:]
-
+            if disrupt:
+                disrupt_time = self.get_disruption_time(shot)
+                warning_times = disrupt_time - alarm_times[i,:]
+            else:
+                final_time = self.get_shot_data(shot)['time'].max()
+                warning_times = final_time - alarm_times[i,:]
+        
             # Fill in true and false alarms
             # True alarm is when shot is disruptive and warning time is greater than required warning time
             # False alarm is when shot is not disruptive but an alarm time is still given
@@ -465,8 +477,7 @@ class Experiment:
         warning_times_shot_list = []
         for disruptive_shot in disruptive_shots:
             # Get the time of disruption for this shot
-            shot_data = self.get_shot_data(disruptive_shot)
-            disrupt_time = shot_data['time_until_disrupt'].iloc[0]
+            disrupt_time = self.get_disruption_time(disruptive_shot)
             # Find the index of the shot in the shot list
             shot_index = np.where(shot_list == disruptive_shot)[0][0]
             # Get the alarm times for this shot
@@ -682,7 +693,7 @@ class Experiment:
             # Determine the time of disruption and whether or not the shot actually disrupted
             true_outcome = {}
             if (shot_data['time_until_disrupt'] >= 0).any():
-                true_outcome['disruption_time'] = shot_data['time_until_disrupt'].values[0]
+                true_outcome['disruption_time'] = self.get_disruption_time(shot_data['shot'].iloc[0])
                 true_outcome['disrupted'] = True
             elif (shot_data['time_until_disrupt'].isnull()).all():
                 true_outcome['disruption_time'] = np.nan
@@ -701,7 +712,7 @@ class Experiment:
 
         # NOW: Find the false positive rate and average warning times
 
-        unique_false_alarm_rates, avg_warning_times, std_warning_times = compute_critical_metric(predictions, true_outcomes, required_warning_time)
+        unique_false_alarm_rates, avg_warning_times, std_warning_times = compute_critical_metric(predictions, true_outcomes, required_warning_time, SIMPLE_THRESHOLDS)
 
         # 4. Return the false alarm rates and average warning times
         return unique_false_alarm_rates, avg_warning_times, std_warning_times
