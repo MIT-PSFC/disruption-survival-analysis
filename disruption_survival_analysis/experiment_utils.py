@@ -355,7 +355,7 @@ def expected_time_to_disruption_integral():
 
 # Other functions
 
-def unique_domain_mapping(domain_values, range_values):
+def unique_domain_mapping(domain_values, range_values, method='average'):
     """
     Maps a range of values to a domain of values, where the domain values are unique
     For example, The way this is calculated, the warning times and true alarm rates and false alarm rates are all given by particular thresholds
@@ -370,16 +370,20 @@ def unique_domain_mapping(domain_values, range_values):
         The values of the domain. Not necessarily unique at this point.
     range_values : numpy.ndarray
         The values of the range. Must be the same length as unique_values.
+    method : str
+        The method to use to combine the range values. 
+        Choices are 'average' and 'median', default is 'average'
+        If average, gives a standard deviation
+        If median, gives the interquartile range
 
     Returns
     -------
     unique_values : list
         The unique values in the range, sorted.
-    avg_range_values : list
-        The average range value for each unique value
-    std_range_values : list
-        The standard deviation of the range values for each unique value
-    
+    typical_range_values : list
+        The measure of central tendency for each unique value (either the average or median)
+    spread_range_values : list
+        The measure of distribution variability of the range values for each unique value (either standard deviation or interquartile range)
     """
 
     # Actually trim down to the unique values
@@ -388,9 +392,9 @@ def unique_domain_mapping(domain_values, range_values):
     except:
         unique_values = np.unique(domain_values)
 
-    # Initialize the average and standard deviation arrays
-    avg_range_values = []
-    std_range_values = []
+    # Initialize the typical value and spread arrays
+    typical_range_values = []
+    spread_range_values = []
 
     # Go through each domain value and find the unique values which correspond to it
     for unique_value in unique_values:
@@ -404,22 +408,28 @@ def unique_domain_mapping(domain_values, range_values):
                 except:
                     grouped_range_values.append(range_values[i])
         # Average the warning times
-        avg_range_value = np.mean(grouped_range_values)
-        std_range_value = np.std(grouped_range_values)
+        if method == 'average':
+            typical_range_value = np.mean(grouped_range_values)
+            spread_range_value = np.std(grouped_range_values)
+        elif method == 'median':
+            typical_range_value = np.median(grouped_range_values)
+            spread_range_value = (np.percentile(grouped_range_values, 75) - np.percentile(grouped_range_values, 25))/2
+        else:
+            raise ValueError("Invalid method")
         # If the grouped values are empty, set the average and standard deviation to 0
-        if np.isnan(avg_range_value):
-            avg_range_value = 0
-        if np.isnan(std_range_value):
-            std_range_value = 0
+        if np.isnan(typical_range_value):
+            typical_range_value = 0
+        if np.isnan(spread_range_value):
+            spread_range_value = 0
         # Append to list
-        avg_range_values.append(avg_range_value)
-        std_range_values.append(std_range_value)
+        typical_range_values.append(typical_range_value)
+        spread_range_values.append(spread_range_value)
 
     # Convert to numpy arrays
-    avg_range_values = np.array(avg_range_values)
-    std_range_values = np.array(std_range_values)
+    typical_range_values = np.array(typical_range_values)
+    spread_range_values = np.array(spread_range_values)
 
-    return unique_values, avg_range_values, std_range_values
+    return unique_values, typical_range_values, spread_range_values
 
 def load_experiment_config(device, dataset, model_type, alarm_type, metric, required_warning_time):
     """
