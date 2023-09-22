@@ -29,7 +29,7 @@ epochs:
   value: 179
 horizon:
   desc: null
-  value: 0.479568731063176
+  value: 0.05
 k:
   desc: null
   value: 3

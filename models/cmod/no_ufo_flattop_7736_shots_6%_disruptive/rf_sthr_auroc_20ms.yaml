@@ -20,7 +20,7 @@ ab-required-warning-time:
   value: 0.02
 class_time:
   desc: null
-  value: 0.4807054808646676
+  value: 0.05
 criterion:
   desc: null
   value: log_loss
