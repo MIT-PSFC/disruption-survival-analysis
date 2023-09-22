@@ -9,7 +9,7 @@ from auton_survival.metrics import survival_regression_metric
 from disruption_survival_analysis.manage_datasets import load_features_outcomes
 
 # We want more low false positive rates, so make the thresholds more dense at the low end
-SIMPLE_THRESHOLDS = np.logspace(-4, 0, 200)
+SIMPLE_THRESHOLDS = np.logspace(-3, 0, 200)
 # Labeling data
 
 def label_shot_data(shot_data, disrupt, disruptive_window):
@@ -413,7 +413,10 @@ def unique_domain_mapping(domain_values, range_values, method='average'):
             spread_range_value = np.std(grouped_range_values)
         elif method == 'median':
             typical_range_value = np.median(grouped_range_values)
-            spread_range_value = (np.percentile(grouped_range_values, 75) - np.percentile(grouped_range_values, 25))/2
+            if len(grouped_range_values) is not 0:
+                spread_range_value = (np.percentile(grouped_range_values, 75) - np.percentile(grouped_range_values, 25))/2
+            else:
+                spread_range_value = np.nan
         else:
             raise ValueError("Invalid method")
         # If the grouped values are empty, set the average and standard deviation to 0

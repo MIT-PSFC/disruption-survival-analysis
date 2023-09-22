@@ -174,9 +174,42 @@ def plot_warning_time_vs_threshold(experiment_list:list[Experiment], horizon=Non
     plt.figure()
 
     for experiment in experiment_list:
-        thresholds, warning_time_avg, warning_time_std = experiment.warning_time_vs_threshold(horizon, required_warning_time=None, method=method)
+        thresholds, warning_time_avg, warning_time_std = experiment.warning_time_vs_threshold(horizon, method=method)
         warning_time_avg_ms = [i * 1000 for i in warning_time_avg]
         warning_time_std_ms = [i * 1000 for i in warning_time_std]
+
+        # Plot with error bars
+        plt.errorbar(thresholds, warning_time_avg_ms, yerr=warning_time_std_ms, label=experiment.name, fmt='o-', capsize=5)
+
+    if min_threshold is None:
+        min_threshold = min(thresholds)
+    if max_threshold is None:
+        max_threshold = max(thresholds)
+    if min_warning_time is None:
+        min_warning_time = 0
+    if max_warning_time is None:
+        max_warning_time = 500
+
+    # Put a line at the required warning time
+    plt.plot([min_threshold, max_threshold], [required_warning_time*1000, required_warning_time*1000], 'k--')
+
+    # Make the x axis logarithmic
+    plt.xscale('log')
+
+    plt.xlim([min_threshold, max_threshold])
+    plt.ylim([min_warning_time, max_warning_time])
+
+    plt.xlabel('Threshold')
+    if method == 'median':
+        plt.ylabel('Median Warning Time [ms]')
+    elif method == 'average':
+        plt.ylabel('Average Warning Time [ms]')
+
+    plt.title(f'Warning Time vs. Threshold')
+
+    plt.legend()
+
+    plt.show()
 
 # Plots for comparing output of models to time series of individual shots
 
