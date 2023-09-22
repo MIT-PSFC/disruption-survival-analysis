@@ -613,7 +613,7 @@ class Experiment:
 
         # Get the true alarm rate, false alarm rate, and warning time at the best f1 score
         true_alarm_rate = true_alarm_count_array[best_f1_score_index]/num_disruptive_shots
-        false_alarm_rate = false_alarm_count_array[best_f1_score_index]/num_disruptive_shots
+        false_alarm_rate = false_alarm_count_array[best_f1_score_index]/(self.get_num_non_disruptive_shots())
         
         # Get threshold at the best f1 score
         best_f1_threshold = self.thresholds[best_f1_score_index]
