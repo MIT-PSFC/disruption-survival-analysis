@@ -511,18 +511,18 @@ class Experiment:
 
         return warning_times_threshold_list
 
-    def warning_time_vs_threshold(self, horizon=None):
+    def warning_time_vs_threshold(self, horizon=None, method='average'):
         """ Get statistics on warning time vs threshold for a given horizon 
             This is inherently a macro statistic, since a single shot can have only one warning time
         """
 
         warning_times_list = self.get_warning_times_list(horizon)
 
-        unique_thresholds, avg_warning_times, std_warning_times = unique_domain_mapping(self.thresholds, warning_times_list)
+        unique_thresholds, typical_warning_times, spread_warning_times = unique_domain_mapping(self.thresholds, warning_times_list, method=method)
 
-        return unique_thresholds, avg_warning_times, std_warning_times
+        return unique_thresholds, typical_warning_times, spread_warning_times
 
-    def warning_time_vs_false_alarm_rate(self, horizon, required_warning_time):
+    def warning_time_vs_false_alarm_rate(self, horizon, required_warning_time, method='average'):
         """ Get statistics on warning time vs false alarm rate for a given horizon 
             This is inherently a macro statistic, since a single shot can have only one warning time
         """
@@ -535,10 +535,10 @@ class Experiment:
 
         _, false_alarm_rates = self.true_false_alarm_rates(horizon, required_warning_time)
 
-        unique_false_alarm_rates, avg_warning_times, std_warning_times = unique_domain_mapping(false_alarm_rates, warning_times_list)
+        unique_false_alarm_rates, typical_warning_times, spread_warning_times = unique_domain_mapping(false_alarm_rates, warning_times_list, method=method)
 
         # TODO: Ignore zero false positve rate results???
-        return unique_false_alarm_rates, avg_warning_times, std_warning_times
+        return unique_false_alarm_rates, typical_warning_times, spread_warning_times
     
     # Metrics methods
 
@@ -573,7 +573,7 @@ class Experiment:
             metric_val = area_under_curve(false_alarm_rates, true_alarm_rates)
         elif metric_type == 'auwtc':
             # Area under warning time curve
-            false_alarm_rates, warning_times, _ = self.warning_time_vs_false_alarm_rate(horizon, required_warning_time)
+            false_alarm_rates, warning_times, _ = self.warning_time_vs_false_alarm_rate(horizon, required_warning_time, method='median')
             metric_val = area_under_curve(false_alarm_rates, warning_times, x_cutoff=0.05)
         elif metric_type == 'maxf1':
             # Highest f1 score over all the thresholds

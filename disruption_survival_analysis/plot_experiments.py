@@ -97,18 +97,10 @@ def plot_roc_curve(experiment_list:list[Experiment], horizon=None, required_warn
 
     plt.figure()
 
-    # This gets funky because I want to plot the TAR as 0, 0.9, 0.99, 0.999, 1.0
-    # Still broken, going 
-
-    #plt.yscale('log')
-
     for experiment in experiment_list:
         false_alarm_rates, true_alarm_rates = experiment.true_alarm_rate_vs_false_alarm_rate(horizon, required_warning_time)
         plt.plot(false_alarm_rates, true_alarm_rates, label=experiment.name)
 
-    
-    #plt.gca().invert_yaxis()
-    #plt.gca().set_yticklabels(1-plt.gca().get_yticks())
 
 
     # Set x axis to be logarithmic scale (to better show the low false alarm rates)
@@ -129,20 +121,22 @@ def plot_roc_curve(experiment_list:list[Experiment], horizon=None, required_warn
     plt.legend()
     plt.show()
 
-def plot_warning_time_vs_false_alarm_rate(experiment_list:list[Experiment], horizon=None, required_warning_time=MINIMUM_WARNING_TIME, min_far=None, max_far=None, min_warning_time=None, max_warning_time=None, cutoff_far=None):
+def plot_warning_time_vs_false_alarm_rate(experiment_list:list[Experiment], horizon=None, required_warning_time=MINIMUM_WARNING_TIME, min_far=None, max_far=None, min_warning_time=None, max_warning_time=None, cutoff_far=None, method='median'):
     """ Averaged over all shots
     """
 
     plt.figure()
 
     for experiment in experiment_list:
-        false_alarm_rates, warning_time_avg, warning_time_std = experiment.warning_time_vs_false_alarm_rate(horizon, required_warning_time=None)
-        warning_time_avg_ms = [i * 1000 for i in warning_time_avg]
-        warning_time_std_ms = [i * 1000 for i in warning_time_std]
+        false_alarm_rates, warning_time_avg, warning_time_std = experiment.warning_time_vs_false_alarm_rate(horizon, required_warning_time=None, method=method)
+        warning_time_typical_ms = [i * 1000 for i in warning_time_avg]
+        warning_time_spread_ms = [i * 1000 for i in warning_time_std]
         # TODO: reintroduce error bars
-        plt.semilogx(false_alarm_rates, warning_time_avg_ms, label=experiment.name)
+        # Plot with error bars
+        plt.errorbar(false_alarm_rates, warning_time_typical_ms, yerr=warning_time_spread_ms, label=experiment.name, fmt='o-', capsize=5)
 
-    # TODO: changed temporarily
+    # Make the x axis logarithmic
+    plt.xscale('log')
 
     if min_far is None:
         min_far = min(false_alarm_rates)
@@ -151,7 +145,7 @@ def plot_warning_time_vs_false_alarm_rate(experiment_list:list[Experiment], hori
     if min_warning_time is None:
         min_warning_time = 0
     if max_warning_time is None:
-        max_warning_time = 2000
+        max_warning_time = 500
 
     # Put a line at the required warning time
     plt.plot([min_far, max_far], [required_warning_time*1000, required_warning_time*1000], 'k--')
@@ -163,12 +157,26 @@ def plot_warning_time_vs_false_alarm_rate(experiment_list:list[Experiment], hori
         plt.axvline(x=cutoff_far, color='r', linestyle='--')
 
     plt.xlabel('False Alarm Rate')
-    plt.ylabel('Warning Time [ms]')
+    if method == 'median':
+        plt.ylabel('Median Warning Time [ms]')
+    elif method == 'average':
+        plt.ylabel('Average Warning Time [ms]')
 
     plt.title(f'Warning Time vs. {int(required_warning_time*1000)}ms False Alarm Rate')
 
     plt.legend()
     plt.show()
+
+def plot_warning_time_vs_threshold(experiment_list:list[Experiment], horizon=None, required_warning_time=MINIMUM_WARNING_TIME, min_threshold=None, max_threshold=None, min_warning_time=None, max_warning_time=None, cutoff_far=None, method='median'):
+    """ Collected over all shots
+    """
+
+    plt.figure()
+
+    for experiment in experiment_list:
+        thresholds, warning_time_avg, warning_time_std = experiment.warning_time_vs_threshold(horizon, required_warning_time=None, method=method)
+        warning_time_avg_ms = [i * 1000 for i in warning_time_avg]
+        warning_time_std_ms = [i * 1000 for i in warning_time_std]
 
 # Plots for comparing output of models to time series of individual shots
 
