@@ -402,7 +402,7 @@ class Experiment:
 
             # If the shot is disruptive, find the time of disruption
             # Even if the shot is non-disruptive, we will determine a warning time for the false alarm calculation
-            disruption_time = self.get_shot_duration(shot)
+            disruption_time = self.get_shot_data(shot)['time'].max()
             # Warning time is disruption time minus alarm time
             warning_times = disruption_time - alarm_times[i,:]
 
