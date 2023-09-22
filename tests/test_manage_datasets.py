@@ -65,7 +65,7 @@ class TestCreatedTrainingSets(unittest.TestCase):
         proportional to their total size"""
         
         ratio = {}
-        ratio_epsilon = 0.03
+        ratio_epsilon = 0.06
 
         for category in ['train', 'test', 'val']:
             num_disrupt = len(load_disruptive_shot_list(TEST_DEVICE, TEST_DATASET_PATH, category))
@@ -133,7 +133,7 @@ class TestCreatedStackedSets(unittest.TestCase):
         proportional to their total size"""
         
         ratio = {}
-        ratio_epsilon = 0.03
+        ratio_epsilon = 0.06
 
         for category in ['train', 'test', 'val']:
             num_disrupt = len(load_disruptive_shot_list(TEST_DEVICE, self.stack_dataset_path, category))

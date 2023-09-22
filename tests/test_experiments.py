@@ -7,11 +7,12 @@ import numpy as np
 from disruption_survival_analysis.Experiments import Experiment
 from disruption_survival_analysis.experiment_utils import load_experiment_config
 from disruption_survival_analysis.manage_datasets import load_disruptive_shot_list
+from disruption_survival_analysis.experiment_utils import SIMPLE_THRESHOLDS
 
 #from disruption_survival_analysis.model_utils import load_model
 
 TEST_DEVICE = 'synthetic'
-TEST_DATASET_PATH = 'synthetic100'
+TEST_DATASET_PATH = 'synthetic120'
 
 class TestSimpleFunctions(unittest.TestCase):
 
@@ -56,6 +57,90 @@ class TestSimpleFunctions(unittest.TestCase):
                     next_non_disruptive_shot += 1
             else:
                 self.fail("Shot lists are not ordered consistently")
+
+class TestTrueAlarmRates(unittest.TestCase):
+
+    def setUp(self):
+        # Load simple DSM experiment
+        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'dsm', 'sthr', 'auroc', 0.02)
+        self.experiment = Experiment(experiment_config, 'test')
+
+    def test_true_alarm_rates_constant_values(self):
+        """Ensures that the true alarm rates don't look wrong"""
+
+        # Get the true alarm rates
+        true_alarm_rates, _ = self.experiment.true_false_alarm_rates()
+
+        # Check that the true alarm rates are not all 0 or 1
+        if (true_alarm_rates == 0).all():
+            self.fail("True alarm rates are all 0")
+        if (true_alarm_rates == 1).all():
+            self.fail("True alarm rates are all 1")
+
+    def test_true_alarm_rates_decreasing(self):
+        """Ensures that the true alarm rates are decreasing with higher thresholds"""
+
+        # Get the true alarm rates
+        true_alarm_rates, _ = self.experiment.true_false_alarm_rates()
+
+        # Check that the true alarm rates are increasing
+        for i in range(len(true_alarm_rates) - 1):
+            if true_alarm_rates[i] < true_alarm_rates[i + 1]:
+                self.fail("True alarm rates are not decreasing")
+
+    def test_true_alarm_rates_boundaries(self):
+        """Check that the true alarm rates are all between 0 and 1"""
+            
+        # Get the true alarm rates
+        true_alarm_rates, _ = self.experiment.true_false_alarm_rates()
+
+        # Check that the true alarm rates are between 0 and 1
+        for true_alarm_rate in true_alarm_rates:
+            if true_alarm_rate < 0 or true_alarm_rate > 1:
+                self.fail("True alarm rates are not between 0 and 1")
+
+class TestFalseAlarmRates(unittest.TestCase):
+
+    def setUp(self):
+
+        # Load simple DSM experiment
+        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'dsm', 'sthr', 'auroc', 0.02)
+        self.experiment = Experiment(experiment_config, 'test')
+    
+    def test_false_alarm_rates_constant_values(self):
+        """Ensures that the false alarm rates don't look wrong"""
+
+        # Get the false alarm rates
+        _, false_alarm_rates = self.experiment.true_false_alarm_rates()
+
+        # Check that the false alarm rates are not all 0 or 1
+        if (false_alarm_rates == 0).all():
+            self.fail("False alarm rates are all 0")
+        if (false_alarm_rates == 1).all():
+            self.fail("False alarm rates are all 1")
+
+    def test_false_alarm_rates_decreasing(self):
+        """Ensures that the false alarm rates are decreasing with higher thresholds"""
+
+        # Get the false alarm rates
+        _, false_alarm_rates = self.experiment.true_false_alarm_rates()
+
+        # Check that the false alarm rates are increasing
+        for i in range(len(false_alarm_rates) - 1):
+            if false_alarm_rates[i] < false_alarm_rates[i + 1]:
+                self.fail("False alarm rates are not decreasing")
+
+    def test_false_alarm_rates_boundaries(self):
+        """Check that the false alarm rates are all between 0 and 1"""
+            
+        # Get the false alarm rates
+        _, false_alarm_rates = self.experiment.true_false_alarm_rates()
+
+        # Check that the false alarm rates are between 0 and 1
+        for false_alarm_rate in false_alarm_rates:
+            if false_alarm_rate < 0 or false_alarm_rate > 1:
+                self.fail("False alarm rates are not between 0 and 1")
+
 
 class TestAllCombos(unittest.TestCase):
 
