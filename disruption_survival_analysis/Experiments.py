@@ -619,7 +619,6 @@ class Experiment:
             f1_scores = calculate_f1_scores(true_alarm_count_array, false_alarm_count_array, num_disruptive_shots)
 
             metric_val = np.max(f1_scores)
-
         elif metric_type == 'ettdi':
             # Expected time to disruption error integral
             metric_val = expected_time_to_disruption_integral()
