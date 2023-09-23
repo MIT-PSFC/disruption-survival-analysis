@@ -44,4 +44,8 @@ class TestPlotExperiments(unittest.TestCase):
 
         plot_auroc_timeslice_shot_avg_vs_horizon(self.experiments)
 
+    def test_plot_false_positive_vs_threshold(self):
+
+        plot_false_positive_vs_threshold(self.experiments, cutoff_far=0.05, method='average')
+
 
