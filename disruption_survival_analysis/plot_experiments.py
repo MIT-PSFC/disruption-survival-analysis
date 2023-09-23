@@ -211,6 +211,68 @@ def plot_warning_time_vs_threshold(experiment_list:list[Experiment], horizon=Non
 
     plt.show()
 
+def plot_threshold_vs_fpr(experiment_list:list[Experiment], horizon=None, required_warning_time=MINIMUM_WARNING_TIME, min_threshold=None, max_threshold=None, min_warning_time=None, max_warning_time=None, cutoff_far=None, method='median'):
+    """ Collected over all shots
+    """
+
+    plt.figure()
+
+    for experiment in experiment_list:
+        thresholds, false_positive_rate, _ = experiment.false_positive_rate_vs_threshold(horizon=horizon, required_warning_time=required_warning_time, method=method)
+
+        # Plot with error bars
+        plt.plot(false_positive_rate, thresholds, label=experiment.name)
+
+    if min_threshold is None:
+        min_threshold = min(thresholds)
+    if max_threshold is None:
+        max_threshold = max(thresholds)
+
+    plt.ylim([min_threshold, max_threshold])
+    plt.xlim([0, 1])
+
+    plt.xlabel('FPR')
+    plt.ylabel('Threshold')
+    
+    plt.title(f'Threshold vs. FPR')
+
+    plt.legend()
+
+    plt.show()
+
+def plot_fpr_vs_threshold(experiment_list:list[Experiment], horizon=None, required_warning_time=MINIMUM_WARNING_TIME, min_threshold=None, max_threshold=None, min_warning_time=None, max_warning_time=None, cutoff_far=None, method='median'):
+    """ Collected over all shots
+    """
+
+    plt.figure()
+
+    for experiment in experiment_list:
+        thresholds, false_positive_rate, _ = experiment.false_positive_rate_vs_threshold(horizon=horizon, required_warning_time=required_warning_time, method=method)
+
+        # Plot with error bars
+        plt.plot(thresholds, false_positive_rate, label=experiment.name)
+
+    if min_threshold is None:
+        min_threshold = min(thresholds)
+    if max_threshold is None:
+        max_threshold = max(thresholds)
+
+    # Put a line at the required warning time
+    #plt.plot([min_threshold, max_threshold], [required_warning_time*1000, required_warning_time*1000], 'k--')
+
+    plt.xlim([min_threshold, max_threshold])
+    plt.ylim([0, 1])
+
+    plt.ylabel('FPR')
+    plt.xlabel('Threshold')
+    
+    plt.title(f'FPR vs. Threshold')
+
+    plt.legend()
+
+    plt.show()
+
+
 # Plots for comparing output of models to time series of individual shots
 
 def plot_risk_compare_horizons(experiment:Experiment, shot, horizons=DEFAULT_HORIZONS):

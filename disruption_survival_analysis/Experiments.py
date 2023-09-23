@@ -69,7 +69,8 @@ class Experiment:
         # Set the thresholds for usage in tpr/fpr calculations
         if self.alarm_type == 'sthr':
             # Simple Threshold
-            self.thresholds = SIMPLE_THRESHOLDS
+            #self.thresholds = SIMPLE_THRESHOLDSF
+            self.thresholds = None
         elif self.alarm_type == 'hyst':
             # Hysteresis
             # Make list of tuples of (min, max, time) for hysteresis
@@ -170,6 +171,25 @@ class Experiment:
         for shot in self.get_non_disruptive_shot_list():
             shot_durations.append(self.get_shot_duration(shot))
         return np.array(shot_durations)
+
+    def set_all_thresholds(self, horizon):
+        
+        shot_list = self.get_shot_list()
+
+        all_risks = []
+
+        # Iterate through shots
+        for i, shot in enumerate(shot_list):
+            # Get the alarm times given by the model
+            risk_at_times = self.get_predictor_risk_at_times(shot, horizon)
+            all_risks.append(risk_at_times['risk'].unique())
+
+        # Get the unique risk values
+        unique_risk_values = np.unique(np.concatenate(all_risks))
+        # Sort the unique risk values
+        unique_risk_values = np.sort(unique_risk_values)
+
+        self.thresholds = unique_risk_values
 
     # Get info from the predictor
 
@@ -318,8 +338,10 @@ class Experiment:
 
         # Get list of all shots
         shot_list = self.get_shot_list()
-        
-        # Create arrays to store the results
+
+        self.set_all_thresholds(horizon)
+
+        # Create array to store the results
         # Array is of shape (num_shots, num_thresholds)
         alarm_times = np.zeros((len(shot_list), len(self.thresholds)))
 
@@ -331,6 +353,7 @@ class Experiment:
             for i, shot in enumerate(shot_list):
                 # Get the alarm times given by the model
                 risk_at_times = self.get_predictor_risk_at_times(shot, horizon)
+
                 alarm_times_calced = calculate_alarm_times(risk_at_times, self.thresholds)
 
                 # Save the alarm times
@@ -399,6 +422,7 @@ class Experiment:
         disruptive_shots = self.get_disruptive_shot_list()
         # Create arrays to store the results
         # Array is of shape (num_shots, num_thresholds)
+        self.set_all_thresholds(horizon)
         true_alarms = np.zeros((len(shot_list), len(self.thresholds)))
         false_alarms = np.zeros((len(shot_list), len(self.thresholds)))
 
@@ -510,6 +534,14 @@ class Experiment:
             warning_times_threshold_list.append(warning_times_threshold)
 
         return warning_times_threshold_list
+
+    def false_positive_rate_vs_threshold(self, required_warning_time=None, horizon=None, method='average'):
+
+        _, false_alarm_rates = self.true_false_alarm_rates(horizon, required_warning_time)
+
+        unique_thresholds, typical_warning_times, spread_warning_times = unique_domain_mapping(self.thresholds, false_alarm_rates, method=method)
+
+        return unique_thresholds, typical_warning_times, spread_warning_times
 
     def warning_time_vs_threshold(self, horizon=None, method='average'):
         """ Get statistics on warning time vs threshold for a given horizon 
