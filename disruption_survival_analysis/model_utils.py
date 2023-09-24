@@ -33,64 +33,81 @@ def make_model(config:dict):
         The survival model to be trained
     """
 
-    model_type = config['aa-model-type']
+    model_type = config['model_type']
     if model_type == 'cph':
         l2 = config['l2']
-        model = SurvivalModel(model_type, l2=l2)
+        model = SurvivalModel(
+            model_type, 
+            l2=l2
+        )
     elif model_type == 'dcph':
-        # Make layers a list of ints
         layer_width = config['layer_width']
         layer_depth = config['layer_depth']
         layers = [layer_width] * layer_depth
-        
         batch_size = config['batch_size']
         epochs = config['epochs']
         learning_rate = config['learning_rate']
         
-        model = SurvivalModel(model_type, layers=layers, learning_rate=learning_rate, batch_size=batch_size, epochs=epochs)
+        model = SurvivalModel(
+            model_type, 
+            layers=layers, 
+            learning_rate=learning_rate, 
+            batch_size=batch_size, 
+            epochs=epochs
+        )
     elif model_type == 'dcm':
-        # Make layers a list of ints
         layer_width = config['layer_width']
         layer_depth = config['layer_depth']
         layers = [layer_width] * layer_depth
-
         batch_size = config['batch_size']
         epochs = config['epochs']
         k = config['k']
         lr = config['learning_rate']
         smoothing_factor = config['smoothing_factor']
-        model = SurvivalModel(model_type, k=k, layers=layers, batch_size=batch_size, lr=lr, epochs=epochs, smoothing_factor=smoothing_factor)
+
+        model = SurvivalModel(
+            model_type, 
+            k=k, 
+            layers=layers, 
+            batch_size=batch_size, 
+            lr=lr, 
+            epochs=epochs, 
+            smoothing_factor=smoothing_factor
+        )
     elif model_type == 'dsm':
-        # Make layers a list of ints
         layer_width = config['layer_width']
         layer_depth = config['layer_depth']
         layers = [layer_width] * layer_depth
-
         batch_size = config['batch_size']
         distribution = config['distribution']
         epochs = config['epochs']
         learning_rate = config['learning_rate']
         temperature = config['temperature']
         
-        model = SurvivalModel(model_type, 
-                                layers=layers, 
-                                distribution=distribution, 
-                                temperature=temperature, 
-                                batch_size=batch_size, 
-                                learning_rate=learning_rate, 
-                                epochs=epochs)
+        model = SurvivalModel(
+            model_type, 
+            layers=layers, 
+            distribution=distribution, 
+            temperature=temperature, 
+            batch_size=batch_size, 
+            learning_rate=learning_rate, 
+            epochs=epochs
+        )
     elif model_type == 'rf' or model_type == 'km':
         criterion = config['criterion']
         max_features = config['max_features']
         n_estimators = config['n_estimators'] 
         min_samples_leaf = config['min_samples_leaf']
         min_samples_split = config['min_samples_split']
-        model = RandomForestClassifier(n_estimators=n_estimators,
-                                        criterion=criterion,
-                                        min_samples_split=min_samples_split,
-                                        min_samples_leaf=min_samples_leaf,
-                                        max_features=max_features,
-                                        random_state=0)
+
+        model = RandomForestClassifier(
+            n_estimators=n_estimators,
+            criterion=criterion,
+            min_samples_split=min_samples_split,
+            min_samples_leaf=min_samples_leaf,
+            max_features=max_features,
+            random_state=0
+        )
     else:
         raise ValueError(f"Model type \"{model_type}\" not recognized")
 
@@ -149,8 +166,8 @@ def get_model_for_experiment(config, experiment_type):
 
     model_type = config['model_type']
 
-    device = config['aa-device']
-    dataset_path = config['aa-dataset-path']
+    device = config['device']
+    dataset_path = config['dataset_path']
 
     # Get the model to be used
     if experiment_type == 'val':
@@ -199,14 +216,14 @@ def get_model_for_experiment(config, experiment_type):
 def name_model(config):
     """Create a name for the model based on how it was trained"""
 
-    model_type = config['aa-model-type']
-    alarm_type = config['ab-alarm-type']
-    metric = config['ab-metric']
+    model_type = config['model_type']
+    alarm_type = config['alarm_type']
+    metric = config['metric']
 
     if metric == 'etint':
         time_string = f"{int(config['01_tau']*1000)}ms"
     else:
-        time_string = f"{int(config['ab-required-warning-time']*1000)}ms"
+        time_string = f"{int(config['required_warning_time']*1000)}ms"
 
     name = f"{model_type}_{alarm_type}_{metric}_{time_string}"
 

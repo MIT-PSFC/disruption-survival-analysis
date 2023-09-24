@@ -57,7 +57,7 @@ hyperparameter_ranges = {
     "learning_rate": { # Default: 0.001
         "min": 0.00001,
         "max": 0.01,
-        "distribution": "log",
+        "distribution": "float",
         "log": True
     },
     "max_features": {
@@ -66,7 +66,9 @@ hyperparameter_ranges = {
     },
     "min_samples_leaf": { # Minimum number of samples for each node ceil(value * n_samples)
         "min": 0.0001,
-        "max":0.9
+        "max":0.9,
+        "distribution": "float",
+        "log": False
     },
     "min_samples_split": { # Minimum number of samples for each split ceil(value * n_samples)
         "min": 0.0001,
@@ -134,7 +136,7 @@ dataset_paths = ["preliminary_dataset_no_ufo"]
 
 # List of models to include in this sweep
 # cph, dcph, dcm, dsm, rf, km
-models = ["dsm", "rf"]
+model_types = ["dsm", "rf"]
 
 # List of alarm types to use
 # sthr, hyst, ettd, ethy
@@ -147,19 +149,19 @@ metrics = ["auroc"]
 # List of required warning times to train on (in seconds)
 required_warning_times = [0.02]
 
-def make_sweep_config(device, dataset_path, model, alarm_type, metric, required_warning_time):
+def make_sweep_config(device, dataset_path, model_type, alarm_type, metric, required_warning_time):
     sweep_config = {}
 
     sweep_config["device"] = device
     sweep_config["dataset_path"] = dataset_path
 
-    sweep_config["model"] = model
+    sweep_config["model_type"] = model_type
     sweep_config["alarm_type"] = alarm_type
     sweep_config["metric"] = metric
     sweep_config["required_warning_time"] = required_warning_time
     
     hyperparameters = {}
-    for hyperparameter in model_hyperparameters[model]:
+    for hyperparameter in model_hyperparameters[model_type]:
         hyperparameters[hyperparameter] = hyperparameter_ranges[hyperparameter]
     sweep_config["hyperparameters"] = hyperparameters
 
@@ -169,22 +171,22 @@ def write_sweep_config(sweep_config):
     # Write the sweep config to a file
     device = sweep_config["device"]
     dataset_path = sweep_config["dataset_path"]
-    model = sweep_config["model"]
+    model_type = sweep_config["model_type"]
     alarm_type = sweep_config["alarm_type"]
     metric = sweep_config["metric"]
     required_warning_time = sweep_config["required_warning_time"]
 
-    sweep_config_name = f"{model}_{alarm_type}_{metric}_{int(required_warning_time*1000)}ms_sweep"
+    sweep_config_name = f"{model_type}_{alarm_type}_{metric}_{int(required_warning_time*1000)}ms_sweep"
 
     with open(f"models/{device}/{dataset_path}/{sweep_config_name}.yaml", "w") as f:
         yaml.dump(sweep_config, f)
 
 for device in devices:
     for dataset_path in dataset_paths:
-        for model in models:
+        for model_type in model_types:
             for alarm_type in alarm_types:
                 for metric in metrics:
                     for required_warning_time in required_warning_times:
-                        sweep_config = make_sweep_config(device, dataset_path, model, alarm_type, metric, required_warning_time)
+                        sweep_config = make_sweep_config(device, dataset_path, model_type, alarm_type, metric, required_warning_time)
                         write_sweep_config(sweep_config)
 

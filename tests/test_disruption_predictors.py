@@ -21,7 +21,7 @@ class TestDisruptionPredictor(unittest.TestCase):
         experiment_config = load_experiment_config("synthetic", "synthetic100", 'dsm', 'sthr', 'auroc', 0.02)
 
         # Get some important information about the model
-        trained_required_warning_time = experiment_config["ab-required-warning-time"]
+        trained_required_warning_time = experiment_config["required_warning_time"]
         trained_horizon = experiment_config["horizon"]
         
         # Create model
@@ -73,7 +73,7 @@ class TestDisruptionPredictorSM(unittest.TestCase):
         experiment_config = load_experiment_config("synthetic", "synthetic100", 'dsm', 'sthr', 'auroc', 0.02)
 
         # Get some important information about the model
-        trained_required_warning_time = experiment_config["ab-required-warning-time"]
+        trained_required_warning_time = experiment_config["required_warning_time"]
         trained_horizon = experiment_config["horizon"]
         
         # Create model
