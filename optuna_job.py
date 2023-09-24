@@ -12,7 +12,7 @@ def objective(trial, sweep_config):
     experiment_config["device"] = sweep_config["device"]
     experiment_config["dataset_path"] = sweep_config["dataset_path"]
 
-    experiment_config["model"] = sweep_config["model"]
+    experiment_config["model_type"] = sweep_config["model_type"]
     experiment_config["alarm_type"] = sweep_config["alarm_type"]
     experiment_config["metric"] = sweep_config["metric"]
     experiment_config["required_warning_time"] = sweep_config["required_warning_time"]
@@ -24,11 +24,8 @@ def objective(trial, sweep_config):
     for hyperparameter_name in hyperparameter_names:
         hyperparameter = hyperparameters[hyperparameter_name]
         
-        # Get the distribution type if it exists
-        try:
-            distribution_type = hyperparameter["distribution"]
-        except KeyError:
-            distribution_type = "float"
+        # Get the distribution type
+        distribution_type = hyperparameter["distribution"]
 
         # Get the value for the trial
         if distribution_type == "categorical":
@@ -73,11 +70,11 @@ if __name__ == "__main__":
     # each sweep gets its own database
     device = sweep_config["device"]
     dataset_path = sweep_config["dataset_path"]
-    model = sweep_config["model"]
+    model_type = sweep_config["model_type"]
     alarm_type = sweep_config["alarm_type"]
     metric = sweep_config["metric"]
     required_warning_time = int(sweep_config["required_warning_time"]*1000)
-    database_path = f"models/{device}/{dataset_path}/{model}_{alarm_type}_{metric}_{required_warning_time}ms_study.db"
+    database_path = f"models/{device}/{dataset_path}/{model_type}_{alarm_type}_{metric}_{required_warning_time}ms_study.db"
 
     # Get the direction the study should be optimized in
     if metric in ["auroc", "auwtc", "maxf1"]:

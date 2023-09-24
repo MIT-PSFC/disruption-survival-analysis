@@ -8,9 +8,9 @@ from auton_survival.estimators import SurvivalModel
 from auton_survival.metrics import survival_regression_metric
 from disruption_survival_analysis.manage_datasets import load_features_outcomes
 
-# We want more low false positive rates, so make the thresholds more dense at the low end
-#SIMPLE_THRESHOLDS = np.logspace(-3, 0, 200)
-SIMPLE_THRESHOLDS = None
+# Set of simple thresholds to use for calculating alarm times
+SIMPLE_THRESHOLDS = np.linspace(0, 1, 100)
+
 # Labeling data
 
 def label_shot_data(shot_data, disrupt, disruptive_window):
