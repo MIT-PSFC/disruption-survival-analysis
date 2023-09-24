@@ -5,10 +5,13 @@ hyperparameter_ranges = {
     "batch_size": { # Default: 128
         "min": 64,
         "max": 256,
+        "distribution": "int"
     },
     "class_time": { # Time in seconds before a disruption labeled as 'disruptive
         "min": 0.001,
         "max": 0.4,
+        "distribution": "float",
+        "log": False
     },
     "criterion": { # Function to measure quality of a split
         "values": ["gini", "entropy", "log_loss"],
@@ -17,6 +20,7 @@ hyperparameter_ranges = {
     "epochs": { # Default: 50
         "min": 50,
         "max": 200,
+        "distribution": "int"
     },
     "distribution": {
         "values": ["Weibull", "LogNormal"],
@@ -26,28 +30,35 @@ hyperparameter_ranges = {
         # In Alex's paper used 0.05, 0.1, 0.2
         "min": 0.001,
         "max": 0.3,
+        "distribution": "float",
+        "log": False
     },
     "k": {
         "min": 1,
         "max": 6,
+        "distribution": "int"
     },
     "l2": { # Default: 0.0001
         "min": 0.00001,
         "max": 0.01,
-        "distribution": "log_uniform_values"
+        "distribution": "float",
+        "log": True
     },
     "layer_depth": {
         "min": 1,
         "max": 5,
+        "distribution": "int"
     },
     "layer_width": {
         "min": 50,
         "max": 200,
+        "distribution": "int"
     },
     "learning_rate": { # Default: 0.001
         "min": 0.00001,
         "max": 0.01,
-        "distribution": "log_uniform_values"
+        "distribution": "log",
+        "log": True
     },
     "max_features": {
         "values": ["sqrt", "log2"],
@@ -59,19 +70,26 @@ hyperparameter_ranges = {
     },
     "min_samples_split": { # Minimum number of samples for each split ceil(value * n_samples)
         "min": 0.0001,
-        "max": 0.9
+        "max": 0.9,
+        "distribution": "float",
+        "log": False
     },
     "n_estimators": { # Number of trees in the forest. Default: 100
         "min": 50,
-        "max": 200
+        "max": 200,
+        "distribution": "int"
     },
     "horizon": { # How many seconds into the future to predict
         "min": 0.001,
         "max": 0.3,
+        "distribution": "float",
+        "log": False
     },
     "temperature": {
         "min": 0.5,
         "max": 1.5,
+        "distribution": "float",
+        "log": False
     }
 }
 
