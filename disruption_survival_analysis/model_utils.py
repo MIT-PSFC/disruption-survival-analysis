@@ -147,7 +147,7 @@ def get_model_for_experiment(config, experiment_type):
         The model to be used for the experiment
     """
 
-    model_type = config['aa-model-type']
+    model_type = config['model_type']
 
     device = config['aa-device']
     dataset_path = config['aa-dataset-path']

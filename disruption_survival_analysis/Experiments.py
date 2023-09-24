@@ -39,8 +39,8 @@ class Experiment:
         """
 
         # Get some info from the config
-        self.device = config['aa-device']
-        self.dataset_path = config['aa-dataset-path']
+        self.device = config['device']
+        self.dataset_path = config['dataset_path']
 
         # Set the type of experiment
         self.experiment_type = experiment_type
@@ -49,10 +49,10 @@ class Experiment:
 
         # Create the model and predictor for the experiment
         model = get_model_for_experiment(config, experiment_type)
-        required_warning_time = config['ab-required-warning-time']
+        required_warning_time = config['required_warning_time']
         self.name = name_model(config)
 
-        model_type = config['aa-model-type']
+        model_type = config['model_type']
 
         if model_type in ['cph', 'dcph', 'dsm'] and isinstance(model, SurvivalModel):
             self.predictor = DisruptionPredictorSM(self.name, model, required_warning_time, config['horizon'])
@@ -64,12 +64,15 @@ class Experiment:
             raise ValueError('Model type not recognized')
         
         # Get the alarm type from the config
-        self.alarm_type = config['ab-alarm-type']
+        self.alarm_type = config['alarm_type']
 
         # Set the thresholds for usage in tpr/fpr calculations
         if self.alarm_type == 'sthr':
             # Simple Threshold
             #self.thresholds = SIMPLE_THRESHOLDSF
+            self.thresholds = SIMPLE_THRESHOLDS
+        elif self.alarm_type == 'athr':
+            # Uses all thresholds
             self.thresholds = None
         elif self.alarm_type == 'hyst':
             # Hysteresis

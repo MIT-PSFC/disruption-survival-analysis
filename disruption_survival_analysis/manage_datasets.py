@@ -10,7 +10,7 @@ from auton_survival.preprocessing import Preprocessor
 NOT_FEATURES = ['time', 'shot', 'time_until_disrupt'] # Columns that are not features
 DROPPED_FEATURES = ['v_surf', 'dbetap_dt', 'dli_dt', 'dWmhd_dt', 'dn_dt', 'dip_dt', 'dip_smoothed', 'dipprog_dt', 'ip_prog'] # Additional features to drop from the raw dataset (should not wind up in the training datasets)
 
-DISRUPTION_DROPPED_TIME = 0.010 # Time before disruption to drop from the dataset (to avoid noise from disruption)
+DISRUPTION_DROPPED_TIME = 0.000 # Time before disruption to drop from the dataset (to avoid noise from disruption)
 
 # Functions for making new datasets
 
@@ -48,11 +48,11 @@ def make_training_sets(device, dataset_path, random_seed=0, debug=False):
     # Eliminate timeslices with negative values in time
     data = data[data['time'] >= 0]
     # Remove where time_until_disrupt is negative, keeping where time_until_disrupt is null
-    # Remove where time_until_disrupt is less than 10ms to avoid noise caused by disruption in data
     data = data[(data['time_until_disrupt'] >= DISRUPTION_DROPPED_TIME) | (data['time_until_disrupt'].isnull())]
+    
+    """
     # Remove shots shorter than 0.5 seconds
     data = data.groupby('shot').filter(lambda x: x['time'].max() - x['time'].min() > 0.5)
-
     # Find shots where one signal is constant for at least 0.5 seconds
     # Get the shots
     shots = data['shot'].unique()
@@ -70,7 +70,7 @@ def make_training_sets(device, dataset_path, random_seed=0, debug=False):
             if num_same >= 100:
                 data = data[data['shot'] != shot]
                 break
-
+    
     # Only keep the last 420 ms of each shot
     # Get the shots
     shots = data['shot'].unique()
@@ -81,7 +81,7 @@ def make_training_sets(device, dataset_path, random_seed=0, debug=False):
         last_timeslices = shot_data[shot_data['time'] < shot_data['time'].max() - 0.42]
         # Drop the timeslices where the time is less than the last 420 ms
         data = data.drop(last_timeslices.index)
-
+    """
     # Save the dataset HERE for debugging
     data.to_csv('data/{}/{}/first_filter.csv'.format(device, dataset_path), index=False)
 
