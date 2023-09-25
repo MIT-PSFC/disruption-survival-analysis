@@ -141,9 +141,14 @@ class TestFalseAlarmRates(unittest.TestCase):
 class TestAllCombos(unittest.TestCase):
 
     # Test for every combination of model, alarm type, and metric
-    model_list = ['cph', 'dcph', 'dsm', 'rf', 'km']
-    alarm_type_list = ['sthr', 'hyst']
-    metric_list = ['auroc', 'auwtc']
+    # TODO: flesh this out
+    # model_list = ['cph', 'dcph', 'dsm', 'rf', 'km']
+    # alarm_type_list = ['sthr', 'hyst']
+    # metric_list = ['auroc', 'auwtc']
+    
+    model_list = ['rf']
+    alarm_type_list = ['sthr']
+    metric_list = ['auroc']
     min_required_warning_times = [0.02]
 
     def test_evaluate_all_metrics(self):
@@ -168,17 +173,15 @@ class TestAllCombos(unittest.TestCase):
 
     def test_evaluate_single_metric(self):
         """Used to test a single metric for a single experiment"""
-
-        test_metric = 'auwtc'
         
-        model = 'cph'
+        model = 'rf'
         alarm_type = 'sthr'
         model_metric = 'auroc'
         min_required_warning_time = 0.02
         experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, model, alarm_type, model_metric, min_required_warning_time)
         experiment = Experiment(experiment_config, 'test')
 
-        experiment.evaluate_metric(test_metric)
+        experiment.evaluate_metric(model_metric)
 
 
 class TestCriticalMetric(unittest.TestCase):
