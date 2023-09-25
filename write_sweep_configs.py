@@ -131,8 +131,8 @@ model_hyperparameters = {
 }
 
 # Datasets to use
-devices = ["cmod"]
-dataset_paths = ["preliminary_dataset_no_ufo"]
+devices = ["synthetic"]
+dataset_paths = ["test"]
 
 # List of models to include in this sweep
 # cph, dcph, dcm, dsm, rf, km
