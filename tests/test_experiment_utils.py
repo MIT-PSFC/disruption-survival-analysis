@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from test_manage_datasets import TEST_DEVICE, TEST_DATASET_PATH
+from tests.test_manage_datasets import TEST_DEVICE, TEST_DATASET_PATH
 
 from disruption_survival_analysis.experiment_utils import label_shot_data, make_shot_lifetime_curve, calculate_alarm_times, unique_domain_mapping
 from disruption_survival_analysis.manage_datasets import load_dataset, load_disruptive_shot_list, load_non_disruptive_shot_list

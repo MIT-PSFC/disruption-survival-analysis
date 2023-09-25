@@ -1,6 +1,6 @@
 import unittest
 
-from test_manage_datasets import TEST_DEVICE, TEST_DATASET_PATH
+from tests.test_manage_datasets import TEST_DEVICE, TEST_DATASET_PATH
 
 from disruption_survival_analysis.experiment_utils import load_experiment_config
 from disruption_survival_analysis.model_utils import get_model_for_experiment
