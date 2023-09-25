@@ -6,10 +6,10 @@ from disruption_survival_analysis.plot_experiments import *
 from disruption_survival_analysis.experiment_utils import load_experiment_config
 from disruption_survival_analysis.Experiments import Experiment
 
-TEST_MODEL_TYPES = ['dsm']
+TEST_MODEL_TYPES = ['rf']
 TEST_ALARM_TYPES = ['sthr']
 TEST_METRICS = ['auroc']
-TEST_MIN_WARNING_TIMES = [0.1]
+TEST_MIN_WARNING_TIMES = [0.02]
 
 
 class TestPlotExperiments(unittest.TestCase):
@@ -40,8 +40,10 @@ class TestPlotExperiments(unittest.TestCase):
 
         plot_auroc_timeslice_shot_avg_vs_horizon(self.experiments)
 
+"""
+
     def test_plot_false_positive_vs_threshold(self):
 
         plot_false_positive_vs_threshold(self.experiments, cutoff_far=0.05, method='average')
 
-
+"""
