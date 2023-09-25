@@ -34,19 +34,21 @@ def make_model(config:dict):
     """
 
     model_type = config['model_type']
+
+    hyperparameters = config['hyperparameters']
     if model_type == 'cph':
-        l2 = config['l2']
+        l2 = hyperparameters['l2']
         model = SurvivalModel(
             model_type, 
             l2=l2
         )
     elif model_type == 'dcph':
-        layer_width = config['layer_width']
-        layer_depth = config['layer_depth']
+        layer_width = hyperparameters['layer_width']
+        layer_depth = hyperparameters['layer_depth']
         layers = [layer_width] * layer_depth
-        batch_size = config['batch_size']
-        epochs = config['epochs']
-        learning_rate = config['learning_rate']
+        batch_size = hyperparameters['batch_size']
+        epochs = hyperparameters['epochs']
+        learning_rate = hyperparameters['learning_rate']
         
         model = SurvivalModel(
             model_type, 
@@ -56,14 +58,14 @@ def make_model(config:dict):
             epochs=epochs
         )
     elif model_type == 'dcm':
-        layer_width = config['layer_width']
-        layer_depth = config['layer_depth']
+        layer_width = hyperparameters['layer_width']
+        layer_depth = hyperparameters['layer_depth']
         layers = [layer_width] * layer_depth
-        batch_size = config['batch_size']
-        epochs = config['epochs']
-        k = config['k']
-        lr = config['learning_rate']
-        smoothing_factor = config['smoothing_factor']
+        batch_size = hyperparameters['batch_size']
+        epochs = hyperparameters['epochs']
+        k = hyperparameters['k']
+        lr = hyperparameters['learning_rate']
+        smoothing_factor = hyperparameters['smoothing_factor']
 
         model = SurvivalModel(
             model_type, 
@@ -75,14 +77,14 @@ def make_model(config:dict):
             smoothing_factor=smoothing_factor
         )
     elif model_type == 'dsm':
-        layer_width = config['layer_width']
-        layer_depth = config['layer_depth']
+        layer_width = hyperparameters['layer_width']
+        layer_depth = hyperparameters['layer_depth']
         layers = [layer_width] * layer_depth
-        batch_size = config['batch_size']
-        distribution = config['distribution']
-        epochs = config['epochs']
-        learning_rate = config['learning_rate']
-        temperature = config['temperature']
+        batch_size = hyperparameters['batch_size']
+        distribution = hyperparameters['distribution']
+        epochs = hyperparameters['epochs']
+        learning_rate = hyperparameters['learning_rate']
+        temperature = hyperparameters['temperature']
         
         model = SurvivalModel(
             model_type, 
@@ -94,11 +96,11 @@ def make_model(config:dict):
             epochs=epochs
         )
     elif model_type == 'rf' or model_type == 'km':
-        criterion = config['criterion']
-        max_features = config['max_features']
-        n_estimators = config['n_estimators'] 
-        min_samples_leaf = config['min_samples_leaf']
-        min_samples_split = config['min_samples_split']
+        criterion = hyperparameters['criterion']
+        max_features = hyperparameters['max_features']
+        n_estimators = hyperparameters['n_estimators'] 
+        min_samples_leaf = hyperparameters['min_samples_leaf']
+        min_samples_split = hyperparameters['min_samples_split']
 
         model = RandomForestClassifier(
             n_estimators=n_estimators,
@@ -176,7 +178,7 @@ def get_model_for_experiment(config, experiment_type):
 
         # Fit the model to the training data
         if isinstance(model, RandomForestClassifier):
-            class_time = config['class_time']
+            class_time = hyperparameters['class_time']
             train_random_forest_model(model, device, dataset_path, class_time)
         elif isinstance(model, SurvivalModel):
             train_survival_model(model, device, dataset_path)
@@ -196,7 +198,7 @@ def get_model_for_experiment(config, experiment_type):
 
             # Fit the model to the training data
             if isinstance(model, RandomForestClassifier):
-                class_time = config['class_time']
+                class_time = config['hyperparameters']['class_time']
                 train_random_forest_model(model, device, dataset_path, class_time)
             elif isinstance(model, SurvivalModel):
                 train_survival_model(model, device, dataset_path)
