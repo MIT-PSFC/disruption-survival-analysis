@@ -81,10 +81,10 @@ def make_training_sets(device, dataset_path, random_seed=0, debug=False):
         last_timeslices = shot_data[shot_data['time'] < shot_data['time'].max() - 0.42]
         # Drop the timeslices where the time is less than the last 420 ms
         data = data.drop(last_timeslices.index)
-    """
     # Save the dataset HERE for debugging
     data.to_csv('data/{}/{}/first_filter.csv'.format(device, dataset_path), index=False)
-
+    """
+    
     # Find the shots that have a disruption
     disrupt_shots = load_disruptive_shot_list(device, dataset_path, 'raw')
     # Find the shots that do not have a disruption

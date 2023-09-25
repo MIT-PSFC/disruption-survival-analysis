@@ -16,6 +16,7 @@ def objective(trial, sweep_config):
     experiment_config["alarm_type"] = sweep_config["alarm_type"]
     experiment_config["metric"] = sweep_config["metric"]
     experiment_config["required_warning_time"] = sweep_config["required_warning_time"]
+    experiment_config["hyperparameters"] = {}
 
     hyperparameters = sweep_config["hyperparameters"]
     # For each hyperparameter in the sweep config, pick a value for the trial
