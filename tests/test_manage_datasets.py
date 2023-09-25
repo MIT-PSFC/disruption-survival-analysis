@@ -7,7 +7,7 @@ import numpy as np
 from disruption_survival_analysis.manage_datasets import make_training_sets, make_stacked_sets, load_dataset, load_shot_list, load_features_labels, load_features_outcomes, load_disruptive_shot_list, load_non_disruptive_shot_list, load_feature_list, DROPPED_FEATURES
 
 TEST_DEVICE = 'synthetic'
-TEST_DATASET_PATH = '180_shots_10%_disruptive'
+TEST_DATASET_PATH = 'test'
 
 class TestCreatedTrainingSets(unittest.TestCase):
     """Tests for the function make_training_sets()"""
@@ -242,7 +242,7 @@ class TestLoadFeaturesOutcomes(unittest.TestCase):
         """Ensure that the function returns the correct features and outcomes dataframes
         for a small dataset"""
 
-        features, outcomes = load_features_outcomes("synthetic", "test", "train")
+        features, outcomes = load_features_outcomes("synthetic", "test", "small")
 
         # Check that the features are correct
         ip_array = [0, 1, 2, 3, 4, 4, 4, 4, 4, 4, 4, 3, 2, 1, 0, 0, 1, 2, 3, 4, 4, 4, 4, 10]
@@ -274,7 +274,7 @@ class TestLoadFeaturesLabels(unittest.TestCase):
         """Ensure that the function returns the correct features and labels
         for a small dataset"""
 
-        features, labels = load_features_labels("synthetic", "test", "train", 5)
+        features, labels = load_features_labels("synthetic", "test", "small", 5)
 
         # Check that the features are correct
         ip_array = [0, 1, 2, 3, 4, 4, 4, 4, 4, 4, 4, 3, 2, 1, 0, 0, 1, 2, 3, 4, 4, 4, 4, 10]

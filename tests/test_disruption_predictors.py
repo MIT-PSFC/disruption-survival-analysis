@@ -22,13 +22,13 @@ class TestDisruptionPredictor(unittest.TestCase):
 
         # Get some important information about the model
         trained_required_warning_time = experiment_config["required_warning_time"]
-        trained_horizon = experiment_config["horizon"]
+        trained_class_time = experiment_config["class_time"]
         
         # Create model
         self.model = get_model_for_experiment(experiment_config, "test")
 
         # Create predictor instance
-        self.predictor = DisruptionPredictor("Test Predictor", self.model, trained_required_warning_time, trained_horizon)
+        self.predictor = DisruptionPredictor("Test Predictor", self.model, trained_required_warning_time, trained_class_time)
 
     def test_get_correct_instance(self):
         """Ensure that the correct class instance is returned"""
