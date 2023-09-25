@@ -54,12 +54,14 @@ class Experiment:
 
         model_type = config['model_type']
 
+        hyperparameters = config['hyperparameters']
+
         if model_type in ['cph', 'dcph', 'dsm'] and isinstance(model, SurvivalModel):
-            self.predictor = DisruptionPredictorSM(self.name, model, required_warning_time, config['horizon'])
+            self.predictor = DisruptionPredictorSM(self.name, model, required_warning_time, hyperparameters['horizon'])
         elif model_type in ['rf'] and isinstance(model, RandomForestClassifier):
-            self.predictor = DisruptionPredictorRF(self.name, model, required_warning_time, config['class_time'])
+            self.predictor = DisruptionPredictorRF(self.name, model, required_warning_time, hyperparameters['class_time'])
         elif model_type in ['km'] and isinstance(model, RandomForestClassifier):
-            self.predictor = DisruptionPredictorKM(self.name, model, required_warning_time, config['class_time'], config['fit_time'])
+            self.predictor = DisruptionPredictorKM(self.name, model, required_warning_time, hyperparameters['class_time'], hyperparameters['fit_time'])
         else:
             raise ValueError('Model type not recognized')
         
@@ -342,7 +344,7 @@ class Experiment:
         # Get list of all shots
         shot_list = self.get_shot_list()
 
-        self.set_all_thresholds(horizon)
+        #self.set_all_thresholds(horizon)
 
         # Create array to store the results
         # Array is of shape (num_shots, num_thresholds)
@@ -425,7 +427,7 @@ class Experiment:
         disruptive_shots = self.get_disruptive_shot_list()
         # Create arrays to store the results
         # Array is of shape (num_shots, num_thresholds)
-        self.set_all_thresholds(horizon)
+        #self.set_all_thresholds(horizon)
         true_alarms = np.zeros((len(shot_list), len(self.thresholds)))
         false_alarms = np.zeros((len(shot_list), len(self.thresholds)))
 

@@ -494,9 +494,4 @@ def load_experiment_config(device, dataset, model_type, alarm_type, metric, requ
     with open(full_path) as file:
         config = yaml.load(file, Loader=yaml.FullLoader)
 
-    # For each item in the config, replace it with the value
-    for key in config:
-        if type(config[key]) == dict:
-            config[key] = config[key]['value']
-
     return config

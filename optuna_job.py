@@ -50,11 +50,8 @@ def objective(trial, sweep_config):
         experiment = Experiment(experiment_config, 'val')
         metric_val = experiment.evaluate_metric(sweep_config["metric"])
     except:
-        # If anything goes wrong during training or validation, log a really bad value
-        if sweep_config["metric"] in ["auroc", "auwtc", "maxf1"]:
-            metric_val = -1
-        else:
-            metric_val = 1337
+        # If anything goes wrong during training or validation, log a NaN
+        metric_val = float("nan")
 
     return metric_val
 
@@ -89,4 +86,4 @@ if __name__ == "__main__":
         load_if_exists=True
     )
 
-    study.optimize(lambda trial: objective(trial, sweep_config), n_trials=10)
+    study.optimize(lambda trial: objective(trial, sweep_config), n_trials=1000)
