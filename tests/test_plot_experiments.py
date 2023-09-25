@@ -33,12 +33,12 @@ class TestPlotExperiments(unittest.TestCase):
 
     def test_plot_auroc_timeslice_all_vs_horizon(self):
 
-        plot_auroc_timeslice_all_vs_horizon(self.experiments, disrupt_only=True)
-        plot_auroc_timeslice_all_vs_horizon(self.experiments, disrupt_only=False)
+        plot_auroc_timeslice_all_vs_horizon(self.experiments, disrupt_only=True, test=True)
+        plot_auroc_timeslice_all_vs_horizon(self.experiments, disrupt_only=False, test=True)
 
     def test_plot_auroc_timeslice_shot_avg_vs_horizon(self):
 
-        plot_auroc_timeslice_shot_avg_vs_horizon(self.experiments)
+        plot_auroc_timeslice_shot_avg_vs_horizon(self.experiments, test=True)
 
 """
 
