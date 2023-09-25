@@ -465,7 +465,7 @@ def unique_domain_mapping(domain_values, range_values, method='average'):
 
 def load_experiment_config(device, dataset, model_type, alarm_type, metric, required_warning_time):
     """
-    Load an experiment config dictionary from a config file
+    Load an experiment config dictionary from a study database file
     Expects file to be one directory up from the current directory, in the 'models' folder
 
     Parameters

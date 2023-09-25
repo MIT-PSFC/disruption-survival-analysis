@@ -43,7 +43,7 @@ def objective(trial, sweep_config):
         else:
             raise ValueError(f"Invalid distribution type: {distribution_type}")
         
-        experiment_config[hyperparameter_name] = value
+        experiment_config["hyperparameters"][hyperparameter_name] = value
 
     try:
         # Create the experiment and try to get the evaluation metric
@@ -79,8 +79,14 @@ if __name__ == "__main__":
     else:
         direction = "minimize"
 
+    storage = optuna.storages.RDBStorage(
+        url=f"sqlite:///{database_path}", 
+        heartbeat_interval=60, 
+        grace_period=120
+    )
+
     study = optuna.create_study(
-        storage=f"sqlite:///{database_path}", 
+        storage=storage, 
         study_name="first",
         direction=direction,
         load_if_exists=True
