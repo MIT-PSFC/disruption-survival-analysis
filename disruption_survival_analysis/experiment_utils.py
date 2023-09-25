@@ -1,7 +1,7 @@
 # Functions used by experiments but not actually part of the experiments
 
 import numpy as np
-import yaml
+import optuna
 
 from sklearn.ensemble import RandomForestClassifier
 from auton_survival.estimators import SurvivalModel
@@ -484,14 +484,37 @@ def load_experiment_config(device, dataset, model_type, alarm_type, metric, requ
         The experiment config dictionary
     
     """
+    print("---")
+    print("Attempting to load hyperparameters from study database")
+    file_name = f"{model_type}_{alarm_type}_{metric}_{int(required_warning_time*1000)}ms_study.db"
+    try:
+        # Get the path to the database file
+        full_path = f"models/{device}/{dataset}/{file_name}"
 
-    # Get the path to the config file
-    file_name = f"{model_type}_{alarm_type}_{metric}_{int(required_warning_time*1000)}ms.yaml"
+        # Get the best trial from the study (expects there to be only one study in the database)
+        study = optuna.load_study(study_name=None, storage=f"sqlite:///{full_path}")
 
-    full_path = f"models/{device}/{dataset}/{file_name}"
+        hyperparameters = study.best_trial.params
 
-    # Load yaml file into dictionary
-    with open(full_path) as file:
-        config = yaml.load(file, Loader=yaml.FullLoader)
+        print(f"Loaded hyperparameters for {device}/{dataset}/{file_name}")
+        print(f"Best validation metric is {study.best_trial.value} from trial {study.best_trial.number}")
+        print("---")
+    except:
+        print(f"Could not load hyperparameters for {device}/{dataset}/{file_name}")
+        print("---")
+        hyperparameters = None
+
+    # Make the experiment config dictionary
+    config = {}
+
+    config['device'] = device
+    config['dataset_path'] = dataset
+
+    config['model_type'] = model_type
+    config['alarm_type'] = alarm_type
+    config['metric'] = metric
+    config['required_warning_time'] = required_warning_time
+
+    config['hyperparameters'] = hyperparameters
 
     return config
