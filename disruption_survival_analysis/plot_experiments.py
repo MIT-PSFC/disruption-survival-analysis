@@ -18,7 +18,7 @@ GOOD_WARNING_TIME = 0.1 # Also from Ryan, would be very nice to have 100ms to re
 
 # Plots for timeslice-level model performance
 
-def plot_auroc_timeslice_all_vs_horizon(experiment_list:list[Experiment], horizons=DEFAULT_HORIZONS, disrupt_only=True):
+def plot_auroc_timeslice_all_vs_horizon(experiment_list:list[Experiment], horizons=DEFAULT_HORIZONS, disrupt_only=True, test=False):
     """ Plot the full-dataset timeslice-level Area Under ROC Curve vs. horizon for each experiment.
 
     Parameters:
@@ -53,9 +53,11 @@ def plot_auroc_timeslice_all_vs_horizon(experiment_list:list[Experiment], horizo
         plt.title('All shot Timeslice Area Under ROC Curve vs. Horizon')
 
     plt.legend()
-    plt.show()
 
-def plot_auroc_timeslice_shot_avg_vs_horizon(experiment_list:list[Experiment], horizons=DEFAULT_HORIZONS):
+    if not test:
+        plt.show()
+
+def plot_auroc_timeslice_shot_avg_vs_horizon(experiment_list:list[Experiment], horizons=DEFAULT_HORIZONS, test=False):
     """ Plot the shot-averaged timeslice Area Under ROC Curve vs. horizon for each experiment.
     Only includes disruptive shots, because a micro average over a non-disruptive shot cannot be done (only one class in truth value).
 
@@ -86,7 +88,9 @@ def plot_auroc_timeslice_shot_avg_vs_horizon(experiment_list:list[Experiment], h
     plt.title('Shot-Average Timeslice Area Under ROC Curve vs. Horizon')
 
     plt.legend()
-    plt.show()
+    
+    if not test:
+        plt.show()
 
 # Plots for shot-level model performance
 
