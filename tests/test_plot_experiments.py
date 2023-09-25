@@ -1,14 +1,10 @@
 import unittest
 
+from test_manage_datasets import TEST_DEVICE, TEST_DATASET_PATH
+
 from disruption_survival_analysis.plot_experiments import *
 from disruption_survival_analysis.experiment_utils import load_experiment_config
 from disruption_survival_analysis.Experiments import Experiment
-
-#TEST_DEVICE = 'synthetic'
-#TEST_DATASET = 'synthetic100'
-
-TEST_DEVICE = 'cmod'
-TEST_DATASET = 'preliminary_dataset_no_ufo'
 
 TEST_MODEL_TYPES = ['dsm']
 TEST_ALARM_TYPES = ['sthr']
@@ -29,7 +25,7 @@ class TestPlotExperiments(unittest.TestCase):
                 for metric in TEST_METRICS:
                     for min_warning_time in TEST_MIN_WARNING_TIMES:
                         
-                        config = load_experiment_config(TEST_DEVICE, TEST_DATASET, model, alarm, metric, min_warning_time)
+                        config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, model, alarm, metric, min_warning_time)
                         
                         # Create test experiment from config
                         experiment = Experiment(config, 'test')

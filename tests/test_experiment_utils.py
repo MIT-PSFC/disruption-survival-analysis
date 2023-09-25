@@ -2,6 +2,8 @@ import unittest
 import numpy as np
 import pandas as pd
 
+from test_manage_datasets import TEST_DEVICE, TEST_DATASET_PATH
+
 from disruption_survival_analysis.experiment_utils import label_shot_data, make_shot_lifetime_curve, calculate_alarm_times, unique_domain_mapping
 from disruption_survival_analysis.manage_datasets import load_dataset, load_disruptive_shot_list, load_non_disruptive_shot_list
 
@@ -48,7 +50,7 @@ class TestMakeShotLifetimeCurve(unittest.TestCase):
 
     # Write tests for the make_shot_lifetime_curve function
     def setUp(self):
-        self.data = load_dataset("synthetic", "synthetic100", "train")
+        self.data = load_dataset(TEST_DEVICE, TEST_DATASET_PATH, "train")
 
         self.lifetime = 0.1 # 100ms
 
@@ -56,7 +58,7 @@ class TestMakeShotLifetimeCurve(unittest.TestCase):
         """Test that the curve values are correct for disruptive shots"""
 
         # Pick a shot that is disruptive
-        disruptive_shot = load_disruptive_shot_list("synthetic", "synthetic100", "train")[0]
+        disruptive_shot = load_disruptive_shot_list(TEST_DEVICE, TEST_DATASET_PATH, "train")[0]
 
         # Get the shot data
         shot_data = self.data[self.data["shot"]==disruptive_shot]
@@ -80,7 +82,7 @@ class TestMakeShotLifetimeCurve(unittest.TestCase):
         """Test that the curve values are correct for non-disruptive shots"""
 
         # Pick a shot that is non-disruptive
-        non_disruptive_shot = load_non_disruptive_shot_list("synthetic", "synthetic100", "train")[0]
+        non_disruptive_shot = load_non_disruptive_shot_list(TEST_DEVICE, TEST_DATASET_PATH, "train")[0]
 
         # Get the shot data
         shot_data = self.data[self.data["shot"]==non_disruptive_shot]

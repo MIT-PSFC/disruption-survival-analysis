@@ -1,5 +1,7 @@
 import unittest
 
+from test_manage_datasets import TEST_DEVICE, TEST_DATASET_PATH
+
 from disruption_survival_analysis.experiment_utils import load_experiment_config
 from disruption_survival_analysis.model_utils import get_model_for_experiment
 from disruption_survival_analysis.manage_datasets import load_dataset
@@ -9,16 +11,14 @@ from disruption_survival_analysis.manage_datasets import load_dataset
 
 from disruption_survival_analysis.DisruptionPredictors import DisruptionPredictor, DisruptionPredictorSM, DisruptionPredictorRF, DisruptionPredictorKM
 
-
-
 class TestDisruptionPredictor(unittest.TestCase):
     """Tests for the base class DisruptionPredictor"""
 
     def setUp(self):
         """Set up a DisruptionPredictor instance for testing"""
         
-        # Load a config file for a simple DSM model
-        experiment_config = load_experiment_config("synthetic", "synthetic100", 'dsm', 'sthr', 'auroc', 0.02)
+        # Load a config file for a simple RF model
+        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'rf', 'sthr', 'auroc', 0.02)
 
         # Get some important information about the model
         trained_required_warning_time = experiment_config["required_warning_time"]
@@ -69,8 +69,8 @@ class TestDisruptionPredictorSM(unittest.TestCase):
 
     def setUp(self):
 
-        # Load a config file for a simple DSM model
-        experiment_config = load_experiment_config("synthetic", "synthetic100", 'dsm', 'sthr', 'auroc', 0.02)
+        # Load a config file for a simple RF model
+        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'rf', 'sthr', 'auroc', 0.02)
 
         # Get some important information about the model
         trained_required_warning_time = experiment_config["required_warning_time"]
@@ -83,7 +83,7 @@ class TestDisruptionPredictorSM(unittest.TestCase):
         self.predictor = DisruptionPredictorSM("Test Predictor", self.model, trained_required_warning_time, trained_horizon)
 
         # Load some test data
-        self.test_data = load_dataset("synthetic", "synthetic100", "val")
+        self.test_data = load_dataset(TEST_DEVICE, TEST_DATASET_PATH, "val")
 
     def test_get_correct_instance(self):
         """Ensure that the correct class instance is returned"""
