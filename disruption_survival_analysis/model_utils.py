@@ -121,7 +121,6 @@ def train_survival_model(model:SurvivalModel, device, dataset_path):
 
     model.fit(x_train, y_train)
 
-
 def train_recurrent_model(model_string, x_tr, t_tr, e_tr, x_val, t_val, e_val):
     """
     Train and tune a recurrent model from auton-survival package
@@ -148,7 +147,7 @@ def train_random_forest_model(model:RandomForestClassifier, device, dataset_path
 # Methods to be used by experiment utils
 def get_model_for_experiment(config, experiment_type):
     """
-    Get the model to be used for the experiment
+    Get the model to be used for the experiment.
 
     Parameters
     ----------
@@ -166,50 +165,37 @@ def get_model_for_experiment(config, experiment_type):
         The model to be used for the experiment
     """
 
-    model_type = config['model_type']
-
     device = config['device']
     dataset_path = config['dataset_path']
+    model_type = config['model_type']
+    hyperparameters = config['hyperparameters']
 
-    # Get the model to be used
-    if experiment_type == 'val':
-        # There must first be a model to validate
-        model = make_model(config)
+    model_name = name_model(config)
 
-        # Fit the model to the training data
-        if isinstance(model, RandomForestClassifier):
-            class_time = hyperparameters['class_time']
-            train_random_forest_model(model, device, dataset_path, class_time)
-        elif isinstance(model, SurvivalModel):
-            train_survival_model(model, device, dataset_path)
-        else:
-            raise ValueError(f"Invalid model type: {model_type}")
-
-    elif experiment_type == 'test':
-        # There must first be a model to test
-
-        # Attempt to load the model by name
-        model_name = name_model(config)
+    if experiment_type == 'test':
         try:
             model = load_model(model_name, device, dataset_path)
+            return model
         except FileNotFoundError:
-            # If the model is not found, make it
-            model = make_model(config)
-
-            # Fit the model to the training data
-            if isinstance(model, RandomForestClassifier):
-                class_time = config['hyperparameters']['class_time']
-                train_random_forest_model(model, device, dataset_path, class_time)
-            elif isinstance(model, SurvivalModel):
-                train_survival_model(model, device, dataset_path)
-            else:
-                raise ValueError(f"Invalid model type: {model_type}")
-            
-            # Save the model
-            save_model(model, model_name, device, dataset_path)
-    else:    
-        raise ValueError(f"Invalid experiment type: {experiment_type}")
+            # If the model does not exist, it must be trained
+            pass
     
+    # Make and train model
+    model = make_model(config)
+
+    # Fit the model to the training data
+    if isinstance(model, RandomForestClassifier):
+        class_time = hyperparameters['class_time']
+        train_random_forest_model(model, device, dataset_path, class_time)
+    elif isinstance(model, SurvivalModel):
+        train_survival_model(model, device, dataset_path)
+    else:
+        raise ValueError(f"Invalid model type: {model_type}")
+    
+    # Save the model for testing future use
+    if experiment_type == 'test':
+        save_model(model, model_name, device, dataset_path)
+
     return model
 
 
