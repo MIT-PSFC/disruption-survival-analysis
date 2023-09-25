@@ -4,15 +4,11 @@ import unittest
 
 import numpy as np
 
+from test_manage_datasets import TEST_DEVICE, TEST_DATASET_PATH
+
 from disruption_survival_analysis.Experiments import Experiment
 from disruption_survival_analysis.experiment_utils import load_experiment_config
 from disruption_survival_analysis.manage_datasets import load_disruptive_shot_list
-from disruption_survival_analysis.experiment_utils import SIMPLE_THRESHOLDS
-
-#from disruption_survival_analysis.model_utils import load_model
-
-TEST_DEVICE = 'synthetic'
-TEST_DATASET_PATH = 'synthetic120'
 
 class TestSimpleFunctions(unittest.TestCase):
 
@@ -20,8 +16,8 @@ class TestSimpleFunctions(unittest.TestCase):
         """Set up the test case
         """
 
-        # Load the config for a simple DSM experiment
-        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'dsm', 'sthr', 'auroc', 0.02)
+        # Load the config for a simple RF experiment
+        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'rf', 'sthr', 'auroc', 0.02)
         self.experiment = Experiment(experiment_config, 'test')
         
     def test_get_num_disrupt(self):
@@ -61,8 +57,8 @@ class TestSimpleFunctions(unittest.TestCase):
 class TestTrueAlarmRates(unittest.TestCase):
 
     def setUp(self):
-        # Load simple DSM experiment
-        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'dsm', 'sthr', 'auroc', 0.02)
+        # Load simple RF experiment
+        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'rf', 'sthr', 'auroc', 0.02)
         self.experiment = Experiment(experiment_config, 'test')
 
     def test_true_alarm_rates_constant_values(self):
@@ -103,8 +99,8 @@ class TestFalseAlarmRates(unittest.TestCase):
 
     def setUp(self):
 
-        # Load simple DSM experiment
-        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'dsm', 'sthr', 'auroc', 0.02)
+        # Load simple RF experiment
+        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'rf', 'sthr', 'auroc', 0.02)
         self.experiment = Experiment(experiment_config, 'test')
     
     def test_false_alarm_rates_constant_values(self):
@@ -191,9 +187,8 @@ class TestCriticalMetric(unittest.TestCase):
         """Set up the test case
         """
 
-        # Load simple DSM experiment
-        #experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'dsm', 'sthr', 'auroc', 0.02)
-        experiment_config = load_experiment_config('cmod', 'no_ufo_flattop_7736_shots_6%_disruptive', 'rf', 'sthr', 'auwtc', 0.02)
+        # Load simple RF experiment
+        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'rf', 'sthr', 'auroc', 0.02)
         self.experiment = Experiment(experiment_config, 'test')
 
     def test_get_metric(self):
@@ -234,8 +229,8 @@ class TestWarningTimesList(unittest.TestCase):
         """Set up the test case
         """
 
-        # Load simple DSM experiment
-        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'dsm', 'sthr', 'auroc', 0.02)
+        # Load simple RF experiment
+        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'rf', 'sthr', 'auroc', 0.02)
         self.experiment = Experiment(experiment_config, 'test')
 
     def test_no_negative_warning_times(self):

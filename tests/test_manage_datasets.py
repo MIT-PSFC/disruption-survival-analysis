@@ -7,7 +7,7 @@ import numpy as np
 from disruption_survival_analysis.manage_datasets import make_training_sets, make_stacked_sets, load_dataset, load_shot_list, load_features_labels, load_features_outcomes, load_disruptive_shot_list, load_non_disruptive_shot_list, load_feature_list, DROPPED_FEATURES
 
 TEST_DEVICE = 'synthetic'
-TEST_DATASET_PATH = 'synthetic100'
+TEST_DATASET_PATH = '180_shots_10%_disruptive'
 
 class TestCreatedTrainingSets(unittest.TestCase):
     """Tests for the function make_training_sets()"""
@@ -261,7 +261,7 @@ class TestLoadFeaturesOutcomes(unittest.TestCase):
     def test_no_non_features(self):
         """Ensure that time, shot, and time_until_disrupt are not in the features"""
 
-        features, _ = load_features_outcomes("synthetic", "synthetic100", "train")
+        features, _ = load_features_outcomes(TEST_DEVICE, TEST_DATASET_PATH, "train")
 
         self.assertTrue('time' not in features.columns)
         self.assertTrue('shot' not in features.columns)
@@ -290,7 +290,7 @@ class TestLoadFeaturesLabels(unittest.TestCase):
     def test_no_non_features(self):
         """Ensure that time, shot, and time_until_disrupt are not in the features"""
 
-        features, _ = load_features_labels("synthetic", "synthetic100", "train", 5)
+        features, _ = load_features_labels(TEST_DEVICE, TEST_DATASET_PATH, "train", 5)
 
         self.assertTrue('time' not in features.columns)
         self.assertTrue('shot' not in features.columns)
@@ -311,7 +311,7 @@ class TestLoadFeatureList(unittest.TestCase):
         """Ensure that all features are covered by the feature list
         """
 
-        feature_list = load_feature_list("synthetic", "synthetic100")
+        feature_list = load_feature_list(TEST_DEVICE, TEST_DATASET_PATH)
 
         # Ensure that all features are covered
         for feature in ['ip', 'n_e', 'aminor', 'kappa', 'squareness', 'delta', 'li', 'Wmhd']:
