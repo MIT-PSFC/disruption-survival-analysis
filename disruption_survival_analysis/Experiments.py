@@ -71,24 +71,24 @@ class Experiment:
         # Set the thresholds for usage in tpr/fpr calculations
         if self.alarm_type == 'sthr':
             # Simple Threshold
-            #self.thresholds = SIMPLE_THRESHOLDSF
             self.thresholds = SIMPLE_THRESHOLDS
         elif self.alarm_type == 'athr':
-            # Uses all thresholds
+            # Uses all unique values of risk for all shots in the dataset at a given horizon
+            # This is calculated in the get_all_thresholds method when the metric is being evaluated, since it depends on the horizon
             self.thresholds = None
         elif self.alarm_type == 'hyst':
             # Hysteresis
             # Make list of tuples of (min, max, time) for hysteresis
-            # where max goes from 0.1 to 1 and min goes from 0 to max
+            # where max goes from 0.1 to 1 and min is set at 0.15
             # and trigger time goes from 0 to 80 ms
+            min_threshold = 0.15
             self.thresholds = []
-            for max in np.linspace(0.1, 1, 9):
-                for min in np.linspace(0, max, 4):
-                    for time in np.linspace(0, 0.08, 4):
-                        self.thresholds.append((min, max, time))
+            for max in np.linspace(min_threshold, 1, 10):
+                for time in np.linspace(0, 0.05, 10):
+                    self.thresholds.append((min_threshold, max, time))
         elif self.alarm_type == 'ettd':
             # Expected time to disruption
-            self.thresholds = [0.1, 0.02] # Expected time to disruption thresholds in seconds
+            self.thresholds = [0.1, 0.05, 0.02] # Expected time to disruption thresholds in seconds
         else:
             raise ValueError('Invalid alarm_type: ' + self.alarm_type)
 
@@ -177,7 +177,8 @@ class Experiment:
             shot_durations.append(self.get_shot_duration(shot))
         return np.array(shot_durations)
 
-    def set_all_thresholds(self, horizon):
+    def get_all_thresholds(self, horizon):
+        """ Gets all unique values of risk for all shots in the dataset at a given horizon """
         
         shot_list = self.get_shot_list()
 
@@ -194,7 +195,7 @@ class Experiment:
         # Sort the unique risk values
         unique_risk_values = np.sort(unique_risk_values)
 
-        self.thresholds = unique_risk_values
+        return unique_risk_values
 
     # Get info from the predictor
 
@@ -344,7 +345,9 @@ class Experiment:
         # Get list of all shots
         shot_list = self.get_shot_list()
 
-        #self.set_all_thresholds(horizon)
+        # If using 'athr' alarm, get all unique floats for thresholds
+        if self.alarm_type == 'athr':
+            self.thresholds = self.get_all_thresholds(horizon)
 
         # Create array to store the results
         # Array is of shape (num_shots, num_thresholds)
@@ -425,14 +428,14 @@ class Experiment:
         shot_list = self.get_shot_list()
         # Get list of disruptive shots
         disruptive_shots = self.get_disruptive_shot_list()
-        # Create arrays to store the results
-        # Array is of shape (num_shots, num_thresholds)
-        #self.set_all_thresholds(horizon)
-        true_alarms = np.zeros((len(shot_list), len(self.thresholds)))
-        false_alarms = np.zeros((len(shot_list), len(self.thresholds)))
 
         # Get the alarm times given by the model
         alarm_times = self.get_alarm_times(horizon)
+
+        # Create arrays to store the results
+        # Array is of shape (num_shots, num_thresholds)
+        true_alarms = np.zeros((len(shot_list), len(self.thresholds)))
+        false_alarms = np.zeros((len(shot_list), len(self.thresholds)))
 
         # Iterate through shots
         for i, shot in enumerate(shot_list):
