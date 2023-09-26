@@ -428,7 +428,6 @@ def unique_domain_mapping(domain_values, range_values, method='average'):
 
     # Go through each domain value and find the unique values which correspond to it
     for unique_value in unique_values:
-        
         grouped_range_values = []
         for i, _ in enumerate(domain_values):
             if domain_values[i] == unique_value:
@@ -437,18 +436,24 @@ def unique_domain_mapping(domain_values, range_values, method='average'):
                     grouped_range_values.extend(range_values[i])
                 except:
                     grouped_range_values.append(range_values[i])
-        # Average the warning times
-        if method == 'average':
-            typical_range_value = np.mean(grouped_range_values)
-            spread_range_value = np.std(grouped_range_values)
-        elif method == 'median':
-            typical_range_value = np.median(grouped_range_values)
-            if len(grouped_range_values) is not 0:
+        
+        # Find the typical value and spread value for the grouped range values
+        if len(grouped_range_values) != 0:
+            if method == 'average':
+                typical_range_value = np.mean(grouped_range_values)
+                spread_range_value = np.std(grouped_range_values)
+            elif method == 'median':
+                typical_range_value = np.median(grouped_range_values)
                 spread_range_value = (np.percentile(grouped_range_values, 75) - np.percentile(grouped_range_values, 25))/2
             else:
-                spread_range_value = np.nan
+                raise ValueError("Invalid method")
         else:
-            raise ValueError("Invalid method")
+            # If the grouped values are empty, set the average and standard deviation to nan
+            # This happens when the 'range' values are all empty lists for a given domain value
+            # For example, when there are no alarms triggered for a given threshold, the warning times will be empty
+            typical_range_value = np.nan
+            spread_range_value = np.nan
+        
         # If the grouped values are empty, set the average and standard deviation to 0
         if np.isnan(typical_range_value):
             typical_range_value = 0
