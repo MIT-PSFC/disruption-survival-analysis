@@ -1,3 +1,4 @@
+import os
 import yaml
 
 # Dictionary for all the various hyperparameters which can be swept over
@@ -130,26 +131,8 @@ model_hyperparameters = {
            "n_estimators"],
 }
 
-# Datasets to use
-devices = ["synthetic"]
-dataset_paths = ["test"]
-
-# List of models to include in this sweep
-# cph, dcph, dcm, dsm, rf, km
-model_types = ["dsm", "rf"]
-
-# List of alarm types to use
-# sthr, hyst, ettd, ethy
-alarm_types = ["sthr"]
-
-# List of validation metrics to use
-# auroc, auwtc, maxf1, etint
-metrics = ["auroc"]
-
-# List of required warning times to train on (in seconds)
-required_warning_times = [0.02]
-
 def make_sweep_config(device, dataset_path, model_type, alarm_type, metric, required_warning_time):
+    # Make a dictionary for the sweep configuration
     sweep_config = {}
 
     sweep_config["device"] = device
@@ -178,15 +161,9 @@ def write_sweep_config(sweep_config):
 
     sweep_config_name = f"{model_type}_{alarm_type}_{metric}_{int(required_warning_time*1000)}ms_sweep"
 
+    # Make directory if it doesn't already exist
+    if not os.path.exists(f"models/{device}/{dataset_path}"):
+        os.makedirs(f"models/{device}/{dataset_path}")
+
     with open(f"models/{device}/{dataset_path}/{sweep_config_name}.yaml", "w") as f:
         yaml.dump(sweep_config, f)
-
-for device in devices:
-    for dataset_path in dataset_paths:
-        for model_type in model_types:
-            for alarm_type in alarm_types:
-                for metric in metrics:
-                    for required_warning_time in required_warning_times:
-                        sweep_config = make_sweep_config(device, dataset_path, model_type, alarm_type, metric, required_warning_time)
-                        write_sweep_config(sweep_config)
-
