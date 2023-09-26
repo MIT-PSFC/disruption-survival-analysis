@@ -2,6 +2,7 @@
 
 import numpy as np
 import optuna
+import yaml
 
 from sklearn.ensemble import RandomForestClassifier
 from auton_survival.estimators import SurvivalModel
@@ -465,7 +466,8 @@ def unique_domain_mapping(domain_values, range_values, method='average'):
 
 def load_experiment_config(device, dataset, model_type, alarm_type, metric, required_warning_time):
     """
-    Load an experiment config dictionary from a study database file
+    Load an experiment config dictionary.
+    Either from a yaml file (first attempt) or from a study database (second attempt)
     Expects file to be one directory up from the current directory, in the 'models' folder
 
     Parameters
@@ -485,24 +487,40 @@ def load_experiment_config(device, dataset, model_type, alarm_type, metric, requ
     
     """
     print("---")
-    print("Attempting to load hyperparameters from study database")
-    file_name = f"{model_type}_{alarm_type}_{metric}_{int(required_warning_time*1000)}ms_study.db"
+    print("Attempting to load hyperparameters from yaml file...")
+    yaml_file_name = f"{model_type}_{alarm_type}_{metric}_{int(required_warning_time*1000)}ms.yaml"
     try:
-        # Get the path to the database file
-        full_path = f"models/{device}/{dataset}/{file_name}"
-
-        # Get the best trial from the study (expects there to be only one study in the database)
-        study = optuna.load_study(study_name=None, storage=f"sqlite:///{full_path}")
-
-        hyperparameters = study.best_trial.params
-
-        print(f"Loaded hyperparameters for {device}/{dataset}/{file_name}")
-        print(f"Best validation metric is {study.best_trial.value} from trial {study.best_trial.number}")
+        with open(f"models/{device}/{dataset}/{yaml_file_name}", "r") as f:
+            hyperparameters = yaml.load(f, Loader=yaml.FullLoader)['hyperparameters']
+        print(f"Loaded hyperparameters for {device}/{dataset}/{yaml_file_name}")
         print("---")
     except:
-        print(f"Could not load hyperparameters for {device}/{dataset}/{file_name}")
-        print("---")
-        hyperparameters = None
+        print("YAML not found. Attempting to load hyperparameters from study database...")
+        db_file_name = f"{model_type}_{alarm_type}_{metric}_{int(required_warning_time*1000)}ms_study.db"
+        try:
+            # Get the path to the database file
+            full_path = f"models/{device}/{dataset}/{db_file_name}"
+            
+            # Check if the database file exists
+            with open(full_path, "r") as f:
+                pass
+
+            # Get the best trial from the study (expects there to be only one study in the database)
+            study = optuna.load_study(study_name=None, storage=f"sqlite:///{full_path}")
+
+            hyperparameters = study.best_trial.params
+
+            # Save the hyperparameters to a yaml file
+            with open(f"models/{device}/{dataset}/{yaml_file_name}", "w") as f:
+                yaml.dump({'hyperparameters': hyperparameters}, f)
+
+            print(f"Loaded hyperparameters for {device}/{dataset}/{db_file_name}")
+            print(f"Best validation metric is {study.best_trial.value} from trial {study.best_trial.number}")
+            print("---")
+        except:
+            print(f"Could not load hyperparameters for {device}/{dataset}/{db_file_name}")
+            print("---")
+            hyperparameters = None
 
     # Make the experiment config dictionary
     config = {}

@@ -1,6 +1,9 @@
 import os
 import yaml
 
+from disruption_survival_analysis.Experiments import Experiment
+from disruption_survival_analysis.experiment_utils import load_experiment_config
+
 # Dictionary for all the various hyperparameters which can be swept over
 hyperparameter_ranges = {
     "batch_size": { # Default: 128
@@ -167,3 +170,61 @@ def write_sweep_config(sweep_config):
 
     with open(f"models/{device}/{dataset_path}/{sweep_config_name}.yaml", "w") as f:
         yaml.dump(sweep_config, f)
+
+
+def create_experiment_groups(device, dataset_path, models, alarms, metrics, min_warning_times):
+    # Create groups of experiments
+    # This is used for setting up dictionaries of experiments to plot
+    # For example, compare all the experiments using the same minimum warning time against eachother
+    experiment_groups = {}
+    for model in models:
+        for alarm in alarms:
+            for metric in metrics:
+                for min_warning_time in min_warning_times:
+                    # Load config for experiment 
+                    config = load_experiment_config(device, dataset_path, model, alarm, metric, min_warning_time)
+                    # Create test experiment from config
+                    experiment = Experiment(config, 'test')
+                    
+                    try:
+                        if experiment_groups[model] is None:
+                            experiment_groups[model] = []
+                    except KeyError:
+                        experiment_groups[model] = []
+                    experiment_groups[model].append(experiment)
+
+                    try:
+                        if experiment_groups[alarm] is None:
+                            experiment_groups[alarm] = []
+                    except KeyError:
+                        experiment_groups[alarm] = []
+                    experiment_groups[alarm].append(experiment)
+
+                    try:
+                        if experiment_groups[metric] is None:
+                            experiment_groups[metric] = []
+                    except KeyError:
+                        experiment_groups[metric] = []
+                    experiment_groups[metric].append(experiment)
+
+                    try:
+                        if experiment_groups[min_warning_time] is None:
+                            experiment_groups[min_warning_time] = []
+                    except KeyError:
+                        experiment_groups[min_warning_time] = []
+                    experiment_groups[min_warning_time].append(experiment)
+
+    return experiment_groups
+
+def get_experiments(experiment_groups, keys1, keys2=None):
+    """Get list of experiments that match all keys"""
+    experiment_list = []
+    for experiment in experiment_groups[keys1[0]]:
+        if all([experiment in experiment_groups[key] for key in keys1]):
+            experiment_list.append(experiment)
+    if keys2 is not None:
+        for experiment in experiment_groups[keys2[0]]:
+            if all([experiment in experiment_groups[key] for key in keys2]):
+                experiment_list.append(experiment)
+    
+    return experiment_list
