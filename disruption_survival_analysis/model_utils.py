@@ -198,7 +198,6 @@ def get_model_for_experiment(config, experiment_type):
 
     return model
 
-
 # Methods for saving and loading models
 
 def name_model(config):
@@ -235,3 +234,4 @@ def load_model(model_name, device, dataset_path):
         model = dill.load(f)
     print('Loaded model from ' + model_file)
     return model
+
