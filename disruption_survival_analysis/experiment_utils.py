@@ -334,8 +334,8 @@ def area_under_curve(x_vals, y_vals, x_cutoff=None):
         x_vals = np.append(x_vals, x_cutoff)
         y_vals = np.append(y_vals, y_cutoff)
 
-        y_vals = y_vals[x_vals < x_cutoff]
-        x_vals = x_vals[x_vals < x_cutoff]
+        y_vals = y_vals[x_vals <= x_cutoff]
+        x_vals = x_vals[x_vals <= x_cutoff]
         
 
     # Sort the values by x
@@ -448,17 +448,12 @@ def unique_domain_mapping(domain_values, range_values, method='average'):
             else:
                 raise ValueError("Invalid method")
         else:
-            # If the grouped values are empty, set the average and standard deviation to nan
+            # If the grouped values are empty, set the average and standard deviation to 0
             # This happens when the 'range' values are all empty lists for a given domain value
             # For example, when there are no alarms triggered for a given threshold, the warning times will be empty
-            typical_range_value = np.nan
-            spread_range_value = np.nan
-        
-        # If the grouped values are empty, set the average and standard deviation to 0
-        if np.isnan(typical_range_value):
             typical_range_value = 0
-        if np.isnan(spread_range_value):
             spread_range_value = 0
+
         # Append to list
         typical_range_values.append(typical_range_value)
         spread_range_values.append(spread_range_value)
