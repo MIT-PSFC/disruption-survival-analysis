@@ -92,7 +92,7 @@ def calculate_alarm_times(risk_at_time, thresholds):
         Should be transformed by the predictor's transformer
     thresholds : list of float
         The thresholds to use for determining if a disruption is imminent
-        Expects a list of floats between 0 and 1, sorted from lowest to highest
+        Expects a list of unique floats between 0 and 1, sorted from lowest to highest
         Disruption is predicted when the risk exceeds a threshold
 
     Returns
