@@ -462,8 +462,8 @@ class Experiment:
 
         true_alarms, false_alarms = self.get_true_false_alarms(horizon, required_warning_time)
 
-        true_alarm_rates = np.sum(true_alarms, axis=0) / self.get_num_disruptive_shots()
-        false_alarm_rates = np.sum(false_alarms, axis=0) / (self.get_num_shots() - self.get_num_disruptive_shots())
+        true_alarm_rates = np.sum(true_alarms, axis=0) / self.get_num_disruptive_shots() 
+        false_alarm_rates = np.sum(false_alarms, axis=0) / self.get_num_non_disruptive_shots()
 
         return true_alarm_rates, false_alarm_rates
 
@@ -480,11 +480,19 @@ class Experiment:
         true_alarms, false_alarms = self.get_true_false_alarms(horizon, required_warning_time)
 
         missed_alarm_rates = 1 - np.sum(true_alarms, axis=0) / self.get_num_disruptive_shots()
-        false_alarm_rates = np.sum(false_alarms, axis=0) / (self.get_num_shots() - self.get_num_disruptive_shots())
+        false_alarm_rates = np.sum(false_alarms, axis=0) / self.get_num_non_disruptive_shots()
 
         unique_false_alarms, avg_missed_alarm_rates, std_missed_alarm_rates = unique_domain_mapping(false_alarm_rates, missed_alarm_rates)
 
         return unique_false_alarms, avg_missed_alarm_rates
+    
+    def false_alarm_rate_vs_threshold(self, required_warning_time=None, horizon=None, method='average'):
+
+        _, false_alarm_rates = self.true_false_alarm_rates(horizon, required_warning_time)
+
+        unique_thresholds, typical_warning_times, spread_warning_times = unique_domain_mapping(self.thresholds, false_alarm_rates, method=method)
+
+        return unique_thresholds, typical_warning_times, spread_warning_times
 
     # Warning Times Methods
 
@@ -539,14 +547,6 @@ class Experiment:
             warning_times_threshold_list.append(warning_times_threshold)
 
         return warning_times_threshold_list
-
-    def false_positive_rate_vs_threshold(self, required_warning_time=None, horizon=None, method='average'):
-
-        _, false_alarm_rates = self.true_false_alarm_rates(horizon, required_warning_time)
-
-        unique_thresholds, typical_warning_times, spread_warning_times = unique_domain_mapping(self.thresholds, false_alarm_rates, method=method)
-
-        return unique_thresholds, typical_warning_times, spread_warning_times
 
     def warning_time_vs_threshold(self, horizon=None, method='average'):
         """ Get statistics on warning time vs threshold for a given horizon 
@@ -679,6 +679,7 @@ class Experiment:
     def get_critical_metric(self, horizon, required_warning_time):
         """ Get the critical metric for the experiment
         This metric is the average warning time (y-axis, range) vs false positive rate (x-axis, domain)
+        Only applicable to simple threshold alarms
         
         Parameters
         ----------
@@ -692,6 +693,9 @@ class Experiment:
         unique_false_alarm_rates, avg_warning_times, std_warning_times : np.array, np.array, np.array
             The unique false alarm rates, average warning times, and standard deviation of warning times
         """
+
+        if self.alarm_type not in ['sthr', 'athr']:
+            raise ValueError('Critical metric only defined for simple threshold alarms (sthr, athr)')
 
         # 0. Set up the predictions and outcomes to calculate the metric
 
@@ -748,7 +752,7 @@ class Experiment:
 
         # NOW: Find the false positive rate and average warning times
 
-        unique_false_alarm_rates, avg_warning_times, std_warning_times = compute_critical_metric(predictions, true_outcomes, required_warning_time, SIMPLE_THRESHOLDS)
+        unique_false_alarm_rates, avg_warning_times, std_warning_times = compute_critical_metric(predictions, true_outcomes, required_warning_time, self.thresholds)
 
         # 4. Return the false alarm rates and average warning times
         return unique_false_alarm_rates, avg_warning_times, std_warning_times
