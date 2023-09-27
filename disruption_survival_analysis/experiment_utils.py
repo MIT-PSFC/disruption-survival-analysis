@@ -431,7 +431,9 @@ def unique_domain_mapping(domain_values, range_values, method='average'):
     for unique_value in unique_values:
         grouped_range_values = []
         for i, _ in enumerate(domain_values):
-            if domain_values[i] == unique_value:
+            # Determine if the domain value matches the unique value
+            match = np.array_equal(domain_values[i], unique_value)
+            if match:
                 # Add to grouped range values depending on if items are list or not
                 try:
                     grouped_range_values.extend(range_values[i])
