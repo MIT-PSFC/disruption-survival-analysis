@@ -1,0 +1,37 @@
+alarm_type: sthr
+dataset_path: test
+device: synthetic
+hyperparameters:
+  class_time:
+    distribution: float
+    log: false
+    max: 0.4
+    min: 0.001
+  criterion:
+    distribution: categorical
+    values:
+    - gini
+    - entropy
+    - log_loss
+  max_features:
+    distribution: categorical
+    values:
+    - sqrt
+    - log2
+  min_samples_leaf:
+    distribution: float
+    log: false
+    max: 0.9
+    min: 0.0001
+  min_samples_split:
+    distribution: float
+    log: false
+    max: 0.9
+    min: 0.0001
+  n_estimators:
+    distribution: int
+    max: 200
+    min: 50
+metric: auroc
+model_type: rf
+required_warning_time: 0.02

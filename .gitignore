@@ -179,6 +179,7 @@ data/d3d
 *test.csv
 *train.csv
 *val.csv
+*first_filter.csv
 
 # Locally trained model pickles
 *.pkl
@@ -191,3 +192,20 @@ wandb
 
 # SLURM output files
 *.out
+
+# Hyperparameter databases
+*.db
+*.db-journal
+
+# Keep files required for tests to run on first install
+!data/synthetic/test/description.txt
+!data/synthetic/test/raw.csv
+!data/synthetic/test/train.csv
+!data/synthetic/test/val.csv
+!data/synthetic/test/test.csv
+!data/synthetic/test/small.csv
+
+!models/synthetic/test/rf_sthr_auroc_20ms_sweep.yaml
+!models/synthetic/test/rf_sthr_auroc_20ms.yaml
+!models/synthetic/test/dsm_sthr_auroc_20ms_sweep.yaml
+!models/synthetic/test/dsm_sthr_auroc_20ms.yaml

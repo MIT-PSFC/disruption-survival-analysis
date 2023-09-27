@@ -1,6 +1,7 @@
 # Functions used by experiments but not actually part of the experiments
 
 import numpy as np
+import optuna
 import yaml
 
 from sklearn.ensemble import RandomForestClassifier
@@ -8,8 +9,8 @@ from auton_survival.estimators import SurvivalModel
 from auton_survival.metrics import survival_regression_metric
 from disruption_survival_analysis.manage_datasets import load_features_outcomes
 
-SIMPLE_THRESHOLDS = np.linspace(0.00, 0.99, 100)
-
+# Set of simple thresholds to use for calculating alarm times
+SIMPLE_THRESHOLDS = np.linspace(0, 1, 100)
 
 # Labeling data
 
@@ -91,7 +92,7 @@ def calculate_alarm_times(risk_at_time, thresholds):
         Should be transformed by the predictor's transformer
     thresholds : list of float
         The thresholds to use for determining if a disruption is imminent
-        Expects a list of floats between 0 and 1, sorted from lowest to highest
+        Expects a list of unique floats between 0 and 1, sorted from lowest to highest
         Disruption is predicted when the risk exceeds a threshold
 
     Returns
@@ -163,8 +164,8 @@ def calculate_alarm_times_hysteresis(risk_at_time, thresholds):
     # Make array of alarm times the same length as thresholds, starting with all None
     alarm_times = [None] * len(thresholds)
 
-    # Make array of saved times the same length as thresholds
-    saved_times = np.zeros(len(thresholds))
+    # Make array of saved times the same length as thresholds, starting with all None
+    saved_times = [None] * len(thresholds)
 
     # Go through the shot data
     for i in range(len(risk_at_time)):
@@ -179,17 +180,18 @@ def calculate_alarm_times_hysteresis(risk_at_time, thresholds):
                 continue
 
             # If the risk is above the upper threshold and we don't already have a time saved, save the time
-            if risk > thresholds[j][1] and saved_times[j] == 0:
+            if risk > thresholds[j][1] and saved_times[j] is None:
                 saved_times[j] = time
 
             # If the risk is below the lower threshold, reset the saved time
             elif risk < thresholds[j][0]:
-                saved_times[j] = 0
+                saved_times[j] = None
 
-            # Check if enough time has elapsed to predict a disruption
-            if time - saved_times[j] > thresholds[j][2]:
-                # Save alarm time
-                alarm_times[j] = time
+            if saved_times[j] is not None:
+                # Check if enough time has elapsed to predict a disruption
+                if time - saved_times[j] >= thresholds[j][2]:
+                    # Save alarm time
+                    alarm_times[j] = time
 
     return alarm_times
 
@@ -305,8 +307,36 @@ def area_under_curve(x_vals, y_vals, x_cutoff=None):
 
     # Limit the false alarm rate to be less than the x cutoff
     if x_cutoff is not None:
-        y_vals = y_vals[x_vals < x_cutoff]
-        x_vals = x_vals[x_vals < x_cutoff]
+        # First, find the index of the values that are directly above and below the cutoff
+        # This is done by finding the index of the first value that is above the cutoff
+        # and then subtracting 1
+
+        upper_index = None
+        # Find the index of the first value that is above the cutoff
+        for i, x_val in enumerate(x_vals):
+            if x_val > x_cutoff:
+                upper_index = i
+                break
+        # If the index is 0, then all the values are above the cutoff
+        # In this case, return 0
+        if upper_index is None or upper_index == 0:
+            return 0
+        # Otherwise, subtract 1 to get the index of the value directly below the cutoff
+        else:
+            lower_index = upper_index - 1
+
+        # Now, interpolate the y values between the two indices
+        # First, calculate the slope
+        slope = (y_vals[upper_index] - y_vals[lower_index])/(x_vals[upper_index] - x_vals[lower_index])
+        # Then, calculate the y value at the cutoff
+        y_cutoff = slope*(x_cutoff - x_vals[lower_index]) + y_vals[lower_index]
+
+        # Add the cutoff values to the x and y values
+        x_vals = np.append(x_vals, x_cutoff)
+        y_vals = np.append(y_vals, y_cutoff)
+
+        y_vals = y_vals[x_vals <= x_cutoff]
+        x_vals = x_vals[x_vals <= x_cutoff]
         
 
     # Sort the values by x
@@ -356,7 +386,7 @@ def expected_time_to_disruption_integral():
 
 # Other functions
 
-def unique_domain_mapping(domain_values, range_values):
+def unique_domain_mapping(domain_values, range_values, method='average'):
     """
     Maps a range of values to a domain of values, where the domain values are unique
     For example, The way this is calculated, the warning times and true alarm rates and false alarm rates are all given by particular thresholds
@@ -371,16 +401,20 @@ def unique_domain_mapping(domain_values, range_values):
         The values of the domain. Not necessarily unique at this point.
     range_values : numpy.ndarray
         The values of the range. Must be the same length as unique_values.
+    method : str
+        The method to use to combine the range values. 
+        Choices are 'average' and 'median', default is 'average'
+        If average, gives a standard deviation
+        If median, gives the interquartile range
 
     Returns
     -------
     unique_values : list
         The unique values in the range, sorted.
-    avg_range_values : list
-        The average range value for each unique value
-    std_range_values : list
-        The standard deviation of the range values for each unique value
-    
+    typical_range_values : list
+        The measure of central tendency for each unique value (either the average or median)
+    spread_range_values : list
+        The measure of distribution variability of the range values for each unique value (either standard deviation or interquartile range)
     """
 
     # Actually trim down to the unique values
@@ -389,13 +423,12 @@ def unique_domain_mapping(domain_values, range_values):
     except:
         unique_values = np.unique(domain_values)
 
-    # Initialize the average and standard deviation arrays
-    avg_range_values = []
-    std_range_values = []
+    # Initialize the typical value and spread arrays
+    typical_range_values = []
+    spread_range_values = []
 
-    # Go through each unique value and find the clumping values which correspond to it
+    # Go through each domain value and find the unique values which correspond to it
     for unique_value in unique_values:
-        
         grouped_range_values = []
         for i, _ in enumerate(domain_values):
             if domain_values[i] == unique_value:
@@ -404,15 +437,38 @@ def unique_domain_mapping(domain_values, range_values):
                     grouped_range_values.extend(range_values[i])
                 except:
                     grouped_range_values.append(range_values[i])
-        # Average the warning times
-        avg_range_values.append(np.mean(grouped_range_values))
-        std_range_values.append(np.std(grouped_range_values))
+        
+        # Find the typical value and spread value for the grouped range values
+        if len(grouped_range_values) != 0:
+            if method == 'average':
+                typical_range_value = np.mean(grouped_range_values)
+                spread_range_value = np.std(grouped_range_values)
+            elif method == 'median':
+                typical_range_value = np.median(grouped_range_values)
+                spread_range_value = (np.percentile(grouped_range_values, 75) - np.percentile(grouped_range_values, 25))/2
+            else:
+                raise ValueError("Invalid method")
+        else:
+            # If the grouped values are empty, set the average and standard deviation to 0
+            # This happens when the 'range' values are all empty lists for a given domain value
+            # For example, when there are no alarms triggered for a given threshold, the warning times will be empty
+            typical_range_value = 0
+            spread_range_value = 0
 
-    return unique_values, avg_range_values, std_range_values
+        # Append to list
+        typical_range_values.append(typical_range_value)
+        spread_range_values.append(spread_range_value)
+
+    # Convert to numpy arrays
+    typical_range_values = np.array(typical_range_values)
+    spread_range_values = np.array(spread_range_values)
+
+    return unique_values, typical_range_values, spread_range_values
 
 def load_experiment_config(device, dataset, model_type, alarm_type, metric, required_warning_time):
     """
-    Load an experiment config dictionary from a config file
+    Load an experiment config dictionary.
+    Either from a yaml file (first attempt) or from a study database (second attempt)
     Expects file to be one directory up from the current directory, in the 'models' folder
 
     Parameters
@@ -431,19 +487,53 @@ def load_experiment_config(device, dataset, model_type, alarm_type, metric, requ
         The experiment config dictionary
     
     """
+    print("---")
+    print("Attempting to load hyperparameters from yaml file...")
+    yaml_file_name = f"{model_type}_{alarm_type}_{metric}_{int(required_warning_time*1000)}ms.yaml"
+    try:
+        with open(f"models/{device}/{dataset}/{yaml_file_name}", "r") as f:
+            hyperparameters = yaml.load(f, Loader=yaml.FullLoader)['hyperparameters']
+        print(f"Loaded hyperparameters for {device}/{dataset}/{yaml_file_name}")
+        print("---")
+    except:
+        print("YAML not found. Attempting to load hyperparameters from study database...")
+        db_file_name = f"{model_type}_{alarm_type}_{metric}_{int(required_warning_time*1000)}ms_study.db"
+        try:
+            # Get the path to the database file
+            full_path = f"models/{device}/{dataset}/{db_file_name}"
+            
+            # Check if the database file exists
+            with open(full_path, "r") as f:
+                pass
 
-    # Get the path to the config file
-    file_name = f"{model_type}_{alarm_type}_{metric}_{int(required_warning_time*1000)}ms.yaml"
+            # Get the best trial from the study (expects there to be only one study in the database)
+            study = optuna.load_study(study_name=None, storage=f"sqlite:///{full_path}")
 
-    full_path = f"models/{device}/{dataset}/{file_name}"
+            hyperparameters = study.best_trial.params
 
-    # Load yaml file into dictionary
-    with open(full_path) as file:
-        config = yaml.load(file, Loader=yaml.FullLoader)
+            # Save the hyperparameters to a yaml file
+            with open(f"models/{device}/{dataset}/{yaml_file_name}", "w") as f:
+                yaml.dump({'hyperparameters': hyperparameters}, f)
 
-    # For each item in the config, replace it with the value
-    for key in config:
-        if type(config[key]) == dict:
-            config[key] = config[key]['value']
+            print(f"Loaded hyperparameters for {device}/{dataset}/{db_file_name}")
+            print(f"Best validation metric is {study.best_trial.value} from trial {study.best_trial.number}")
+            print("---")
+        except:
+            print(f"Could not load hyperparameters for {device}/{dataset}/{db_file_name}")
+            print("---")
+            hyperparameters = None
+
+    # Make the experiment config dictionary
+    config = {}
+
+    config['device'] = device
+    config['dataset_path'] = dataset
+
+    config['model_type'] = model_type
+    config['alarm_type'] = alarm_type
+    config['metric'] = metric
+    config['required_warning_time'] = required_warning_time
+
+    config['hyperparameters'] = hyperparameters
 
     return config

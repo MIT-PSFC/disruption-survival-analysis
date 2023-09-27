@@ -11,7 +11,7 @@ from disruption_survival_analysis.model_utils import get_model_for_experiment, n
 from auton_survival.estimators import SurvivalModel # CPH, DCPH, DSM, DCM, RSF
 from sklearn.ensemble import RandomForestClassifier
 
-from disruption_survival_analysis.DisruptionPredictors import DisruptionPredictorSM, DisruptionPredictorRF
+from disruption_survival_analysis.DisruptionPredictors import DisruptionPredictorSM, DisruptionPredictorRF, DisruptionPredictorKM
 
 from disruption_survival_analysis.warning_times import compute_critical_metric
 
@@ -39,8 +39,8 @@ class Experiment:
         """
 
         # Get some info from the config
-        self.device = config['aa-device']
-        self.dataset_path = config['aa-dataset-path']
+        self.device = config['device']
+        self.dataset_path = config['dataset_path']
 
         # Set the type of experiment
         self.experiment_type = experiment_type
@@ -49,36 +49,46 @@ class Experiment:
 
         # Create the model and predictor for the experiment
         model = get_model_for_experiment(config, experiment_type)
-        required_warning_time = config['ab-required-warning-time']
+        required_warning_time = config['required_warning_time']
         self.name = name_model(config)
 
-        if isinstance(model, SurvivalModel):
-            self.predictor = DisruptionPredictorSM(self.name, model, required_warning_time, config['horizon'])
-        elif isinstance(model, RandomForestClassifier):
-            self.predictor = DisruptionPredictorRF(self.name, model, required_warning_time, config['class_time'])
+        model_type = config['model_type']
+
+        hyperparameters = config['hyperparameters']
+
+        if model_type in ['cph', 'dcph', 'dsm'] and isinstance(model, SurvivalModel):
+            self.predictor = DisruptionPredictorSM(self.name, model, required_warning_time, hyperparameters['horizon'])
+        elif model_type in ['rf'] and isinstance(model, RandomForestClassifier):
+            self.predictor = DisruptionPredictorRF(self.name, model, required_warning_time, hyperparameters['class_time'])
+        elif model_type in ['km'] and isinstance(model, RandomForestClassifier):
+            self.predictor = DisruptionPredictorKM(self.name, model, required_warning_time, hyperparameters['class_time'], hyperparameters['fit_time'])
         else:
             raise ValueError('Model type not recognized')
         
         # Get the alarm type from the config
-        self.alarm_type = config['ab-alarm-type']
+        self.alarm_type = config['alarm_type']
 
         # Set the thresholds for usage in tpr/fpr calculations
         if self.alarm_type == 'sthr':
             # Simple Threshold
             self.thresholds = SIMPLE_THRESHOLDS
+        elif self.alarm_type == 'athr':
+            # Uses all unique values of risk for all shots in the dataset at a given horizon
+            # This is calculated in the get_all_thresholds method when the metric is being evaluated, since it depends on the horizon
+            self.thresholds = None
         elif self.alarm_type == 'hyst':
             # Hysteresis
             # Make list of tuples of (min, max, time) for hysteresis
-            # where max goes from 0.1 to 1 and min goes from 0 to max
+            # where max goes from 0.1 to 1 and min is set at 0.15
             # and trigger time goes from 0 to 80 ms
+            min_threshold = 0.15
             self.thresholds = []
-            for max in np.linspace(0.1, 1, 9):
-                for min in np.linspace(0, max, 4):
-                    for time in np.linspace(0, 0.08, 4):
-                        self.thresholds.append((min, max, time))
+            for max in np.linspace(min_threshold, 1, 10):
+                for time in np.linspace(0, 0.05, 10):
+                    self.thresholds.append((min_threshold, max, time))
         elif self.alarm_type == 'ettd':
             # Expected time to disruption
-            self.thresholds = [0.1, 0.02] # Expected time to disruption thresholds in seconds
+            self.thresholds = [0.1, 0.05, 0.02] # Expected time to disruption thresholds in seconds
         else:
             raise ValueError('Invalid alarm_type: ' + self.alarm_type)
 
@@ -128,6 +138,15 @@ class Experiment:
         shot_data = self.all_data[self.all_data['shot'] == shot]
         return shot_data['time'].values
     
+    def get_disruption_time(self, shot):
+        """ Returns the disruption time for a given shot """
+        if shot not in self.get_disruptive_shot_list():
+            raise ValueError('Shot was not disruptive, cannot get disruption time.')
+        else:
+            shot_data = self.all_data[self.all_data['shot'] == shot]
+            disruption_time = shot_data['time'].iloc[0] + shot_data['time_until_disrupt'].iloc[0]
+            return disruption_time
+    
     def get_shot_data(self, shot):
         """ Returns the data for a given shot """
         return self.all_data[self.all_data['shot'] == shot]
@@ -158,10 +177,31 @@ class Experiment:
             shot_durations.append(self.get_shot_duration(shot))
         return np.array(shot_durations)
 
+    def get_all_thresholds(self, horizon):
+        """ Gets all unique values of risk for all shots in the dataset at a given horizon """
+        
+        shot_list = self.get_shot_list()
+
+        all_risks = []
+
+        # Iterate through shots
+        for i, shot in enumerate(shot_list):
+            # Get the alarm times given by the model
+            risk_at_times = self.get_predictor_risk_at_times(shot, horizon)
+            all_risks.append(risk_at_times['risk'].unique())
+
+        # Get the unique risk values
+        unique_risk_values = np.unique(np.concatenate(all_risks))
+        # Sort the unique risk values
+        unique_risk_values = np.sort(unique_risk_values)
+
+        return unique_risk_values
+
     # Get info from the predictor
 
     def get_predictor_risk(self, shot, horizon=None):
-        return self.predictor.get_risk(shot, self.get_shot_data(shot), horizon=horizon)
+        data = self.get_shot_data(shot)
+        return self.predictor.get_risk(shot, data, horizon=horizon)
     
     def get_predictor_risk_at_times(self, shot, horizon=None):
         return self.predictor.get_risk_at_times(shot, self.get_shot_data(shot), horizon=horizon)
@@ -304,19 +344,24 @@ class Experiment:
 
         # Get list of all shots
         shot_list = self.get_shot_list()
-        
-        # Create arrays to store the results
+
+        # If using 'athr' alarm, get all unique floats for thresholds
+        if self.alarm_type == 'athr':
+            self.thresholds = self.get_all_thresholds(horizon)
+
+        # Create array to store the results
         # Array is of shape (num_shots, num_thresholds)
         alarm_times = np.zeros((len(shot_list), len(self.thresholds)))
 
         # Determine which function to use 
-        if self.alarm_type == 'sthr':
+        if self.alarm_type in ['sthr', 'athr']:
             # Simple Threshold
 
             # Iterate through shots
             for i, shot in enumerate(shot_list):
                 # Get the alarm times given by the model
                 risk_at_times = self.get_predictor_risk_at_times(shot, horizon)
+
                 alarm_times_calced = calculate_alarm_times(risk_at_times, self.thresholds)
 
                 # Save the alarm times
@@ -383,13 +428,14 @@ class Experiment:
         shot_list = self.get_shot_list()
         # Get list of disruptive shots
         disruptive_shots = self.get_disruptive_shot_list()
+
+        # Get the alarm times given by the model
+        alarm_times = self.get_alarm_times(horizon)
+
         # Create arrays to store the results
         # Array is of shape (num_shots, num_thresholds)
         true_alarms = np.zeros((len(shot_list), len(self.thresholds)))
         false_alarms = np.zeros((len(shot_list), len(self.thresholds)))
-
-        # Get the alarm times given by the model
-        alarm_times = self.get_alarm_times(horizon)
 
         # Iterate through shots
         for i, shot in enumerate(shot_list):
@@ -397,10 +443,13 @@ class Experiment:
 
             # If the shot is disruptive, find the time of disruption
             # Even if the shot is non-disruptive, we will determine a warning time for the false alarm calculation
-            disruption_time = self.get_shot_duration(shot)
-            # Warning time is disruption time minus alarm time
-            warning_times = disruption_time - alarm_times[i,:]
-
+            if disrupt:
+                disrupt_time = self.get_disruption_time(shot)
+                warning_times = disrupt_time - alarm_times[i,:]
+            else:
+                final_time = self.get_shot_data(shot)['time'].max()
+                warning_times = final_time - alarm_times[i,:]
+        
             # Fill in true and false alarms
             # True alarm is when shot is disruptive and warning time is greater than required warning time
             # False alarm is when shot is not disruptive but an alarm time is still given
@@ -416,8 +465,8 @@ class Experiment:
 
         true_alarms, false_alarms = self.get_true_false_alarms(horizon, required_warning_time)
 
-        true_alarm_rates = np.sum(true_alarms, axis=0) / self.get_num_disruptive_shots()
-        false_alarm_rates = np.sum(false_alarms, axis=0) / (self.get_num_shots() - self.get_num_disruptive_shots())
+        true_alarm_rates = np.sum(true_alarms, axis=0) / self.get_num_disruptive_shots() 
+        false_alarm_rates = np.sum(false_alarms, axis=0) / self.get_num_non_disruptive_shots()
 
         return true_alarm_rates, false_alarm_rates
 
@@ -434,11 +483,19 @@ class Experiment:
         true_alarms, false_alarms = self.get_true_false_alarms(horizon, required_warning_time)
 
         missed_alarm_rates = 1 - np.sum(true_alarms, axis=0) / self.get_num_disruptive_shots()
-        false_alarm_rates = np.sum(false_alarms, axis=0) / (self.get_num_shots() - self.get_num_disruptive_shots())
+        false_alarm_rates = np.sum(false_alarms, axis=0) / self.get_num_non_disruptive_shots()
 
         unique_false_alarms, avg_missed_alarm_rates, std_missed_alarm_rates = unique_domain_mapping(false_alarm_rates, missed_alarm_rates)
 
         return unique_false_alarms, avg_missed_alarm_rates
+    
+    def false_alarm_rate_vs_threshold(self, required_warning_time=None, horizon=None, method='average'):
+
+        _, false_alarm_rates = self.true_false_alarm_rates(horizon, required_warning_time)
+
+        unique_thresholds, typical_warning_times, spread_warning_times = unique_domain_mapping(self.thresholds, false_alarm_rates, method=method)
+
+        return unique_thresholds, typical_warning_times, spread_warning_times
 
     # Warning Times Methods
 
@@ -460,8 +517,7 @@ class Experiment:
         warning_times_shot_list = []
         for disruptive_shot in disruptive_shots:
             # Get the time of disruption for this shot
-            shot_data = self.get_shot_data(disruptive_shot)
-            disrupt_time = shot_data['time_until_disrupt'].iloc[0]
+            disrupt_time = self.get_disruption_time(disruptive_shot)
             # Find the index of the shot in the shot list
             shot_index = np.where(shot_list == disruptive_shot)[0][0]
             # Get the alarm times for this shot
@@ -495,32 +551,34 @@ class Experiment:
 
         return warning_times_threshold_list
 
-    def warning_time_vs_threshold(self, horizon=None):
+    def warning_time_vs_threshold(self, horizon=None, method='average'):
         """ Get statistics on warning time vs threshold for a given horizon 
             This is inherently a macro statistic, since a single shot can have only one warning time
         """
 
         warning_times_list = self.get_warning_times_list(horizon)
 
-        unique_thresholds, avg_warning_times, std_warning_times = unique_domain_mapping(self.thresholds, warning_times_list)
+        unique_thresholds, typical_warning_times, spread_warning_times = unique_domain_mapping(self.thresholds, warning_times_list, method=method)
 
-        return unique_thresholds, avg_warning_times, std_warning_times
+        return unique_thresholds, typical_warning_times, spread_warning_times
 
-    def warning_time_vs_false_alarm_rate(self, horizon, required_warning_time):
+    def warning_time_vs_false_alarm_rate(self, horizon, required_warning_time, method='average'):
         """ Get statistics on warning time vs false alarm rate for a given horizon 
             This is inherently a macro statistic, since a single shot can have only one warning time
         """
 
         warning_times_list = self.get_warning_times_list(horizon)
         # If warning time less than required warning time, remove it
+        if required_warning_time == None:
+            required_warning_time = self.predictor.trained_required_warning_time
         warning_times_list = [[warning_time for warning_time in warning_times if warning_time > required_warning_time] for warning_times in warning_times_list]
 
         _, false_alarm_rates = self.true_false_alarm_rates(horizon, required_warning_time)
 
-        unique_false_alarm_rates, avg_warning_times, std_warning_times = unique_domain_mapping(false_alarm_rates, warning_times_list)
+        unique_false_alarm_rates, typical_warning_times, spread_warning_times = unique_domain_mapping(false_alarm_rates, warning_times_list, method=method)
 
         # TODO: Ignore zero false positve rate results???
-        return unique_false_alarm_rates, avg_warning_times, std_warning_times
+        return unique_false_alarm_rates, typical_warning_times, spread_warning_times
     
     # Metrics methods
 
@@ -555,7 +613,7 @@ class Experiment:
             metric_val = area_under_curve(false_alarm_rates, true_alarm_rates)
         elif metric_type == 'auwtc':
             # Area under warning time curve
-            false_alarm_rates, warning_times, _ = self.warning_time_vs_false_alarm_rate(horizon, required_warning_time)
+            false_alarm_rates, warning_times, _ = self.warning_time_vs_false_alarm_rate(horizon, required_warning_time, method='median')
             metric_val = area_under_curve(false_alarm_rates, warning_times, x_cutoff=0.05)
         elif metric_type == 'maxf1':
             # Highest f1 score over all the thresholds
@@ -569,7 +627,6 @@ class Experiment:
             f1_scores = calculate_f1_scores(true_alarm_count_array, false_alarm_count_array, num_disruptive_shots)
 
             metric_val = np.max(f1_scores)
-
         elif metric_type == 'ettdi':
             # Expected time to disruption error integral
             metric_val = expected_time_to_disruption_integral()
@@ -595,7 +652,7 @@ class Experiment:
 
         # Get the true alarm rate, false alarm rate, and warning time at the best f1 score
         true_alarm_rate = true_alarm_count_array[best_f1_score_index]/num_disruptive_shots
-        false_alarm_rate = false_alarm_count_array[best_f1_score_index]/num_disruptive_shots
+        false_alarm_rate = false_alarm_count_array[best_f1_score_index]/(self.get_num_non_disruptive_shots())
         
         # Get threshold at the best f1 score
         best_f1_threshold = self.thresholds[best_f1_score_index]
@@ -625,6 +682,7 @@ class Experiment:
     def get_critical_metric(self, horizon, required_warning_time):
         """ Get the critical metric for the experiment
         This metric is the average warning time (y-axis, range) vs false positive rate (x-axis, domain)
+        Only applicable to simple threshold alarms
         
         Parameters
         ----------
@@ -638,6 +696,9 @@ class Experiment:
         unique_false_alarm_rates, avg_warning_times, std_warning_times : np.array, np.array, np.array
             The unique false alarm rates, average warning times, and standard deviation of warning times
         """
+
+        if self.alarm_type not in ['sthr', 'athr']:
+            raise ValueError('Critical metric only defined for simple threshold alarms (sthr, athr)')
 
         # 0. Set up the predictions and outcomes to calculate the metric
 
@@ -675,7 +736,7 @@ class Experiment:
             # Determine the time of disruption and whether or not the shot actually disrupted
             true_outcome = {}
             if (shot_data['time_until_disrupt'] >= 0).any():
-                true_outcome['disruption_time'] = shot_data['time_until_disrupt'].values[0]
+                true_outcome['disruption_time'] = self.get_disruption_time(shot_data['shot'].iloc[0])
                 true_outcome['disrupted'] = True
             elif (shot_data['time_until_disrupt'].isnull()).all():
                 true_outcome['disruption_time'] = np.nan
@@ -694,7 +755,7 @@ class Experiment:
 
         # NOW: Find the false positive rate and average warning times
 
-        unique_false_alarm_rates, avg_warning_times, std_warning_times = compute_critical_metric(predictions, true_outcomes, required_warning_time)
+        unique_false_alarm_rates, avg_warning_times, std_warning_times = compute_critical_metric(predictions, true_outcomes, required_warning_time, self.thresholds)
 
         # 4. Return the false alarm rates and average warning times
         return unique_false_alarm_rates, avg_warning_times, std_warning_times

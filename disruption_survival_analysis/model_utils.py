@@ -33,64 +33,83 @@ def make_model(config:dict):
         The survival model to be trained
     """
 
-    model_type = config['aa-model-type']
+    model_type = config['model_type']
+
+    hyperparameters = config['hyperparameters']
     if model_type == 'cph':
-        l2 = config['l2']
-        model = SurvivalModel(model_type, l2=l2)
+        l2 = hyperparameters['l2']
+        model = SurvivalModel(
+            model_type, 
+            l2=l2
+        )
     elif model_type == 'dcph':
-        # Make layers a list of ints
-        layer_width = config['layer_width']
-        layer_depth = config['layer_depth']
+        layer_width = hyperparameters['layer_width']
+        layer_depth = hyperparameters['layer_depth']
         layers = [layer_width] * layer_depth
+        batch_size = hyperparameters['batch_size']
+        epochs = hyperparameters['epochs']
+        learning_rate = hyperparameters['learning_rate']
         
-        batch_size = config['batch_size']
-        epochs = config['epochs']
-        learning_rate = config['learning_rate']
-        
-        model = SurvivalModel(model_type, layers=layers, learning_rate=learning_rate, batch_size=batch_size, epochs=epochs)
+        model = SurvivalModel(
+            model_type, 
+            layers=layers, 
+            learning_rate=learning_rate, 
+            batch_size=batch_size, 
+            epochs=epochs
+        )
     elif model_type == 'dcm':
-        # Make layers a list of ints
-        layer_width = config['layer_width']
-        layer_depth = config['layer_depth']
+        layer_width = hyperparameters['layer_width']
+        layer_depth = hyperparameters['layer_depth']
         layers = [layer_width] * layer_depth
+        batch_size = hyperparameters['batch_size']
+        epochs = hyperparameters['epochs']
+        k = hyperparameters['k']
+        lr = hyperparameters['learning_rate']
+        smoothing_factor = hyperparameters['smoothing_factor']
 
-        batch_size = config['batch_size']
-        epochs = config['epochs']
-        k = config['k']
-        lr = config['learning_rate']
-        smoothing_factor = config['smoothing_factor']
-        model = SurvivalModel(model_type, k=k, layers=layers, batch_size=batch_size, lr=lr, epochs=epochs, smoothing_factor=smoothing_factor)
+        model = SurvivalModel(
+            model_type, 
+            k=k, 
+            layers=layers, 
+            batch_size=batch_size, 
+            lr=lr, 
+            epochs=epochs, 
+            smoothing_factor=smoothing_factor
+        )
     elif model_type == 'dsm':
-        # Make layers a list of ints
-        layer_width = config['layer_width']
-        layer_depth = config['layer_depth']
+        layer_width = hyperparameters['layer_width']
+        layer_depth = hyperparameters['layer_depth']
         layers = [layer_width] * layer_depth
-
-        batch_size = config['batch_size']
-        distribution = config['distribution']
-        epochs = config['epochs']
-        learning_rate = config['learning_rate']
-        temperature = config['temperature']
+        batch_size = hyperparameters['batch_size']
+        distribution = hyperparameters['distribution']
+        epochs = hyperparameters['epochs']
+        learning_rate = hyperparameters['learning_rate']
+        temperature = hyperparameters['temperature']
         
-        model = SurvivalModel(model_type, 
-                                layers=layers, 
-                                distribution=distribution, 
-                                temperature=temperature, 
-                                batch_size=batch_size, 
-                                learning_rate=learning_rate, 
-                                epochs=epochs)
-    elif model_type == 'rf':
-        criterion = config['criterion']
-        max_features = config['max_features']
-        n_estimators = config['n_estimators'] 
-        min_samples_leaf = config['min_samples_leaf']
-        min_samples_split = config['min_samples_split']
-        model = RandomForestClassifier(n_estimators=n_estimators,
-                                        criterion=criterion,
-                                        min_samples_split=min_samples_split,
-                                        min_samples_leaf=min_samples_leaf,
-                                        max_features=max_features,
-                                        random_state=0)
+        model = SurvivalModel(
+            model_type, 
+            layers=layers, 
+            distribution=distribution, 
+            temperature=temperature, 
+            batch_size=batch_size, 
+            learning_rate=learning_rate, 
+            epochs=epochs
+        )
+    elif model_type == 'rf' or model_type == 'km':
+        criterion = hyperparameters['criterion']
+        max_features = hyperparameters['max_features']
+        n_estimators = hyperparameters['n_estimators'] 
+        min_samples_leaf = hyperparameters['min_samples_leaf']
+        min_samples_split = hyperparameters['min_samples_split']
+
+        model = RandomForestClassifier(
+            n_estimators=n_estimators,
+            criterion=criterion,
+            min_samples_split=min_samples_split,
+            min_samples_leaf=min_samples_leaf,
+            max_features=max_features,
+            random_state=0
+        )
     else:
         raise ValueError(f"Model type \"{model_type}\" not recognized")
 
@@ -101,7 +120,6 @@ def train_survival_model(model:SurvivalModel, device, dataset_path):
     x_train, y_train = load_features_outcomes(device, dataset_path, 'train')
 
     model.fit(x_train, y_train)
-
 
 def train_recurrent_model(model_string, x_tr, t_tr, e_tr, x_val, t_val, e_val):
     """
@@ -129,7 +147,7 @@ def train_random_forest_model(model:RandomForestClassifier, device, dataset_path
 # Methods to be used by experiment utils
 def get_model_for_experiment(config, experiment_type):
     """
-    Get the model to be used for the experiment
+    Get the model to be used for the experiment.
 
     Parameters
     ----------
@@ -147,66 +165,52 @@ def get_model_for_experiment(config, experiment_type):
         The model to be used for the experiment
     """
 
-    model_type = config['aa-model-type']
+    device = config['device']
+    dataset_path = config['dataset_path']
+    model_type = config['model_type']
+    hyperparameters = config['hyperparameters']
 
-    device = config['aa-device']
-    dataset_path = config['aa-dataset-path']
+    model_name = name_model(config)
 
-    # Get the model to be used
-    if experiment_type == 'val':
-        # There must first be a model to validate
-        model = make_model(config)
-
-        # Fit the model to the training data
-        if isinstance(model, RandomForestClassifier):
-            class_time = config['class_time']
-            train_random_forest_model(model, device, dataset_path, class_time)
-        elif isinstance(model, SurvivalModel):
-            train_survival_model(model, device, dataset_path)
-        else:
-            raise ValueError(f"Invalid model type: {model_type}")
-
-    elif experiment_type == 'test':
-        # There must first be a model to test
-
-        # Attempt to load the model by name
-        model_name = name_model(config)
+    if experiment_type == 'test':
         try:
             model = load_model(model_name, device, dataset_path)
+            return model
         except FileNotFoundError:
-            # If the model is not found, make it
-            model = make_model(config)
-
-            # Fit the model to the training data
-            if isinstance(model, RandomForestClassifier):
-                class_time = config['class_time']
-                train_random_forest_model(model, device, dataset_path, class_time)
-            elif isinstance(model, SurvivalModel):
-                train_survival_model(model, device, dataset_path)
-            else:
-                raise ValueError(f"Invalid model type: {model_type}")
-            
-            # Save the model
-            save_model(model, model_name, device, dataset_path)
-    else:    
-        raise ValueError(f"Invalid experiment type: {experiment_type}")
+            # If the model does not exist, it must be trained
+            pass
     
-    return model
+    # Make and train model
+    model = make_model(config)
 
+    # Fit the model to the training data
+    if isinstance(model, RandomForestClassifier):
+        class_time = hyperparameters['class_time']
+        train_random_forest_model(model, device, dataset_path, class_time)
+    elif isinstance(model, SurvivalModel):
+        train_survival_model(model, device, dataset_path)
+    else:
+        raise ValueError(f"Invalid model type: {model_type}")
+    
+    # Save the model for testing future use
+    if experiment_type == 'test':
+        save_model(model, model_name, device, dataset_path)
+
+    return model
 
 # Methods for saving and loading models
 
 def name_model(config):
     """Create a name for the model based on how it was trained"""
 
-    model_type = config['aa-model-type']
-    alarm_type = config['ab-alarm-type']
-    metric = config['ab-metric']
+    model_type = config['model_type']
+    alarm_type = config['alarm_type']
+    metric = config['metric']
 
     if metric == 'etint':
         time_string = f"{int(config['01_tau']*1000)}ms"
     else:
-        time_string = f"{int(config['ab-required-warning-time']*1000)}ms"
+        time_string = f"{int(config['required_warning_time']*1000)}ms"
 
     name = f"{model_type}_{alarm_type}_{metric}_{time_string}"
 
@@ -230,3 +234,4 @@ def load_model(model_name, device, dataset_path):
         model = dill.load(f)
     print('Loaded model from ' + model_file)
     return model
+

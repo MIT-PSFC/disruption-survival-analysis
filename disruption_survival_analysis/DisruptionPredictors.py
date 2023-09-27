@@ -310,8 +310,9 @@ class DisruptionPredictorRF(DisruptionPredictor):
 class DisruptionPredictorKM(DisruptionPredictor):
     """Kaplan-Meier Disruption predictor like Tinguely et al. 2019"""
 
-    def __init__(self, name, model:RandomForestClassifier, trained_warning_time, trained_class_time):
+    def __init__(self, name, model:RandomForestClassifier, trained_warning_time, trained_class_time, trained_fit_time):
         super().__init__(name, model, trained_warning_time, trained_class_time)
+        self.trained_fit_time = trained_fit_time
 
     def linear_slope(self, x, y):
         # Calculate the slope of a linear fit to the data
@@ -333,7 +334,7 @@ class DisruptionPredictorKM(DisruptionPredictor):
         # Time in seconds to do linear fit over
         # In paper, used 0.05, 0.1, 0.2
         if t_fit is None:
-            t_fit = 0.1
+            t_fit = self.trained_fit_time
 
         risk_at_times = data.copy()
 

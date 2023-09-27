@@ -2,7 +2,11 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from disruption_survival_analysis.experiment_utils import label_shot_data, make_shot_lifetime_curve, calculate_alarm_times, unique_domain_mapping
+from tests.test_manage_datasets import TEST_DEVICE, TEST_DATASET_PATH
+
+from disruption_survival_analysis.experiment_utils import label_shot_data, make_shot_lifetime_curve
+from disruption_survival_analysis.experiment_utils import calculate_alarm_times, calculate_alarm_times_hysteresis
+from disruption_survival_analysis.experiment_utils import unique_domain_mapping
 from disruption_survival_analysis.manage_datasets import load_dataset, load_disruptive_shot_list, load_non_disruptive_shot_list
 
 # Labeling data tests
@@ -48,7 +52,7 @@ class TestMakeShotLifetimeCurve(unittest.TestCase):
 
     # Write tests for the make_shot_lifetime_curve function
     def setUp(self):
-        self.data = load_dataset("synthetic", "synthetic100", "train")
+        self.data = load_dataset(TEST_DEVICE, TEST_DATASET_PATH, "train")
 
         self.lifetime = 0.1 # 100ms
 
@@ -56,7 +60,7 @@ class TestMakeShotLifetimeCurve(unittest.TestCase):
         """Test that the curve values are correct for disruptive shots"""
 
         # Pick a shot that is disruptive
-        disruptive_shot = load_disruptive_shot_list("synthetic", "synthetic100", "train")[0]
+        disruptive_shot = load_disruptive_shot_list(TEST_DEVICE, TEST_DATASET_PATH, "train")[0]
 
         # Get the shot data
         shot_data = self.data[self.data["shot"]==disruptive_shot]
@@ -80,7 +84,7 @@ class TestMakeShotLifetimeCurve(unittest.TestCase):
         """Test that the curve values are correct for non-disruptive shots"""
 
         # Pick a shot that is non-disruptive
-        non_disruptive_shot = load_non_disruptive_shot_list("synthetic", "synthetic100", "train")[0]
+        non_disruptive_shot = load_non_disruptive_shot_list(TEST_DEVICE, TEST_DATASET_PATH, "train")[0]
 
         # Get the shot data
         shot_data = self.data[self.data["shot"]==non_disruptive_shot]
@@ -129,6 +133,26 @@ class TestCalculateAlarmTimes(unittest.TestCase):
 
 class TestCalculateAlarmTimesHysteresis(unittest.TestCase):
     """Tests for the function calculate_alarm_times_hysteresis"""
+
+    def test_calculate_alarm_times_exact(self):
+        """Ensure that the calculate_alarm_times_hysteresis function returns the correct times
+        This tests the case where the risk exceeds the threshold exactly
+        """
+
+        # Create a Pandas dataframe of risks at different times
+        risk_at_time = pd.DataFrame({'time': [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7], 'risk': [0.01, 0.11, 0.71, 0.11, 0.81, 0.21, 0.41, 0.51]})
+
+        thresholds = [(0.15, 0.3, 0.0), (0.15, 0.3, 0.1), (0.15, 0.3, 0.2), (0.15, 0.3, 0.9), (0.15, 0.9, 0.0)]
+
+        # Calculate the alarm times
+        alarm_times = calculate_alarm_times_hysteresis(risk_at_time, thresholds)
+
+        # Check that the alarm times are correct
+        self.assertEqual(alarm_times[0], 0.2)
+        self.assertEqual(alarm_times[1], 0.6)
+        self.assertEqual(alarm_times[2], 0.7)
+        self.assertEqual(alarm_times[3], None)
+        self.assertEqual(alarm_times[4], None)
 
 class TestCalculateAlarmTimesEttd(unittest.TestCase):
     """Tests for the function calculate_alarm_times_ettd"""

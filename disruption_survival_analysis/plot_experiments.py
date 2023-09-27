@@ -18,7 +18,7 @@ GOOD_WARNING_TIME = 0.1 # Also from Ryan, would be very nice to have 100ms to re
 
 # Plots for timeslice-level model performance
 
-def plot_auroc_timeslice_all_vs_horizon(experiment_list:list[Experiment], horizons=DEFAULT_HORIZONS, disrupt_only=True):
+def plot_auroc_timeslice_all_vs_horizon(experiment_list:list[Experiment], horizons=DEFAULT_HORIZONS, disrupt_only=True, test=False):
     """ Plot the full-dataset timeslice-level Area Under ROC Curve vs. horizon for each experiment.
 
     Parameters:
@@ -53,9 +53,11 @@ def plot_auroc_timeslice_all_vs_horizon(experiment_list:list[Experiment], horizo
         plt.title('All shot Timeslice Area Under ROC Curve vs. Horizon')
 
     plt.legend()
-    plt.show()
 
-def plot_auroc_timeslice_shot_avg_vs_horizon(experiment_list:list[Experiment], horizons=DEFAULT_HORIZONS):
+    if not test:
+        plt.show()
+
+def plot_auroc_timeslice_shot_avg_vs_horizon(experiment_list:list[Experiment], horizons=DEFAULT_HORIZONS, test=False):
     """ Plot the shot-averaged timeslice Area Under ROC Curve vs. horizon for each experiment.
     Only includes disruptive shots, because a micro average over a non-disruptive shot cannot be done (only one class in truth value).
 
@@ -86,7 +88,9 @@ def plot_auroc_timeslice_shot_avg_vs_horizon(experiment_list:list[Experiment], h
     plt.title('Shot-Average Timeslice Area Under ROC Curve vs. Horizon')
 
     plt.legend()
-    plt.show()
+    
+    if not test:
+        plt.show()
 
 # Plots for shot-level model performance
 
@@ -97,18 +101,10 @@ def plot_roc_curve(experiment_list:list[Experiment], horizon=None, required_warn
 
     plt.figure()
 
-    # This gets funky because I want to plot the TAR as 0, 0.9, 0.99, 0.999, 1.0
-    # Still broken, going 
-
-    #plt.yscale('log')
-
     for experiment in experiment_list:
         false_alarm_rates, true_alarm_rates = experiment.true_alarm_rate_vs_false_alarm_rate(horizon, required_warning_time)
         plt.plot(false_alarm_rates, true_alarm_rates, label=experiment.name)
 
-    
-    #plt.gca().invert_yaxis()
-    #plt.gca().set_yticklabels(1-plt.gca().get_yticks())
 
 
     # Set x axis to be logarithmic scale (to better show the low false alarm rates)
@@ -129,20 +125,22 @@ def plot_roc_curve(experiment_list:list[Experiment], horizon=None, required_warn
     plt.legend()
     plt.show()
 
-def plot_warning_time_vs_false_alarm_rate(experiment_list:list[Experiment], horizon=None, required_warning_time=MINIMUM_WARNING_TIME, min_far=None, max_far=None, min_warning_time=None, max_warning_time=None):
+def plot_warning_time_vs_false_alarm_rate(experiment_list:list[Experiment], horizon=None, required_warning_time=MINIMUM_WARNING_TIME, min_far=None, max_far=None, min_warning_time=None, max_warning_time=None, cutoff_far=None, method='median'):
     """ Averaged over all shots
     """
 
     plt.figure()
 
     for experiment in experiment_list:
-        false_alarm_rates, warning_time_avg, warning_time_std = experiment.warning_time_vs_false_alarm_rate(horizon, required_warning_time)
-        warning_time_avg_ms = [i * 1000 for i in warning_time_avg]
-        warning_time_std_ms = [i * 1000 for i in warning_time_std]
+        false_alarm_rates, warning_time_avg, warning_time_std = experiment.warning_time_vs_false_alarm_rate(horizon, required_warning_time=None, method=method)
+        warning_time_typical_ms = [i * 1000 for i in warning_time_avg]
+        warning_time_spread_ms = [i * 1000 for i in warning_time_std]
         # TODO: reintroduce error bars
-        plt.semilogx(false_alarm_rates, warning_time_avg_ms, label=experiment.name)
+        # Plot with error bars
+        plt.errorbar(false_alarm_rates, warning_time_typical_ms, yerr=warning_time_spread_ms, label=experiment.name, fmt='o-', capsize=5)
 
-    # TODO: changed temporarily
+    # Make the x axis logarithmic
+    plt.xscale('log')
 
     if min_far is None:
         min_far = min(false_alarm_rates)
@@ -151,7 +149,7 @@ def plot_warning_time_vs_false_alarm_rate(experiment_list:list[Experiment], hori
     if min_warning_time is None:
         min_warning_time = 0
     if max_warning_time is None:
-        max_warning_time = 2000
+        max_warning_time = 500
 
     # Put a line at the required warning time
     plt.plot([min_far, max_far], [required_warning_time*1000, required_warning_time*1000], 'k--')
@@ -159,13 +157,125 @@ def plot_warning_time_vs_false_alarm_rate(experiment_list:list[Experiment], hori
     plt.xlim([min_far, max_far])
     plt.ylim([min_warning_time, max_warning_time])
 
+    if cutoff_far is not None:
+        plt.axvline(x=cutoff_far, color='r', linestyle='--')
+
     plt.xlabel('False Alarm Rate')
-    plt.ylabel('Warning Time [ms]')
+    if method == 'median':
+        plt.ylabel('Median Warning Time [ms]')
+    elif method == 'average':
+        plt.ylabel('Average Warning Time [ms]')
 
     plt.title(f'Warning Time vs. {int(required_warning_time*1000)}ms False Alarm Rate')
 
     plt.legend()
     plt.show()
+
+def plot_warning_time_vs_threshold(experiment_list:list[Experiment], horizon=None, required_warning_time=MINIMUM_WARNING_TIME, min_threshold=None, max_threshold=None, min_warning_time=None, max_warning_time=None, cutoff_far=None, method='median'):
+    """ Collected over all shots
+    """
+
+    plt.figure()
+
+    for experiment in experiment_list:
+        thresholds, warning_time_avg, warning_time_std = experiment.warning_time_vs_threshold(horizon, method=method)
+        warning_time_avg_ms = [i * 1000 for i in warning_time_avg]
+        warning_time_std_ms = [i * 1000 for i in warning_time_std]
+
+        # Plot with error bars
+        plt.errorbar(thresholds, warning_time_avg_ms, yerr=warning_time_std_ms, label=experiment.name, fmt='o-', capsize=5)
+
+    if min_threshold is None:
+        min_threshold = min(thresholds)
+    if max_threshold is None:
+        max_threshold = max(thresholds)
+    if min_warning_time is None:
+        min_warning_time = 0
+    if max_warning_time is None:
+        max_warning_time = 500
+
+    # Put a line at the required warning time
+    plt.plot([min_threshold, max_threshold], [required_warning_time*1000, required_warning_time*1000], 'k--')
+
+    # Make the x axis logarithmic
+    plt.xscale('log')
+
+    plt.xlim([min_threshold, max_threshold])
+    plt.ylim([min_warning_time, max_warning_time])
+
+    plt.xlabel('Threshold')
+    if method == 'median':
+        plt.ylabel('Median Warning Time [ms]')
+    elif method == 'average':
+        plt.ylabel('Average Warning Time [ms]')
+
+    plt.title(f'Warning Time vs. Threshold')
+
+    plt.legend()
+
+    plt.show()
+
+def plot_threshold_vs_fpr(experiment_list:list[Experiment], horizon=None, required_warning_time=MINIMUM_WARNING_TIME, min_threshold=None, max_threshold=None, min_warning_time=None, max_warning_time=None, cutoff_far=None, method='median'):
+    """ Collected over all shots
+    """
+
+    plt.figure()
+
+    for experiment in experiment_list:
+        thresholds, false_positive_rate, _ = experiment.false_positive_rate_vs_threshold(horizon=horizon, required_warning_time=required_warning_time, method=method)
+
+        # Plot with error bars
+        plt.plot(false_positive_rate, thresholds, label=experiment.name)
+
+    if min_threshold is None:
+        min_threshold = min(thresholds)
+    if max_threshold is None:
+        max_threshold = max(thresholds)
+
+    plt.ylim([min_threshold, max_threshold])
+    plt.xlim([0, 1])
+
+    plt.xlabel('FPR')
+    plt.ylabel('Threshold')
+    
+    plt.title(f'Threshold vs. FPR')
+
+    plt.legend()
+
+    plt.show()
+
+def plot_fpr_vs_threshold(experiment_list:list[Experiment], horizon=None, required_warning_time=MINIMUM_WARNING_TIME, min_threshold=None, max_threshold=None, min_warning_time=None, max_warning_time=None, cutoff_far=None, method='median'):
+    """ Collected over all shots
+    """
+
+    plt.figure()
+
+    for experiment in experiment_list:
+        thresholds, false_positive_rate, _ = experiment.false_positive_rate_vs_threshold(horizon=horizon, required_warning_time=required_warning_time, method=method)
+
+        # Plot with error bars
+        plt.plot(thresholds, false_positive_rate, label=experiment.name)
+
+    if min_threshold is None:
+        min_threshold = min(thresholds)
+    if max_threshold is None:
+        max_threshold = max(thresholds)
+
+    # Put a line at the required warning time
+    #plt.plot([min_threshold, max_threshold], [required_warning_time*1000, required_warning_time*1000], 'k--')
+
+    plt.xlim([min_threshold, max_threshold])
+    plt.ylim([0, 1])
+
+    plt.ylabel('FPR')
+    plt.xlabel('Threshold')
+    
+    plt.title(f'FPR vs. Threshold')
+
+    plt.legend()
+
+    plt.show()
+
 
 # Plots for comparing output of models to time series of individual shots
 
@@ -286,10 +396,10 @@ def plot_disruptive_vs_non_disruptive_shot_durations(experiment:Experiment):
 
     plt.figure()
 
-    plt.hist(disruptive_shot_durations_ms, bins=50, label='Disruptive')
     plt.hist(non_disruptive_shot_durations_ms, bins=50, label='Non-Disruptive')
+    plt.hist(disruptive_shot_durations_ms, bins=50, label='Disruptive')
 
-    plt.xlim([500, max(max(disruptive_shot_durations_ms), max(non_disruptive_shot_durations_ms))])
+    plt.xlim([min(min(disruptive_shot_durations_ms), min(non_disruptive_shot_durations_ms)), max(max(disruptive_shot_durations_ms), max(non_disruptive_shot_durations_ms))])
 
     plt.xlabel('Shot Duration [ms]')
     plt.ylabel('Number of Shots')

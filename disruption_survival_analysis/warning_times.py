@@ -1,8 +1,8 @@
 import numpy as np
 
-from disruption_survival_analysis.experiment_utils import SIMPLE_THRESHOLDS
+SIMPLE_THRESHOLDS = np.linspace(0, 1, 100)
 
-def compute_critical_metric(predictions, true_outcomes, required_warning_time):
+def compute_critical_metric(predictions, true_outcomes, required_warning_time, thresholds):
     """ Compute the critical metric for a given set of predictions and true outcomes.
         The critical metric is the average warning time for a given false alarm rate.
 
@@ -29,9 +29,6 @@ def compute_critical_metric(predictions, true_outcomes, required_warning_time):
     """
 
     # 1. Set Up
-
-    # Create thresholds for simple threshold alarm.
-    thresholds = SIMPLE_THRESHOLDS
 
     # Count the number of negatives in the true outcomes
     num_negatives = 0
@@ -101,9 +98,17 @@ def compute_critical_metric(predictions, true_outcomes, required_warning_time):
         for i, _ in enumerate(all_false_alarm_rates):
             if all_false_alarm_rates[i] == false_alarm_rate:
                 warning_times.extend(all_warning_times[i])
+        # Compute averages and standard deviations
+        avg_warning_time = np.mean(warning_times)
+        std_warning_time = np.std(warning_times)
+        # If the grouped values are empty, set the average and standard deviation to 0
+        if np.isnan(avg_warning_time):
+            avg_warning_time = 0
+        if np.isnan(std_warning_time):
+            std_warning_time = 0
         # Average the warning times
-        avg_warning_times.append(np.mean(warning_times))
-        std_warning_times.append(np.std(warning_times))
+        avg_warning_times.append(avg_warning_time)
+        std_warning_times.append(std_warning_time)
 
     # 4. Return the false alarm rates and average warning times
     return unique_false_alarm_rates, avg_warning_times, std_warning_times
