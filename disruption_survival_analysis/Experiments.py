@@ -84,9 +84,9 @@ class Experiment:
             # where max goes from min to 0.95 in increments of 0.05
             # and trigger time goes from 0 to 50 ms in increments of 5 ms
             self.thresholds = []
-            for min_threshold in np.linspace(0.05, 0.5, 10):
+            for min_threshold in np.linspace(0.05, 0.5, 2):
                 for max_threshold in np.arange(min_threshold, 1, 0.05):
-                    for time_threshold in np.linspace(0, 0.05, 11):
+                    for time_threshold in np.linspace(0, 0.05, 2):
                         self.thresholds.append((min_threshold, max_threshold, time_threshold))
         elif self.alarm_type == 'ettd':
             # Expected time to disruption
@@ -501,10 +501,19 @@ class Experiment:
 
     # Warning Times Methods
 
-    def get_warning_times_list(self, horizon=None):
+    def get_warning_times_list(self, horizon=None, required_warning_time=None):
         """Get a list of warning times for each threshold given a horizon.
         This is a list of arrays of variable length,
         The list is ordered to be consistent with the list of thresholds.
+
+        Parameters
+        ----------
+        horizon : float, optional
+            The horizon to get warning times for
+            If None, use the horizon the model was hyperparameter tuned for
+        required_warning_time : float, optional
+            The required warning time. If None, return all warning times
+            If specified, only return warning times greater than the required warning time
         """
         
         # Get list of all shots
@@ -515,7 +524,7 @@ class Experiment:
         # Get array of alarm times for this horizon
         alarm_times = self.get_alarm_times(horizon)
 
-        # Create list to store warning times
+        # Create list to store warning times for each shot at various thresholds
         warning_times_shot_list = []
         for disruptive_shot in disruptive_shots:
             # Get the time of disruption for this shot
@@ -531,16 +540,9 @@ class Experiment:
             # If warning time is negative, set it to NaN
             warning_times = [warning_time if warning_time >= 0 else np.nan for warning_time in warning_times]
 
-            # Convert to numpy array
-            warning_times = np.array(warning_times)
-
-            # The only way a NaN will show up in the warning times is if the alarm time was None or Nan
-            # If alarm time was None, that means no alarm was raised for this disruptive shot
-            # We don't want to include 'no alarm' times in the average warning times, so remove them 
-            warning_times = warning_times[~np.isnan(warning_times)]
-
             warning_times_shot_list.append(warning_times)
 
+        # The statistics we want to do are for each threshold for various shots
         warning_times_threshold_list = []
         for threshold_index in range(len(self.thresholds)):
             warning_times_threshold = []
@@ -549,7 +551,20 @@ class Experiment:
                     warning_times_threshold.append(warning_times_shot[threshold_index])
                 except:
                     pass
+                
+            # Convert to numpy array
+            warning_times = np.array(warning_times)
+
+            # The only way a NaN will show up in the warning times is if the alarm time was None or Nan
+            # If alarm time was None, that means no alarm was raised for this disruptive shot
+            # We don't want to include 'no alarm' times in the average warning times, so remove them 
+            warning_times_threshold = warning_times_threshold[~np.isnan(warning_times_threshold)]
+
             warning_times_threshold_list.append(warning_times_threshold)
+
+        # If there is a required warning time, remove warning times less than that
+        if required_warning_time != None:
+            warning_times_threshold_list = [[warning_time for warning_time in warning_times if warning_time > required_warning_time] for warning_times in warning_times_threshold_list]
 
         return warning_times_threshold_list
 
@@ -564,17 +579,19 @@ class Experiment:
 
         return unique_thresholds, typical_warning_times, spread_warning_times
 
-    def warning_time_vs_false_alarm_rate(self, horizon, required_warning_time, method='average'):
+    def warning_time_vs_false_alarm_rate(self, horizon=None, required_warning_time=None, method='average'):
         """ Get statistics on warning time vs false alarm rate for a given horizon 
             This is inherently a macro statistic, since a single shot can have only one warning time
         """
 
-        warning_times_list = self.get_warning_times_list(horizon)
-        # If warning time less than required warning time, remove it
+        if horizon == None:
+            horizon = self.predictor.trained_disruptive_window
         if required_warning_time == None:
             required_warning_time = self.predictor.trained_required_warning_time
-        warning_times_list = [[warning_time for warning_time in warning_times if warning_time > required_warning_time] for warning_times in warning_times_list]
 
+        # Ger warning time list filtered by required warning time
+        warning_times_list = self.get_warning_times_list(horizon, required_warning_time=required_warning_time)
+        
         _, false_alarm_rates = self.true_false_alarm_rates(horizon, required_warning_time)
 
         unique_false_alarm_rates, typical_warning_times, spread_warning_times = unique_domain_mapping(false_alarm_rates, warning_times_list, method=method)
