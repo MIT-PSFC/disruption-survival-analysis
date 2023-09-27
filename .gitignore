@@ -196,6 +196,7 @@ wandb
 # Hyperparameter databases
 *.db
 *.db-journal
+*.rename
 
 # Keep files required for tests to run on first install
 !data/synthetic/test/description.txt
