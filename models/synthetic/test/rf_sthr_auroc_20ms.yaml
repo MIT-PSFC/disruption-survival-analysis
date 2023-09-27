@@ -1,7 +1,7 @@
 hyperparameters:
-  class_time: 0.15506414790236253
-  criterion: gini
+  class_time: 0.09347026057402834
+  criterion: entropy
   max_features: sqrt
-  min_samples_leaf: 0.015501470986674818
-  min_samples_split: 0.5696411583701103
-  n_estimators: 120
+  min_samples_leaf: 0.014866185841473893
+  min_samples_split: 0.5856010330577472
+  n_estimators: 75

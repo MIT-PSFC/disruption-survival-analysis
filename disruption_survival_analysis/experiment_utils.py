@@ -10,7 +10,7 @@ from auton_survival.metrics import survival_regression_metric
 from disruption_survival_analysis.manage_datasets import load_features_outcomes
 
 # Set of simple thresholds to use for calculating alarm times
-SIMPLE_THRESHOLDS = np.linspace(0, 1, 100)
+SIMPLE_THRESHOLDS = np.linspace(0, 1, 101)
 
 # Labeling data
 
@@ -508,8 +508,13 @@ def load_experiment_config(device, dataset, model_type, alarm_type, metric, requ
             with open(full_path, "r") as f:
                 pass
 
+            lock_obj = optuna.storages.JournalFileOpenLock(full_path)
+            storage = optuna.storages.JournalStorage(
+                optuna.storages.JournalFileStorage(full_path, lock_obj=lock_obj)
+            )
+
             # Get the best trial from the study (expects there to be only one study in the database)
-            study = optuna.load_study(study_name=None, storage=f"sqlite:///{full_path}")
+            study = optuna.load_study(study_name=None, storage=storage)
 
             hyperparameters = study.best_trial.params
 
