@@ -164,8 +164,8 @@ def calculate_alarm_times_hysteresis(risk_at_time, thresholds):
     # Make array of alarm times the same length as thresholds, starting with all None
     alarm_times = [None] * len(thresholds)
 
-    # Make array of saved times the same length as thresholds
-    saved_times = np.zeros(len(thresholds))
+    # Make array of saved times the same length as thresholds, starting with all None
+    saved_times = [None] * len(thresholds)
 
     # Go through the shot data
     for i in range(len(risk_at_time)):
@@ -180,17 +180,18 @@ def calculate_alarm_times_hysteresis(risk_at_time, thresholds):
                 continue
 
             # If the risk is above the upper threshold and we don't already have a time saved, save the time
-            if risk > thresholds[j][1] and saved_times[j] == 0:
+            if risk > thresholds[j][1] and saved_times[j] is None:
                 saved_times[j] = time
 
             # If the risk is below the lower threshold, reset the saved time
             elif risk < thresholds[j][0]:
-                saved_times[j] = 0
+                saved_times[j] = None
 
-            # Check if enough time has elapsed to predict a disruption
-            if time - saved_times[j] > thresholds[j][2]:
-                # Save alarm time
-                alarm_times[j] = time
+            if saved_times[j] is not None:
+                # Check if enough time has elapsed to predict a disruption
+                if time - saved_times[j] >= thresholds[j][2]:
+                    # Save alarm time
+                    alarm_times[j] = time
 
     return alarm_times
 
