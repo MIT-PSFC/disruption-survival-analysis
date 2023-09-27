@@ -22,5 +22,5 @@ do
     sed -i "s/--job-name=.*/--job-name=$sweep_id/g" job_instance.slurm
 
     # Launch the job
-    ./job_launch.sh 7 sqlite:///$directory/$file
+    ./job_launch.sh 7 $directory/$file
 done
