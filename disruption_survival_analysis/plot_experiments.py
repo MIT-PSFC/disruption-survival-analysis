@@ -139,13 +139,10 @@ def plot_warning_time_vs_false_alarm_rate(experiment_list:list[Experiment], hori
         # Plot with error bars
         plt.errorbar(false_alarm_rates, warning_time_typical_ms, yerr=warning_time_spread_ms, label=experiment.name, fmt='o-', capsize=5)
 
-    # Make the x axis logarithmic
-    plt.xscale('log')
-
     if min_far is None:
-        min_far = min(false_alarm_rates)
+        min_far = 0
     if max_far is None:
-        max_far = max(false_alarm_rates)
+        max_far = 0.1
     if min_warning_time is None:
         min_warning_time = 0
     if max_warning_time is None:
@@ -215,17 +212,17 @@ def plot_warning_time_vs_threshold(experiment_list:list[Experiment], horizon=Non
 
     plt.show()
 
-def plot_threshold_vs_fpr(experiment_list:list[Experiment], horizon=None, required_warning_time=MINIMUM_WARNING_TIME, min_threshold=None, max_threshold=None, min_warning_time=None, max_warning_time=None, cutoff_far=None, method='median'):
+def plot_threshold_vs_false_alarm_rate(experiment_list:list[Experiment], horizon=None, required_warning_time=MINIMUM_WARNING_TIME, min_threshold=None, max_threshold=None, min_warning_time=None, max_warning_time=None, cutoff_far=None, method='median'):
     """ Collected over all shots
     """
 
     plt.figure()
 
     for experiment in experiment_list:
-        thresholds, false_positive_rate, _ = experiment.false_positive_rate_vs_threshold(horizon=horizon, required_warning_time=required_warning_time, method=method)
+        thresholds, false_alarm_rate, _ = experiment.false_alarm_rate_vs_threshold(horizon=horizon, required_warning_time=required_warning_time, method=method)
 
         # Plot with error bars
-        plt.plot(false_positive_rate, thresholds, label=experiment.name)
+        plt.plot(false_alarm_rate, thresholds, label=experiment.name)
 
     if min_threshold is None:
         min_threshold = min(thresholds)
@@ -244,17 +241,17 @@ def plot_threshold_vs_fpr(experiment_list:list[Experiment], horizon=None, requir
 
     plt.show()
 
-def plot_fpr_vs_threshold(experiment_list:list[Experiment], horizon=None, required_warning_time=MINIMUM_WARNING_TIME, min_threshold=None, max_threshold=None, min_warning_time=None, max_warning_time=None, cutoff_far=None, method='median'):
+def plot_false_alarm_rate_vs_threshold(experiment_list:list[Experiment], horizon=None, required_warning_time=MINIMUM_WARNING_TIME, min_threshold=None, max_threshold=None, min_warning_time=None, max_warning_time=None, cutoff_far=None, method='median'):
     """ Collected over all shots
     """
 
     plt.figure()
 
     for experiment in experiment_list:
-        thresholds, false_positive_rate, _ = experiment.false_positive_rate_vs_threshold(horizon=horizon, required_warning_time=required_warning_time, method=method)
+        thresholds, false_alarm_rate, _ = experiment.false_alarm_rate_vs_threshold(horizon=horizon, required_warning_time=required_warning_time, method=method)
 
         # Plot with error bars
-        plt.plot(thresholds, false_positive_rate, label=experiment.name)
+        plt.plot(thresholds, false_alarm_rate, label=experiment.name)
 
     if min_threshold is None:
         min_threshold = min(thresholds)
