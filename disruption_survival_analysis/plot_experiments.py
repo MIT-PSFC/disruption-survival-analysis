@@ -175,6 +175,9 @@ def plot_warning_time_vs_threshold(experiment_list:list[Experiment], horizon=Non
     plt.figure()
 
     for experiment in experiment_list:
+        if experiment.alarm_type == 'hyst':
+            print("Skipping hysteresis alarm times for warning time vs. threshold plot")
+            continue
         thresholds, warning_time_avg, warning_time_std = experiment.warning_time_vs_threshold(horizon, method=method)
         warning_time_avg_ms = [i * 1000 for i in warning_time_avg]
         warning_time_std_ms = [i * 1000 for i in warning_time_std]
@@ -301,7 +304,7 @@ def plot_risk_compare_horizons(experiment:Experiment, shot, horizons=DEFAULT_HOR
 
     plt.legend()
 
-def plot_risk_compare_models(experiment_list:list[Experiment], shot):
+def plot_risk_compare_models(experiment_list:list[Experiment], shot, threshold=None):
     """Assumes the particular shot's data is the same for all experiments"""
 
     plt.figure()
@@ -322,6 +325,23 @@ def plot_risk_compare_models(experiment_list:list[Experiment], shot):
         plt.axvline(x=final_time-trained_warning_time, color=color, linestyle='-')
         trained_disruptive_window = experiment.predictor.trained_disruptive_window*1000
         plt.axvline(x=final_time-trained_disruptive_window, color=color, linestyle='--')
+        
+        if threshold is not None:
+            # Find alarm time in this shot for specified threshold
+            # First, get the key for this alarm time, which is horizon
+            horizon = experiment.predictor.trained_disruptive_window
+
+            # Second, find index of shot
+            shot_index = np.where(experiment.get_shot_list() == shot)[0][0]
+
+            # Third, find index of threshold
+            threshold_index = np.where(experiment.thresholds == threshold)[0][0]
+
+            alarm_time = experiment.alarm_times[horizon][shot_index][threshold_index]
+
+            # Plot with a big orange dot at the alarm time on the risk curve
+            y_val = experiment.get_predictor_risk(shot, horizon)[np.where(times == alarm_time)[0][0]]
+            plt.plot(alarm_time, y_val, color='orange', marker='o', markersize=10)
     pass
 
     plt.xlim([times[0], times[-1]])

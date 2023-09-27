@@ -79,13 +79,15 @@ class Experiment:
         elif self.alarm_type == 'hyst':
             # Hysteresis
             # Make list of tuples of (min, max, time) for hysteresis
-            # where max goes from 0.1 to 1 and min is set at 0.15
-            # and trigger time goes from 0 to 80 ms
-            min_threshold = 0.15
+            # Match the scheme use in Montes 2021
+            # min goes from 0.05 to 0.5 in increments of 0.05
+            # where max goes from min to 0.95 in increments of 0.05
+            # and trigger time goes from 0 to 50 ms in increments of 5 ms
             self.thresholds = []
-            for max in np.linspace(min_threshold, 1, 10):
-                for time in np.linspace(0, 0.05, 10):
-                    self.thresholds.append((min_threshold, max, time))
+            for min_threshold in np.linspace(0.05, 0.5, 11):
+                for max_threshold in np.arange(min_threshold, 1, 0.05):
+                    for time_threshold in np.linspace(0, 0.05, 11):
+                        self.thresholds.append((min_threshold, max_threshold, time_threshold))
         elif self.alarm_type == 'ettd':
             # Expected time to disruption
             self.thresholds = [0.1, 0.05, 0.02] # Expected time to disruption thresholds in seconds
