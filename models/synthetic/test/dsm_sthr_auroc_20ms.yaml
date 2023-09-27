@@ -1,11 +1,11 @@
 hyperparameters:
-  batch_size: 226
-  distribution: LogNormal
-  epochs: 62
-  horizon: 0.16970098122997426
+  batch_size: 139
+  distribution: Weibull
+  epochs: 59
+  horizon: 0.09509072455639701
   k: 1
-  layer_depth: 4
-  layer_width: 133
-  learning_rate: 0.003705157258672547
-  max_features: log2
-  temperature: 0.7979612700464223
+  layer_depth: 2
+  layer_width: 128
+  learning_rate: 0.0011250593784250939
+  max_features: sqrt
+  temperature: 1.1726898093427167

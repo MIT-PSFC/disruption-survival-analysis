@@ -1,7 +1,7 @@
 hyperparameters:
-  class_time: 0.28805174756070334
-  criterion: log_loss
+  class_time: 0.15506414790236253
+  criterion: gini
   max_features: sqrt
-  min_samples_leaf: 0.020605825923164563
-  min_samples_split: 0.5995997298397618
-  n_estimators: 54
+  min_samples_leaf: 0.015501470986674818
+  min_samples_split: 0.5696411583701103
+  n_estimators: 120
