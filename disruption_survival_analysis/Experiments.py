@@ -354,7 +354,7 @@ class Experiment:
         alarm_times = np.zeros((len(shot_list), len(self.thresholds)))
 
         # Determine which function to use 
-        if self.alarm_type == 'sthr':
+        if self.alarm_type in ['sthr', 'athr']:
             # Simple Threshold
 
             # Iterate through shots
