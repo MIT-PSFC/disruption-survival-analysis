@@ -677,7 +677,7 @@ class Experiment:
         unique_thresholds, avg_warning_times, std_warning_times = self.warning_time_vs_threshold(horizon)
         # Find index where threshold is equal to the best f1 score threshold
         
-        if self.alarm_type == 'sthr':
+        if self.alarm_type != 'hyst':
             warning_time_index = np.where(unique_thresholds == best_f1_threshold)
         else:
             # TODO make better
