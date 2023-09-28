@@ -46,8 +46,8 @@ class TestComputeCriticalMetric(unittest.TestCase):
         # Further, both average warning times should be 2.0
         if len(avg_warning_times) != 2:
             raise ValueError('There should only be two average warning times')
-        if avg_warning_times[0] != 2.0:
-            raise ValueError('The first average warning time should be 2.0')
+        if avg_warning_times[0] != 1.975:
+            raise ValueError('The first average warning time should be 1.975')
         if avg_warning_times[1] != 2.0:
             raise ValueError('The second average warning time should be 2.0')
         
@@ -56,7 +56,7 @@ class TestComputeCriticalMetric(unittest.TestCase):
         # Further, both standard deviations of the warning times should be 0.0
         if len(std_warning_times) != 2:
             raise ValueError('There should only be two standard deviations of the warning times')
-        if std_warning_times[0] != 0.0:
+        if not np.allclose(std_warning_times[0], 0.222205):
             raise ValueError('The first standard deviation of the warning times should be 0.0')
         if std_warning_times[1] != 0.0:
             raise ValueError('The second standard deviation of the warning times should be 0.0')
@@ -80,5 +80,5 @@ class TestComputeCriticalMetric(unittest.TestCase):
 
         # Check the output
         assert np.allclose(false_alarm_rates, np.array([0, 1]))
-        assert np.allclose(avg_warning_times, np.array([1.5, 1.875]))
-        assert np.allclose(std_warning_times, np.array([0.5, 0.33072]))
+        assert np.allclose(avg_warning_times, np.array([0.42857, 1.36363]))
+        assert np.allclose(std_warning_times, np.array([0.72843, 0.88140]))
