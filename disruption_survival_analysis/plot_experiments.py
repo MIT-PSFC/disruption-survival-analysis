@@ -259,7 +259,7 @@ def plot_threshold_vs_false_alarm_rate(experiment_list:list[Experiment], horizon
 
     plt.show()
 
-def plot_false_alarm_rate_vs_threshold(experiment_list:list[Experiment], horizon=None, required_warning_time=MINIMUM_WARNING_TIME, min_threshold=None, max_threshold=None, min_warning_time=None, max_warning_time=None, cutoff_far=None, method='median'):
+def plot_false_alarm_rate_vs_threshold(experiment_list:list[Experiment], horizon=None, required_warning_time=MINIMUM_WARNING_TIME, min_threshold=None, max_threshold=None, min_warning_time=None, max_warning_time=None, cutoff_far=None, method='median', log=False):
     """ Collected over all shots
     """
 
@@ -285,11 +285,20 @@ def plot_false_alarm_rate_vs_threshold(experiment_list:list[Experiment], horizon
         except:
             max_threshold = 1
 
+    # Give some extra space on the plots
+    min_threshold *= 0.9
+    max_threshold *= 1.1
+
+
     # Put a line at the required warning time
     #plt.plot([min_threshold, max_threshold], [required_warning_time*1000, required_warning_time*1000], 'k--')
 
+    # If log is true, make the x axis logarithmic
+    if log:
+        plt.xscale('log')
+
     plt.xlim([min_threshold, max_threshold])
-    plt.ylim([0, 1])
+    plt.ylim([-0.1, 1.1])
 
     plt.ylabel('FPR')
     plt.xlabel('Threshold')
