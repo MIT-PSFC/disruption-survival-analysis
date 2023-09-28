@@ -112,7 +112,7 @@ def plot_roc_curve(experiment_list:list[Experiment], horizon=None, required_warn
 
     plt.xlim([0, 1])
     #plt.ylim([-5, 0])
-    plt.ylim([0, 1])
+    plt.ylim([0, 1.01])
 
     plt.xlabel('False Alarm Rate')
     plt.ylabel('True Alarm Rate')
@@ -299,7 +299,7 @@ def plot_false_alarm_rate_vs_threshold(experiment_list:list[Experiment], horizon
     if log:
         plt.xscale('log')
 
-    plt.xlim([min_threshold, 0.1])
+    plt.xlim([min_threshold, max_threshold])
     plt.ylim([-0.1, 1.1])
 
     plt.ylabel('False Alarm Rate')
