@@ -6,7 +6,7 @@ project_name="test-multi-sweep-optuna"
 source /etc/profile
 source ~/projects/disruption-survival-analysis/.venv/bin/activate
 
-directory="models/synthetic/test"
+directory="synthetic/test"
 
 # Get names of all sweep config files in directory
 files=$(ls $directory | grep "sweep")
