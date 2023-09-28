@@ -61,7 +61,7 @@ if __name__ == "__main__":
     sweep_config_path = sys.argv[1]
 
     # Load the sweep config
-    sweep_config = yaml.safe_load(open(sweep_config_path, "r"))
+    sweep_config = yaml.safe_load(open(f"models/{sweep_config_path}", "r"))
 
     # Get the path to put the study database
     # Since SQLite can't accept writes from more than one process at a time,
@@ -80,15 +80,14 @@ if __name__ == "__main__":
     else:
         direction = "minimize"
 
-    storage = optuna.storages.RDBStorage(
-        url=f"sqlite:///{database_path}", 
-        heartbeat_interval=60, 
-        grace_period=120
+    lock_obj = optuna.storages.JournalFileOpenLock(database_path)
+    storage = optuna.storages.JournalStorage(
+        optuna.storages.JournalFileStorage(database_path, lock_obj=lock_obj)
     )
 
     study = optuna.create_study(
         storage=storage, 
-        study_name="first",
+        study_name="second",
         direction=direction,
         load_if_exists=True
     )

@@ -14,7 +14,7 @@ files=$(ls $directory | grep "sweep")
 # Make a wandb agent for each sweep config file
 for file in $files
 do
-    echo "Launching agent for $file"
+    echo "Launching workers for $file"
 
     # Change the --job-name SBATCH argument in the job_instance.slurm file
     # to the name of the sweep config, minus .yaml
@@ -22,5 +22,5 @@ do
     sed -i "s/--job-name=.*/--job-name=$sweep_id/g" job_instance.slurm
 
     # Launch the job
-    ./job_launch.sh 7 sqlite:///$directory/$file
+    ./job_launch.sh 7 $directory/$file
 done

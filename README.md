@@ -33,7 +33,7 @@ python -m unittest tests/test_*
 
 ## Workflow
 
-### Making Datasets
+### 1. Making Datasets
 
 Datasets used in this repo take the following form:
 ```
@@ -51,12 +51,14 @@ Ordering of the columns and rows makes no difference, library should handle it a
 
 **To add a new dataset**, follow instructions in `Make Datasets.ipynb`
 
-### Hyperparameter Tuning Models
+### 2. Hyperparameter Tuning Models
 
-Follow instructions in `Write Sweep Configs.ipynb`
+Follow instructions in `Write Sweep Configs.ipynb` or use `write_sweep_configs.py`
 
 After sweep configs are generated, run the following command to start a hyperparameter tuning session:
-`python optuna_job.py models/[device]/[dataset_path]/[sweep].yaml`
+```bash
+python optuna_job.py models/[device]/[dataset_path]/[sweep].yaml
+```
 
 Open multiple terminals and execute the command to have several jobs performing sweeps at once. 
 - *probably need to re-activate virtual environment for each terminal*
@@ -71,7 +73,7 @@ optuna-dashboard sqlite:///models/[device]/[dataset]/[study].db
 > The present implementation uses SQLite3, which may suffer performance issues when doing many parallel runs. 
 > This shouldn't be the bottleneck as I expect model training to take significantly longer than database writes, but to avoid possibility of deadlock we may switch to using MySQL in the future.
 
-### Running Experiments
+### 3. Running Experiments
 
 Open `Run Experiments.ipynb` notebook
 

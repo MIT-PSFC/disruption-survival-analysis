@@ -139,13 +139,10 @@ def plot_warning_time_vs_false_alarm_rate(experiment_list:list[Experiment], hori
         # Plot with error bars
         plt.errorbar(false_alarm_rates, warning_time_typical_ms, yerr=warning_time_spread_ms, label=experiment.name, fmt='o-', capsize=5)
 
-    # Make the x axis logarithmic
-    plt.xscale('log')
-
     if min_far is None:
-        min_far = min(false_alarm_rates)
+        min_far = 0
     if max_far is None:
-        max_far = max(false_alarm_rates)
+        max_far = 0.1
     if min_warning_time is None:
         min_warning_time = 0
     if max_warning_time is None:
@@ -178,6 +175,9 @@ def plot_warning_time_vs_threshold(experiment_list:list[Experiment], horizon=Non
     plt.figure()
 
     for experiment in experiment_list:
+        if experiment.alarm_type == 'hyst':
+            print("Skipping hysteresis alarm times for warning time vs. threshold plot")
+            continue
         thresholds, warning_time_avg, warning_time_std = experiment.warning_time_vs_threshold(horizon, method=method)
         warning_time_avg_ms = [i * 1000 for i in warning_time_avg]
         warning_time_std_ms = [i * 1000 for i in warning_time_std]
@@ -186,13 +186,19 @@ def plot_warning_time_vs_threshold(experiment_list:list[Experiment], horizon=Non
         plt.errorbar(thresholds, warning_time_avg_ms, yerr=warning_time_std_ms, label=experiment.name, fmt='o-', capsize=5)
 
     if min_threshold is None:
-        min_threshold = min(thresholds)
+        try:
+            min_threshold = min(thresholds)
+        except:
+            min_threshold = 0
     if max_threshold is None:
-        max_threshold = max(thresholds)
+        try:
+            max_threshold = max(thresholds)
+        except:
+            max_threshold = 1
     if min_warning_time is None:
         min_warning_time = 0
     if max_warning_time is None:
-        max_warning_time = 500
+        max_warning_time = 300
 
     # Put a line at the required warning time
     plt.plot([min_threshold, max_threshold], [required_warning_time*1000, required_warning_time*1000], 'k--')
@@ -215,22 +221,31 @@ def plot_warning_time_vs_threshold(experiment_list:list[Experiment], horizon=Non
 
     plt.show()
 
-def plot_threshold_vs_fpr(experiment_list:list[Experiment], horizon=None, required_warning_time=MINIMUM_WARNING_TIME, min_threshold=None, max_threshold=None, min_warning_time=None, max_warning_time=None, cutoff_far=None, method='median'):
+def plot_threshold_vs_false_alarm_rate(experiment_list:list[Experiment], horizon=None, required_warning_time=MINIMUM_WARNING_TIME, min_threshold=None, max_threshold=None, min_warning_time=None, max_warning_time=None, cutoff_far=None, method='median'):
     """ Collected over all shots
     """
 
     plt.figure()
 
     for experiment in experiment_list:
-        thresholds, false_positive_rate, _ = experiment.false_positive_rate_vs_threshold(horizon=horizon, required_warning_time=required_warning_time, method=method)
+        if experiment.alarm_type == 'hyst':
+            print("Skipping hysteresis alarm times for threshold vs. false alarm rate plot")
+            continue
+        thresholds, false_alarm_rate, _ = experiment.false_alarm_rate_vs_threshold(horizon=horizon, required_warning_time=required_warning_time, method=method)
 
         # Plot with error bars
-        plt.plot(false_positive_rate, thresholds, label=experiment.name)
+        plt.plot(false_alarm_rate, thresholds, label=experiment.name)
 
     if min_threshold is None:
-        min_threshold = min(thresholds)
+        try:
+            min_threshold = min(thresholds)
+        except:
+            min_threshold = 0
     if max_threshold is None:
-        max_threshold = max(thresholds)
+        try:
+            max_threshold = max(thresholds)
+        except:
+            max_threshold = 1
 
     plt.ylim([min_threshold, max_threshold])
     plt.xlim([0, 1])
@@ -244,22 +259,31 @@ def plot_threshold_vs_fpr(experiment_list:list[Experiment], horizon=None, requir
 
     plt.show()
 
-def plot_fpr_vs_threshold(experiment_list:list[Experiment], horizon=None, required_warning_time=MINIMUM_WARNING_TIME, min_threshold=None, max_threshold=None, min_warning_time=None, max_warning_time=None, cutoff_far=None, method='median'):
+def plot_false_alarm_rate_vs_threshold(experiment_list:list[Experiment], horizon=None, required_warning_time=MINIMUM_WARNING_TIME, min_threshold=None, max_threshold=None, min_warning_time=None, max_warning_time=None, cutoff_far=None, method='median'):
     """ Collected over all shots
     """
 
     plt.figure()
 
     for experiment in experiment_list:
-        thresholds, false_positive_rate, _ = experiment.false_positive_rate_vs_threshold(horizon=horizon, required_warning_time=required_warning_time, method=method)
+        if experiment.alarm_type == 'hyst':
+            print("Skipping hysteresis alarm times for false alarm rate vs. threshold plot")
+            continue
+        thresholds, false_alarm_rate, _ = experiment.false_alarm_rate_vs_threshold(horizon=horizon, required_warning_time=required_warning_time, method=method)
 
         # Plot with error bars
-        plt.plot(thresholds, false_positive_rate, label=experiment.name)
+        plt.plot(thresholds, false_alarm_rate, label=experiment.name)
 
     if min_threshold is None:
-        min_threshold = min(thresholds)
+        try:
+            min_threshold = min(thresholds)
+        except:
+            min_threshold = 0
     if max_threshold is None:
-        max_threshold = max(thresholds)
+        try:
+            max_threshold = max(thresholds)
+        except:
+            max_threshold = 1
 
     # Put a line at the required warning time
     #plt.plot([min_threshold, max_threshold], [required_warning_time*1000, required_warning_time*1000], 'k--')
@@ -304,13 +328,13 @@ def plot_risk_compare_horizons(experiment:Experiment, shot, horizons=DEFAULT_HOR
 
     plt.legend()
 
-def plot_risk_compare_models(experiment_list:list[Experiment], shot):
+def plot_risk_compare_models(experiment_list:list[Experiment], shot, threshold=None):
     """Assumes the particular shot's data is the same for all experiments"""
 
     plt.figure()
 
-    times = experiment_list[0].get_time(shot) * 1000
-    final_time = times[-1]
+    times_ms = experiment_list[0].get_time(shot) * 1000
+    final_time_ms = times_ms[-1]
     disruptive = (shot in experiment_list[0].get_disruptive_shot_list())
 
     # Make a list of easy to see colors for each experiment
@@ -319,15 +343,39 @@ def plot_risk_compare_models(experiment_list:list[Experiment], shot):
     for i, experiment in enumerate(experiment_list):
         color = colors[i % len(colors)]
         risk = experiment.get_predictor_risk(shot)
-        plt.plot(times, risk, label=experiment.name, color=color)
-        trained_warning_time = experiment.predictor.trained_required_warning_time*1000
+        plt.plot(times_ms, risk, label=experiment.name, color=color)
+        trained_warning_time_ms = experiment.predictor.trained_required_warning_time*1000
         # Plot with a solid vertical line
-        plt.axvline(x=final_time-trained_warning_time, color=color, linestyle='-')
-        trained_disruptive_window = experiment.predictor.trained_disruptive_window*1000
-        plt.axvline(x=final_time-trained_disruptive_window, color=color, linestyle='--')
-    pass
+        plt.axvline(x=final_time_ms-trained_warning_time_ms, color=color, linestyle='-')
+        trained_disruptive_window_ms = experiment.predictor.trained_disruptive_window*1000
+        plt.axvline(x=final_time_ms-trained_disruptive_window_ms, color=color, linestyle='--')
+        
+        if threshold is not None:
+            # Find alarm time in this shot for specified threshold
+            # First, get the key for this alarm time, which is horizon
+            horizon = experiment.predictor.trained_disruptive_window
 
-    plt.xlim([times[0], times[-1]])
+            # Second, find index of shot
+            shot_index = np.where(experiment.get_shot_list() == shot)[0][0]
+
+            # Third, find index of threshold
+            for i, t in enumerate(experiment.thresholds):
+                if np.isclose(t, threshold).all():
+                    threshold_index = i
+                    break
+            
+            try:
+                alarm_time_ms = experiment.alarm_times[horizon][shot_index][threshold_index]*1000
+
+                # Plot with a big orange dot at the alarm time on the risk curve
+                y_val = experiment.get_predictor_risk(shot, horizon)[np.where(times_ms == alarm_time_ms)[0][0]]
+                plt.plot(alarm_time_ms, y_val, color='orange', marker='o', markersize=8)
+                plt.plot(alarm_time_ms, y_val, color=color, marker='o', markersize=6)
+            except:
+                # no alarm triggered for this threshold, do nothing
+                pass
+
+    plt.xlim([times_ms[0], times_ms[-1]])
     plt.ylim([0, 1])
 
     plt.xlabel('Time [ms]')
