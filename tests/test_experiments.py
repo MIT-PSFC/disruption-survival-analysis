@@ -233,11 +233,9 @@ class TestWarningTimesList(unittest.TestCase):
         """
 
         # Load hysteresis rf experiment
-        self.required_warning_time = 0.1
-        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'dsm', 'hyst', 'auroc', self.required_warning_time)
+        self.required_warning_time = 0.02
+        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'rf', 'sthr', 'auroc', self.required_warning_time)
         self.experiment = Experiment(experiment_config, 'test')
-
-        
 
     def test_no_negative_warning_times(self):
         """Ensure that there are no negative warning times
@@ -266,6 +264,19 @@ class TestWarningTimesList(unittest.TestCase):
             if true_alarm_rate == 0:
                 if len(warning_times[i]) != 0:
                     self.fail(f"There exist warning times when true alarm rate is 0 at index {i}")
+
+    def test_warning_times_increasing(self):
+        """Ensure that the warning times are increasing with increasing false alarm rates
+        """
+
+
+        general_false_alarm_rates, general_avg_warning_times, _ = self.experiment.warning_time_vs_false_alarm_rate()    
+
+        # Check that the warning times are increasing
+        for i in range(len(general_false_alarm_rates) - 1):
+            if general_avg_warning_times[i] > general_avg_warning_times[i + 1]:
+                self.fail("Warning times are not increasing")
+
 
 
 

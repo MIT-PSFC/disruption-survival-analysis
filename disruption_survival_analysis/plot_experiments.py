@@ -265,6 +265,9 @@ def plot_false_alarm_rate_vs_threshold(experiment_list:list[Experiment], horizon
 
     plt.figure()
 
+    # Put a horizontal line at y = 0
+    plt.axhline(y=0, color='k', linestyle='--')
+
     for experiment in experiment_list:
         if experiment.alarm_type == 'hyst':
             print("Skipping hysteresis alarm times for false alarm rate vs. threshold plot")
@@ -289,7 +292,6 @@ def plot_false_alarm_rate_vs_threshold(experiment_list:list[Experiment], horizon
     min_threshold *= 0.9
     max_threshold *= 1.1
 
-
     # Put a line at the required warning time
     #plt.plot([min_threshold, max_threshold], [required_warning_time*1000, required_warning_time*1000], 'k--')
 
@@ -297,13 +299,13 @@ def plot_false_alarm_rate_vs_threshold(experiment_list:list[Experiment], horizon
     if log:
         plt.xscale('log')
 
-    plt.xlim([min_threshold, max_threshold])
+    plt.xlim([min_threshold, 0.1])
     plt.ylim([-0.1, 1.1])
 
-    plt.ylabel('FPR')
+    plt.ylabel('False Alarm Rate')
     plt.xlabel('Threshold')
     
-    plt.title(f'FPR vs. Threshold')
+    plt.title(f'False Alarm Rate vs. Threshold')
 
     plt.legend()
 
