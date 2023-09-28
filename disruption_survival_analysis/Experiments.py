@@ -534,11 +534,18 @@ class Experiment:
             # Get the alarm times for this shot
             shot_alarm_times = alarm_times[shot_index]
 
+            # TODO: if warning time is None, that means no alarm was raised.
+            # Should this be treated as a zero warning time, or should it be ignored?
+            # For now, treat it as a zero warning time
+
+            # If alarm time is None, set it to zero (no alarm raised)
+            shot_alarm_times = [0 if alarm_time is None else alarm_time for alarm_time in shot_alarm_times]
+
             # Calculate the warning times for this shot
             warning_times = [disrupt_time - alarm_time for alarm_time in shot_alarm_times]
             
-            # If warning time is negative, set it to NaN
-            warning_times = [warning_time if warning_time >= 0 else np.nan for warning_time in warning_times]
+            # If warning time is negative, set it to zero
+            warning_times = [warning_time if warning_time >= 0 else 0 for warning_time in warning_times]
 
             warning_times_shot_list.append(warning_times)
 
@@ -552,12 +559,7 @@ class Experiment:
                 except:
                     pass
 
-            # The only way a NaN will show up in the warning times is if the alarm time was None or Nan
-            # If alarm time was None, that means no alarm was raised for this disruptive shot
-            # We don't want to include 'no alarm' times in the average warning times, so remove them 
             warning_times_threshold = np.array(warning_times_threshold)
-            warning_times_threshold = warning_times_threshold[~np.isnan(warning_times_threshold)]
-
             warning_times_threshold_list.append(warning_times_threshold)
 
         # If there is a required warning time, remove warning times less than that
