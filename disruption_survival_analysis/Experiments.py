@@ -534,37 +534,36 @@ class Experiment:
             # Get the alarm times for this shot
             shot_alarm_times = alarm_times[shot_index]
 
-            # TODO: if warning time is None, that means no alarm was raised.
-            # Should this be treated as a zero warning time, or should it be ignored?
-            # For now, treat it as a zero warning time
-
-            # If alarm time is None, set it to zero (no alarm raised)
-            shot_alarm_times = [0 if alarm_time is None else alarm_time for alarm_time in shot_alarm_times]
-
             # Calculate the warning times for this shot
             warning_times = [disrupt_time - alarm_time for alarm_time in shot_alarm_times]
             
-            # If warning time is negative, set it to zero
+            # If warning time is nan, set it to zero
+            # NOTE: if warning time is None, that means no alarm was raised.
+            # Should this be treated as a zero warning time, or should it be ignored?
+            # It could go either way. We have chosen that it should be treated as a zero warning time.
+            # This makes the 'average warning time vs false positve rate plot' more intuitive,
+            # as the average warning time is then monatonically increasing with false positive rate.
+            # If one were to pick the other option, then the average warning time could 
+            # fluctuate up and down with false positive rate
+            # (Consider the case where a single disruptive shot has a moderate risk value very early on,
+            # and many other disruptive shots have a lower risk value very close to the end)
             warning_times = [warning_time if warning_time >= 0 else 0 for warning_time in warning_times]
 
             warning_times_shot_list.append(warning_times)
 
         # The statistics we want to do are for each threshold for various shots
-        warning_times_threshold_list = []
-        for threshold_index in range(len(self.thresholds)):
-            warning_times_threshold = []
-            for warning_times_shot in warning_times_shot_list:
-                try:
-                    warning_times_threshold.append(warning_times_shot[threshold_index])
-                except:
-                    pass
+        # So we need to transpose the list
 
-            warning_times_threshold = np.array(warning_times_threshold)
-            warning_times_threshold_list.append(warning_times_threshold)
+        # First, turn into a numpy array
+        warning_times_shot_list = np.array(warning_times_shot_list)
+        # Then, transpose
+        warning_times_threshold_list = warning_times_shot_list.T
 
         # If there is a required warning time, remove warning times less than that
-        if required_warning_time != None:
-            warning_times_threshold_list = [[warning_time for warning_time in warning_times if warning_time > required_warning_time] for warning_times in warning_times_threshold_list]
+        # TODO: clarify that warning time does not take into account the cutoff,
+        # but true alarms and false alarms *do*
+        #if required_warning_time != None:
+        #    warning_times_threshold_list = [[warning_time for warning_time in warning_times if warning_time > required_warning_time] for warning_times in warning_times_threshold_list]
 
         return warning_times_threshold_list
 
