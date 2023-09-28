@@ -52,6 +52,7 @@ def compute_critical_metric(predictions, true_outcomes, required_warning_time, t
             # Iterate through each predicted risk at time in the shot.
             # Once an alarm is triggered, this loop gets broken out of, 
             # because only one alarm can be triggered per shot at a given threshold.
+            warning_time = None
             for j, risk in enumerate(prediction['risk']):
                 if risk > threshold:
                     # The risk exceeded the threshold. Determine if it was a true alarm.
@@ -63,14 +64,14 @@ def compute_critical_metric(predictions, true_outcomes, required_warning_time, t
                             alarms += 1
                             true_alarms += 1
                             warning_times.append(warning_time)
-                        else:
-                            # Alarm was triggered too late. Missed alarm.
-                            # Do not increment alarms or true_alarms
-                            pass
                     else:
                         # Shot was not disruptive. False alarm.
                         alarms += 1
                     break
+            # Ran through all risks in the shot and none exceeded the threshold. No alarm.
+            # If the shot was disruptive, the warning time is 0.
+            if true_outcomes[i]['disrupted'] and warning_time is None:
+                warning_times.append(0)
 
         # Compute the false alarm rate and average warning time
         false_alarms = alarms - true_alarms

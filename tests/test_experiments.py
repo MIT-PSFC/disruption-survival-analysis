@@ -228,47 +228,55 @@ class TestCriticalMetric(unittest.TestCase):
 
 class TestWarningTimesList(unittest.TestCase):
 
-    def setUp(self):
-        """Set up the test case
-        """
-
-        # Load hysteresis rf experiment
-        self.required_warning_time = 0.02
-        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'rf', 'sthr', 'auroc', self.required_warning_time)
-        self.experiment = Experiment(experiment_config, 'test')
-
     def test_no_negative_warning_times(self):
         """Ensure that there are no negative warning times
         """
 
+        # Load hysteresis rf experiment
+        required_warning_time = 0.02
+        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'rf', 'sthr', 'auroc', required_warning_time)
+        experiment = Experiment(experiment_config, 'test')
+
         # Get the warning times list
-        warning_times_list = self.experiment.get_warning_times_list()
+        warning_times_list = experiment.get_warning_times_list()
 
         # Check that there are no negative warning times
         for warning_times in warning_times_list:
             for warning_time in warning_times:
                 self.assertGreaterEqual(warning_time, 0)
 
-    def test_warning_times_agree_with_true_positives(self):
-        """In the case when the true positive rate is 0 for a given false positve rate,
-        ensure that the warning time is 0"""
+    def test_warning_times_nonzero_with_true_positives(self):
+        """In the case when the true positive rate is greater than zero for a given false positve rate,
+        ensure that the average warning time is greater than zero"""
+
+        # Load dsm simple threshold experiment
+        required_warning_time = 0.1
+        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'dsm', 'sthr', 'auroc', required_warning_time)
+        self.experiment = Experiment(experiment_config, 'test')
 
         # Get the true alarm rate list
         true_alarm_rates, _ = self.experiment.true_false_alarm_rates()
         
         # Get the warning time list
-        warning_times = self.experiment.get_warning_times_list(required_warning_time=self.required_warning_time)
+        warning_times = self.experiment.get_warning_times_list(required_warning_time=required_warning_time)
+
+        # Get the average warning times
+        avg_warning_times = np.mean(warning_times, axis=1)
 
         # Check that the warning times are empty when the true alarm rate is 0
         for i, true_alarm_rate in enumerate(true_alarm_rates):
-            if true_alarm_rate == 0:
-                if len(warning_times[i]) != 0:
-                    self.fail(f"There exist warning times when true alarm rate is 0 at index {i}")
+            if true_alarm_rate != 0:
+                if avg_warning_times[i] == 0:
+                    self.fail(f"There are no warning times when there exist true positives {i}")
 
     def test_warning_times_increasing(self):
         """Ensure that the warning times are increasing with increasing false alarm rates
         """
 
+        # Load dsm simple threshold experiment
+        required_warning_time = 0.1
+        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'dsm', 'sthr', 'auroc', required_warning_time)
+        self.experiment = Experiment(experiment_config, 'test')
 
         general_false_alarm_rates, general_avg_warning_times, _ = self.experiment.warning_time_vs_false_alarm_rate()    
 
