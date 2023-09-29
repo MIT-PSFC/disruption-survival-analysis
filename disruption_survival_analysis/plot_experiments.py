@@ -112,7 +112,7 @@ def plot_roc_curve(experiment_list:list[Experiment], horizon=None, required_warn
 
     plt.xlim([0, 1])
     #plt.ylim([-5, 0])
-    plt.ylim([0, 1])
+    plt.ylim([0, 1.01])
 
     plt.xlabel('False Alarm Rate')
     plt.ylabel('True Alarm Rate')
@@ -137,7 +137,9 @@ def plot_warning_time_vs_false_alarm_rate(experiment_list:list[Experiment], hori
         warning_time_spread_ms = [i * 1000 for i in warning_time_std]
         # TODO: reintroduce error bars
         # Plot with error bars
-        plt.errorbar(false_alarm_rates, warning_time_typical_ms, yerr=warning_time_spread_ms, label=experiment.name, fmt='o-', capsize=5)
+        #plt.errorbar(false_alarm_rates, warning_time_typical_ms, yerr=warning_time_spread_ms, label=experiment.name, fmt='o-', capsize=5)
+        # Plot without error bars
+        plt.plot(false_alarm_rates, warning_time_typical_ms, label=experiment.name, marker='o')
 
     if min_far is None:
         min_far = 0
@@ -146,7 +148,7 @@ def plot_warning_time_vs_false_alarm_rate(experiment_list:list[Experiment], hori
     if min_warning_time is None:
         min_warning_time = 0
     if max_warning_time is None:
-        max_warning_time = 500
+        max_warning_time = 100
 
     # Put a line at the required warning time
     plt.plot([min_far, max_far], [required_warning_time*1000, required_warning_time*1000], 'k--')
@@ -259,11 +261,14 @@ def plot_threshold_vs_false_alarm_rate(experiment_list:list[Experiment], horizon
 
     plt.show()
 
-def plot_false_alarm_rate_vs_threshold(experiment_list:list[Experiment], horizon=None, required_warning_time=MINIMUM_WARNING_TIME, min_threshold=None, max_threshold=None, min_warning_time=None, max_warning_time=None, cutoff_far=None, method='median'):
+def plot_false_alarm_rate_vs_threshold(experiment_list:list[Experiment], horizon=None, required_warning_time=MINIMUM_WARNING_TIME, min_threshold=None, max_threshold=None, min_warning_time=None, max_warning_time=None, cutoff_far=None, method='median', log=False):
     """ Collected over all shots
     """
 
     plt.figure()
+
+    # Put a horizontal line at y = 0
+    plt.axhline(y=0, color='k', linestyle='--')
 
     for experiment in experiment_list:
         if experiment.alarm_type == 'hyst':
@@ -285,16 +290,24 @@ def plot_false_alarm_rate_vs_threshold(experiment_list:list[Experiment], horizon
         except:
             max_threshold = 1
 
+    # Give some extra space on the plots
+    min_threshold *= 0.9
+    max_threshold *= 1.1
+
     # Put a line at the required warning time
     #plt.plot([min_threshold, max_threshold], [required_warning_time*1000, required_warning_time*1000], 'k--')
 
-    plt.xlim([min_threshold, max_threshold])
-    plt.ylim([0, 1])
+    # If log is true, make the x axis logarithmic
+    if log:
+        plt.xscale('log')
 
-    plt.ylabel('FPR')
+    plt.xlim([min_threshold, max_threshold])
+    plt.ylim([-0.1, 1.1])
+
+    plt.ylabel('False Alarm Rate')
     plt.xlabel('Threshold')
     
-    plt.title(f'FPR vs. Threshold')
+    plt.title(f'False Alarm Rate vs. Threshold')
 
     plt.legend()
 

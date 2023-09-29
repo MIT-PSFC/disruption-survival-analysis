@@ -3,8 +3,8 @@
 from disruption_survival_analysis.sweep_config import make_sweep_config, write_sweep_config
 
 # Datasets to use
-devices = ["synthetic"]
-dataset_paths = ["test"]
+devices = ["cmod"]
+dataset_paths = ["preliminary_dataset_no_ufo", "preliminary_dataset_no_ufo/stack_6"]
 
 # List of models to create sweeps for
 # cph, dcph, dcm, dsm, rf, km

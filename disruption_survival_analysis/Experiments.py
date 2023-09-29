@@ -84,9 +84,9 @@ class Experiment:
             # where max goes from min to 0.95 in increments of 0.05
             # and trigger time goes from 0 to 50 ms in increments of 5 ms
             self.thresholds = []
-            for min_threshold in np.linspace(0.05, 0.5, 2):
+            for min_threshold in np.linspace(0, 0.5, 11):
                 for max_threshold in np.arange(min_threshold, 1, 0.05):
-                    for time_threshold in np.linspace(0, 0.05, 2):
+                    for time_threshold in np.linspace(0, 0.05, 11):
                         self.thresholds.append((min_threshold, max_threshold, time_threshold))
         elif self.alarm_type == 'ettd':
             # Expected time to disruption
@@ -537,32 +537,33 @@ class Experiment:
             # Calculate the warning times for this shot
             warning_times = [disrupt_time - alarm_time for alarm_time in shot_alarm_times]
             
-            # If warning time is negative, set it to NaN
-            warning_times = [warning_time if warning_time >= 0 else np.nan for warning_time in warning_times]
+            # If warning time is nan, set it to zero
+            # NOTE: if warning time is None, that means no alarm was raised.
+            # Should this be treated as a zero warning time, or should it be ignored?
+            # It could go either way. We have chosen that it should be treated as a zero warning time.
+            # This makes the 'average warning time vs false positve rate plot' more intuitive,
+            # as the average warning time is then monatonically increasing with false positive rate.
+            # If one were to pick the other option, then the average warning time could 
+            # fluctuate up and down with false positive rate
+            # (Consider the case where a single disruptive shot has a moderate risk value very early on,
+            # and many other disruptive shots have a lower risk value very close to the end)
+            warning_times = [warning_time if warning_time >= 0 else 0 for warning_time in warning_times]
 
             warning_times_shot_list.append(warning_times)
 
         # The statistics we want to do are for each threshold for various shots
-        warning_times_threshold_list = []
-        for threshold_index in range(len(self.thresholds)):
-            warning_times_threshold = []
-            for warning_times_shot in warning_times_shot_list:
-                try:
-                    warning_times_threshold.append(warning_times_shot[threshold_index])
-                except:
-                    pass
+        # So we need to transpose the list
 
-            # The only way a NaN will show up in the warning times is if the alarm time was None or Nan
-            # If alarm time was None, that means no alarm was raised for this disruptive shot
-            # We don't want to include 'no alarm' times in the average warning times, so remove them 
-            warning_times_threshold = np.array(warning_times_threshold)
-            warning_times_threshold = warning_times_threshold[~np.isnan(warning_times_threshold)]
-
-            warning_times_threshold_list.append(warning_times_threshold)
+        # First, turn into a numpy array
+        warning_times_shot_list = np.array(warning_times_shot_list)
+        # Then, transpose
+        warning_times_threshold_list = warning_times_shot_list.T
 
         # If there is a required warning time, remove warning times less than that
-        if required_warning_time != None:
-            warning_times_threshold_list = [[warning_time for warning_time in warning_times if warning_time > required_warning_time] for warning_times in warning_times_threshold_list]
+        # TODO: clarify that warning time does not take into account the cutoff,
+        # but true alarms and false alarms *do*
+        #if required_warning_time != None:
+        #    warning_times_threshold_list = [[warning_time for warning_time in warning_times if warning_time > required_warning_time] for warning_times in warning_times_threshold_list]
 
         return warning_times_threshold_list
 
@@ -630,7 +631,7 @@ class Experiment:
             metric_val = area_under_curve(false_alarm_rates, true_alarm_rates)
         elif metric_type == 'auwtc':
             # Area under warning time curve
-            false_alarm_rates, warning_times, _ = self.warning_time_vs_false_alarm_rate(horizon, required_warning_time, method='median')
+            false_alarm_rates, warning_times, _ = self.warning_time_vs_false_alarm_rate(horizon, required_warning_time, method='average')
             metric_val = area_under_curve(false_alarm_rates, warning_times, x_cutoff=0.05)
         elif metric_type == 'maxf1':
             # Highest f1 score over all the thresholds
@@ -677,7 +678,7 @@ class Experiment:
         unique_thresholds, avg_warning_times, std_warning_times = self.warning_time_vs_threshold(horizon)
         # Find index where threshold is equal to the best f1 score threshold
         
-        if self.alarm_type == 'sthr':
+        if self.alarm_type != 'hyst':
             warning_time_index = np.where(unique_thresholds == best_f1_threshold)
         else:
             # TODO make better
