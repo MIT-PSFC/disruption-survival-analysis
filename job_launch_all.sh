@@ -19,8 +19,8 @@ do
     # Change the --job-name SBATCH argument in the job_instance.slurm file
     # to the name of the sweep config, minus .yaml
     sweep_id=$(echo $file | sed 's/.yaml//g')
-    sed -i "s/--job-name=.*/--job-name=$sweep_id-$device_dataset/g" job_instance.slurm
+    sed -i "s/--job-name=.*/--job-name=$sweep_id/g" job_instance.slurm
 
     # Launch the job
-    ./job_launch.sh 7 $directory/$file
+    ./job_launch.sh 7 $device_dataset/$file
 done
