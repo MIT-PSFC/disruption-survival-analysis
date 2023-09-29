@@ -325,11 +325,12 @@ def area_under_curve(x_vals, y_vals, x_cutoff=None):
         else:
             lower_index = upper_index - 1
 
-        # Now, interpolate the y values between the two indices
-        # First, calculate the slope
-        slope = (y_vals[upper_index] - y_vals[lower_index])/(x_vals[upper_index] - x_vals[lower_index])
-        # Then, calculate the y value at the cutoff
-        y_cutoff = slope*(x_cutoff - x_vals[lower_index]) + y_vals[lower_index]
+        # Hold the y value directly below the cutoff constant
+        # This makes it so our metric is only influenced by values below the cutoff
+        # In addition, if the average warning time is really good early on (i.e. the curve is very steep)
+        # and there are no other false alarm rates until later, this will lead to a large area under the curve
+        # which is exactly what we want
+        y_cutoff = y_vals[lower_index]
 
         # Add the cutoff values to the x and y values
         x_vals = np.append(x_vals, x_cutoff)
