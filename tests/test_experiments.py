@@ -99,8 +99,8 @@ class TestFalseAlarmRates(unittest.TestCase):
 
     def setUp(self):
 
-        # Load simple RF experiment
-        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'rf', 'sthr', 'auroc', 0.02)
+        # Load simple dsm experiment
+        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'dsm', 'sthr', 'auroc', 0.02)
         self.experiment = Experiment(experiment_config, 'test')
     
     def test_false_alarm_rates_constant_values(self):
@@ -136,6 +136,18 @@ class TestFalseAlarmRates(unittest.TestCase):
         for false_alarm_rate in false_alarm_rates:
             if false_alarm_rate < 0 or false_alarm_rate > 1:
                 self.fail("False alarm rates are not between 0 and 1")
+
+    def test_false_alarm_rates_limits(self):
+        """Check that the false alarm rate is 0 when the threshold is 1 and 1 when the threshold is 0"""
+
+        # Get the false alarm rates
+        _, false_alarm_rates = self.experiment.true_false_alarm_rates()
+
+        # Check that the false alarm rates are 0 when the threshold is 1 and 1 when the threshold is 0
+        if false_alarm_rates[0] != 1:
+            self.fail("False alarm rate is not 1 when threshold is 0")
+        if false_alarm_rates[-1] != 0:
+            self.fail("False alarm rate is not 0 when threshold is 1")
 
 
 class TestAllCombos(unittest.TestCase):

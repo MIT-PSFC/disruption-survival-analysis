@@ -137,7 +137,9 @@ def plot_warning_time_vs_false_alarm_rate(experiment_list:list[Experiment], hori
         warning_time_spread_ms = [i * 1000 for i in warning_time_std]
         # TODO: reintroduce error bars
         # Plot with error bars
-        plt.errorbar(false_alarm_rates, warning_time_typical_ms, yerr=warning_time_spread_ms, label=experiment.name, fmt='o-', capsize=5)
+        #plt.errorbar(false_alarm_rates, warning_time_typical_ms, yerr=warning_time_spread_ms, label=experiment.name, fmt='o-', capsize=5)
+        # Plot without error bars
+        plt.plot(false_alarm_rates, warning_time_typical_ms, label=experiment.name, marker='o')
 
     if min_far is None:
         min_far = 0
