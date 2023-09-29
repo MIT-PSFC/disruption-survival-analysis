@@ -84,9 +84,9 @@ class Experiment:
             # where max goes from min to 0.95 in increments of 0.05
             # and trigger time goes from 0 to 50 ms in increments of 5 ms
             self.thresholds = []
-            for min_threshold in np.linspace(0.05, 0.5, 2):
+            for min_threshold in np.linspace(0, 0.5, 11):
                 for max_threshold in np.arange(min_threshold, 1, 0.05):
-                    for time_threshold in np.linspace(0, 0.05, 2):
+                    for time_threshold in np.linspace(0, 0.05, 11):
                         self.thresholds.append((min_threshold, max_threshold, time_threshold))
         elif self.alarm_type == 'ettd':
             # Expected time to disruption
