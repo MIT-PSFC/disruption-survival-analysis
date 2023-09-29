@@ -631,7 +631,7 @@ class Experiment:
             metric_val = area_under_curve(false_alarm_rates, true_alarm_rates)
         elif metric_type == 'auwtc':
             # Area under warning time curve
-            false_alarm_rates, warning_times, _ = self.warning_time_vs_false_alarm_rate(horizon, required_warning_time, method='median')
+            false_alarm_rates, warning_times, _ = self.warning_time_vs_false_alarm_rate(horizon, required_warning_time, method='average')
             metric_val = area_under_curve(false_alarm_rates, warning_times, x_cutoff=0.05)
         elif metric_type == 'maxf1':
             # Highest f1 score over all the thresholds
