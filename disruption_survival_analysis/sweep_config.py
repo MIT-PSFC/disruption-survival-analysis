@@ -182,9 +182,15 @@ def create_experiment_groups(device, dataset_path, models, alarms, metrics, min_
             for metric in metrics:
                 for min_warning_time in min_warning_times:
                     # Load config for experiment 
-                    config = load_experiment_config(device, dataset_path, model, alarm, metric, min_warning_time)
-                    # Create test experiment from config
-                    experiment = Experiment(config, 'test')
+                    if alarm == 'athr':
+                        config = load_experiment_config(device, dataset_path, model, 'sthr', metric, min_warning_time)
+                        # Create test experiment from config
+                        config['alarm_type'] = 'athr'
+                        experiment = Experiment(config, 'test')
+                    else:
+                        config = load_experiment_config(device, dataset_path, model, alarm, metric, min_warning_time)
+                        # Create test experiment from config
+                        experiment = Experiment(config, 'test')
                     
                     try:
                         if experiment_groups[model] is None:

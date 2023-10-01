@@ -94,7 +94,7 @@ def plot_auroc_timeslice_shot_avg_vs_horizon(experiment_list:list[Experiment], h
 
 # Plots for shot-level model performance
 
-def plot_roc_curve(experiment_list:list[Experiment], horizon=None, required_warning_time=MINIMUM_WARNING_TIME):
+def plot_roc_curve(experiment_list:list[Experiment], horizon=None, required_warning_time=MINIMUM_WARNING_TIME, debug=False):
     """ Averaged over all shots
     
     """
@@ -123,7 +123,8 @@ def plot_roc_curve(experiment_list:list[Experiment], horizon=None, required_warn
         plt.title(f"{required_warning_time * 1000} ms True Alarm Rate vs. False Alarm Rate at {horizon*1000} ms Horizon")
 
     plt.legend()
-    plt.show()
+    if not debug:
+        plt.show()
 
 def plot_warning_time_vs_false_alarm_rate(experiment_list:list[Experiment], horizon=None, required_warning_time=MINIMUM_WARNING_TIME, min_far=None, max_far=None, min_warning_time=None, max_warning_time=None, cutoff_far=None, method='median'):
     """ Averaged over all shots
@@ -137,9 +138,9 @@ def plot_warning_time_vs_false_alarm_rate(experiment_list:list[Experiment], hori
         warning_time_spread_ms = [i * 1000 for i in warning_time_std]
         # TODO: reintroduce error bars
         # Plot with error bars
-        #plt.errorbar(false_alarm_rates, warning_time_typical_ms, yerr=warning_time_spread_ms, label=experiment.name, fmt='o-', capsize=5)
+        plt.errorbar(false_alarm_rates, warning_time_typical_ms, yerr=warning_time_spread_ms, label=experiment.name, fmt='o-', capsize=5)
         # Plot without error bars
-        plt.plot(false_alarm_rates, warning_time_typical_ms, label=experiment.name, marker='o')
+        #plt.plot(false_alarm_rates, warning_time_typical_ms, label=experiment.name, marker='o')
 
     if min_far is None:
         min_far = 0
