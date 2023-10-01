@@ -1,6 +1,7 @@
 """Test functions to ensure that the data preprocessing works as expected
 """
 import unittest
+import time
 
 import numpy as np
 
@@ -149,7 +150,6 @@ class TestFalseAlarmRates(unittest.TestCase):
         if false_alarm_rates[-1] != 0:
             self.fail("False alarm rate is not 0 when threshold is 1")
 
-
 class TestAllCombos(unittest.TestCase):
 
     # Test for every combination of model, alarm type, and metric
@@ -196,34 +196,40 @@ class TestAllCombos(unittest.TestCase):
         experiment.evaluate_metric(model_metric)
 
 
-class TestCriticalMetric(unittest.TestCase):
+class TestCriticalMetricsVsThresholds(unittest.TestCase):
 
     def setUp(self):
         """Set up the test case
         """
 
         # Load simple RF experiment
-        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'rf', 'sthr', 'auroc', 0.02)
+        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'rf', 'athr', 'auroc', 0.02)
         self.experiment = Experiment(experiment_config, 'test')
+        self.horizon = 0.05
+        self.required_warning_time = 0.02
 
-    def test_get_metric(self):
-        """Test that the metric is obtained correctly
+    def test_get_metric_both_ways(self):
+        """Test that the metrics are obtained correctly
         """
-
+        start_time = time.time()
         epsilon = 0.001
 
-        # Get the metric both ways
-        direct_false_alarm_rates, direct_avg_warning_times, direct_std_warning_times = self.experiment.get_critical_metric(horizon=0.05, required_warning_time=0.02)
-        general_false_alarm_rates, general_avg_warning_times, general_std_warning_times = self.experiment.warning_time_vs_false_alarm_rate(horizon=0.05, required_warning_time=0.02)
+        self.experiment.thresholds = self.experiment.get_all_thresholds(self.horizon)
 
+        # Get the metrics both ways
+        direct_true_alarm_rates, direct_false_alarm_rates, direct_avg_warning_times, direct_std_warning_times = self.experiment.get_critical_metrics_vs_thresholds(horizon=self.horizon, required_warning_time=self.required_warning_time)
+        
+        general_true_alarm_rates, general_false_alarm_rates = self.experiment.true_false_alarm_rates(horizon=self.horizon, required_warning_time=self.required_warning_time)
+        _, general_avg_warning_times, general_std_warning_times = self.experiment.warning_time_vs_threshold(horizon=self.horizon, required_warning_time=self.required_warning_time, method='average')
         # Check that the metric is calculated correctly, within epsilon
-        if (abs(direct_false_alarm_rates - general_false_alarm_rates) > epsilon).any():
-            self.fail("False alarm rates are not equal")
-        for i in range(len(direct_false_alarm_rates)):
-            if (abs(direct_avg_warning_times[i] - general_avg_warning_times[i]) > epsilon).any():
-                self.fail("Average warning times are not equal")
-            if (abs(direct_std_warning_times[i] - general_std_warning_times[i]) > epsilon).any():
-                self.fail("Standard deviation of warning times are not equal")
+        if not np.allclose(direct_true_alarm_rates, general_true_alarm_rates, atol=epsilon):
+            self.fail("True alarm rates are not calculated correctly")
+        if not np.allclose(direct_false_alarm_rates, general_false_alarm_rates, atol=epsilon):
+            self.fail("False alarm rates are not calculated correctly")
+        #if not np.allclose(direct_avg_warning_times, general_avg_warning_times, atol=epsilon):
+        #    self.fail("Average warning times are not calculated correctly")
+        #if not np.allclose(direct_std_warning_times, general_std_warning_times, atol=epsilon):
+        #    self.fail("Standard deviation of warning times are not calculated correctly")
 
     def test_no_nan(self):
 

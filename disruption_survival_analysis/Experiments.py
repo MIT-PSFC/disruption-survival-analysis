@@ -13,7 +13,7 @@ from sklearn.ensemble import RandomForestClassifier
 
 from disruption_survival_analysis.DisruptionPredictors import DisruptionPredictorSM, DisruptionPredictorRF, DisruptionPredictorKM
 
-from disruption_survival_analysis.warning_times import compute_critical_metric
+from disruption_survival_analysis.critical_metrics import compute_metrics_vs_thresholds, compute_metrics_vs_thresholds_parallel
 
 class Experiment:
     """ Class that holds onto data shared between multiple experiments """
@@ -567,12 +567,12 @@ class Experiment:
 
         return warning_times_threshold_list
 
-    def warning_time_vs_threshold(self, horizon=None, method='average'):
+    def warning_time_vs_threshold(self, horizon=None, required_warning_time=None, method='average'):
         """ Get statistics on warning time vs threshold for a given horizon 
             This is inherently a macro statistic, since a single shot can have only one warning time
         """
 
-        warning_times_list = self.get_warning_times_list(horizon)
+        warning_times_list = self.get_warning_times_list(horizon, required_warning_time)
 
         unique_thresholds, typical_warning_times, spread_warning_times = unique_domain_mapping(self.thresholds, warning_times_list, method=method)
 
@@ -696,24 +696,7 @@ class Experiment:
 
         return true_alarm_rate, false_alarm_rate, avg_warning_time, std_warning_time
     
-    # A self-contained single function to evaluate the only metric which is absolutely critical to the project
-    def get_critical_metric(self, horizon, required_warning_time):
-        """ Get the critical metric for the experiment
-        This metric is the average warning time (y-axis, range) vs false positive rate (x-axis, domain)
-        Only applicable to simple threshold alarms
-        
-        Parameters
-        ----------
-        horizon : float
-            The horizon for the survival models to predict at
-        required_warning_time : float
-            The time before a disruption an alarm must be triggered for it to count as a 'true alarm'
-
-        Returns
-        -------
-        unique_false_alarm_rates, avg_warning_times, std_warning_times : np.array, np.array, np.array
-            The unique false alarm rates, average warning times, and standard deviation of warning times
-        """
+    def critical_metric_setup(self, horizon):
 
         if self.alarm_type not in ['sthr', 'athr']:
             raise ValueError('Critical metric only defined for simple threshold alarms (sthr, athr)')
@@ -749,6 +732,8 @@ class Experiment:
             else:
                 raise ValueError('Model type not supported')
             shot_predictions['time'] = shot_data['time'].values
+            # Convert to numpy array
+            shot_predictions['risk'] = np.array(shot_predictions['risk'])
             predictions.append(shot_predictions)
 
             # Determine the time of disruption and whether or not the shot actually disrupted
@@ -763,17 +748,47 @@ class Experiment:
                 raise ValueError('Invalid shot data, mixed disruption and non-disruption data')
             true_outcomes.append(true_outcome)
 
-        # At this point, we have the following setup:
-        # predictions is a list of dictionaries, each dictionary contains the following keys:
-        #   'risk': a numpy array of risk values
-        #   'time': a numpy array of time values
-        # true_outcomes is a list of dictionaries, each dictionary contains the following keys:
-        #   'disruption_time': the time of disruption
-        #   'disrupted': whether or not the shot actually disrupted
+        return predictions, true_outcomes
+
+
+    def get_critical_metrics_vs_thresholds(self, horizon, required_warning_time):
+
+        predictions, outcomes = self.critical_metric_setup(horizon)
 
         # NOW: Find the false positive rate and average warning times
+        self.thresholds = self.get_all_thresholds(horizon)
+        true_alarm_rates, false_alarm_rates, avg_warning_times, std_warning_times = compute_metrics_vs_thresholds_parallel(predictions, outcomes, required_warning_time, self.thresholds)
 
-        unique_false_alarm_rates, avg_warning_times, std_warning_times = compute_critical_metric(predictions, true_outcomes, required_warning_time, self.thresholds)
+        # 4. Return the false alarm rates and average warning times
+        return true_alarm_rates, false_alarm_rates, avg_warning_times, std_warning_times
+
+
+    # A self-contained single function to evaluate the only metric which is absolutely critical to the project
+    def get_critical_metrics_vs_false_alarm_rate(self, horizon, required_warning_time):
+        """ Get the critical metric for the experiment
+        This metric is the average warning time (y-axis, range) vs false positive rate (x-axis, domain)
+        Only applicable to simple threshold alarms
+        
+        Parameters
+        ----------
+        horizon : float
+            The horizon for the survival models to predict at
+        required_warning_time : float
+            The time before a disruption an alarm must be triggered for it to count as a 'true alarm'
+
+        Returns
+        -------
+        unique_false_alarm_rates, avg_warning_times, std_warning_times : np.array, np.array, np.array
+            The unique false alarm rates, average warning times, and standard deviation of warning times
+        """
+
+        if self.alarm_type not in ['sthr', 'athr']:
+            raise ValueError('Critical metric only defined for simple threshold alarms (sthr, athr)')
+
+        predictions, true_outcomes = self.critical_metric_setup(horizon)
+
+
+        unique_false_alarm_rates, avg_warning_times, std_warning_times = compute_metrics_vs_thresholds_parallel(predictions, true_outcomes, required_warning_time, self.thresholds)
 
         # 4. Return the false alarm rates and average warning times
         return unique_false_alarm_rates, avg_warning_times, std_warning_times

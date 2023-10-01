@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 
-from disruption_survival_analysis.warning_times import compute_critical_metric
+from disruption_survival_analysis.critical_metrics import compute_metrics_vs_threshold
 
 TEST_THRESHOLDS = np.linspace(0, 1, 100)
 
@@ -30,7 +30,7 @@ class TestComputeCriticalMetric(unittest.TestCase):
 
         required_warning_time = 1.9
 
-        false_alarm_rates, avg_warning_times, std_warning_times = compute_critical_metric(predictions, true_outcomes, required_warning_time, TEST_THRESHOLDS)
+        _, false_alarm_rates, avg_warning_times, std_warning_times = compute_metrics_vs_(predictions, true_outcomes, required_warning_time, TEST_THRESHOLDS)
 
         # Check that the false alarm rates are correct
         # There should only be two false alarm rates, either 0 or 1
@@ -82,3 +82,4 @@ class TestComputeCriticalMetric(unittest.TestCase):
         assert np.allclose(false_alarm_rates, np.array([0, 1]))
         assert np.allclose(avg_warning_times, np.array([0.42857, 1.36363]))
         assert np.allclose(std_warning_times, np.array([0.72843, 0.88140]))
+
