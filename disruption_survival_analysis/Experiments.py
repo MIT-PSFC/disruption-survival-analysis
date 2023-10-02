@@ -757,7 +757,7 @@ class Experiment:
 
         # NOW: Find the false positive rate and average warning times
         self.thresholds = self.get_all_thresholds(horizon)
-        true_alarm_rates, false_alarm_rates, avg_warning_times, std_warning_times = compute_metrics_vs_thresholds_parallel(predictions, outcomes, required_warning_time, self.thresholds)
+        true_alarm_rates, false_alarm_rates, avg_warning_times, std_warning_times = compute_metrics_vs_thresholds(predictions, outcomes, required_warning_time, self.thresholds)
 
         # 4. Return the false alarm rates and average warning times
         return true_alarm_rates, false_alarm_rates, avg_warning_times, std_warning_times
