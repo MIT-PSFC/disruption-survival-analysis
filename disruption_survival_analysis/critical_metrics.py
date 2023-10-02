@@ -60,7 +60,7 @@ def compute_metrics_vs_thresholds(predictions, outcomes, required_warning_time, 
             warning_times[i] = warning_time
             disruptive_shots += 1
         else:
-            false_positives += (alarms_triggered)
+            false_positives += (alarms_triggered)[0]
             non_disruptive_shots += 1
 
     true_alarm_rates = true_positives / disruptive_shots
