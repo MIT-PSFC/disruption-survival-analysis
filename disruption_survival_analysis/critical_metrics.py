@@ -30,39 +30,82 @@ def compute_avg_warning_time_vs_false_alarm_rate(predictions, true_outcomes, req
 
 
 def compute_metrics_vs_thresholds(predictions, outcomes, required_warning_time, thresholds):
-    num_negatives = sum(1 for outcome in outcomes if not outcome['disrupted'])
-    num_positives = len(outcomes) - num_negatives
+    true_positives = np.zeros(len(thresholds))
+    false_positives = np.zeros(len(thresholds))
+    total_warning_time = np.zeros(len(thresholds))
+    warning_times = np.zeros((len(predictions), len(thresholds)))
+    disruptive_shots = 0
+    non_disruptive_shots = 0
 
-    risks = [pred['risk'] for pred in predictions]
-    times = [pred['time'] for pred in predictions]
-    disruption_times = [outcome['disruption_time'] for outcome in outcomes]
-    disrupted = [outcome['disrupted'] for outcome in outcomes]
+    for i in range(len(predictions)):
+        risk_values = predictions[i]['risk']
+        time_values = predictions[i]['time']
+        disruption_time = outcomes[i]['disruption_time']
+        disrupted = outcomes[i]['disrupted']
+        
+        alarms_triggered = (risk_values[:, np.newaxis] > thresholds).any(axis=0)
 
-    # Convert lists to arrays for faster computation
-    risks = np.array(risks)
-    times = np.array(times)
-    disruption_times = np.array(disruption_times)
-    disrupted = np.array(disrupted)
+        if disrupted:
+            if np.any(alarms_triggered):
+                first_alarm_time = np.where(alarms_triggered, time_values[:, np.newaxis], np.inf).min(axis=0)
+                warning_time = np.maximum(0, disruption_time - first_alarm_time) * disrupted
+            else:
+                warning_time = np.zeros(len(thresholds))
+            true_positives += (warning_time > required_warning_time)
+            total_warning_time += warning_time
+            warning_times[i] = warning_time
+            disruptive_shots += 1
+        else:
+            false_positives += (alarms_triggered)
+            non_disruptive_shots += 1
 
-    alarms_triggered = risks[:, :, None] > thresholds
-    warning_times = disruption_times[:, None] - times[:, :, None]
-
-    valid_alarms = (warning_times > required_warning_time) & alarms_triggered & disrupted[:, None, None]
-    false_alarms = alarms_triggered & ~disrupted[:, None, None]
-
-    true_alarms_per_threshold = valid_alarms.sum(axis=0)
-    false_alarms_per_threshold = false_alarms.sum(axis=0)
-
-    true_alarm_rates = true_alarms_per_threshold / num_positives
-    false_alarm_rates = false_alarms_per_threshold / num_negatives
-
-    avg_warning_times = np.where(valid_alarms, warning_times, 0).sum(axis=0) / true_alarms_per_threshold
-    avg_warning_times = np.nan_to_num(avg_warning_times)  # handle cases where true_alarms_per_threshold = 0
-
-    std_warning_times = np.sqrt(((np.where(valid_alarms, warning_times - avg_warning_times, 0) ** 2).sum(axis=0)) / true_alarms_per_threshold)
-    std_warning_times = np.nan_to_num(std_warning_times)  # handle cases where true_alarms_per_threshold = 0
-
+    true_alarm_rates = true_positives / disruptive_shots
+    false_alarm_rates = false_positives / non_disruptive_shots
+    avg_warning_times = total_warning_time / disruptive_shots
+    std_warning_times = np.std(warning_times[:disruptive_shots], axis=0)
+    
     return true_alarm_rates, false_alarm_rates, avg_warning_times, std_warning_times
+
+# def compute_metrics_vs_thresholds(predictions, outcomes, required_warning_time, thresholds):
+#     num_negatives = sum(1 for outcome in outcomes if not outcome['disrupted'])
+#     num_positives = len(outcomes) - num_negatives
+
+#     # Pad the predictions so that they are all the same length
+#     max_length = max(len(pred['risk']) for pred in predictions)
+#     for pred in predictions:
+#         pred['risk'] = np.pad(pred['risk'], (0, max_length - len(pred['risk'])), 'constant', constant_values=0)
+#         pred['time'] = np.pad(pred['time'], (0, max_length - len(pred['time'])), 'constant', constant_values=0)
+
+#     risks = [pred['risk'] for pred in predictions]
+#     times = [pred['time'] for pred in predictions]
+#     disruption_times = [outcome['disruption_time'] for outcome in outcomes]
+#     disrupted = [outcome['disrupted'] for outcome in outcomes]
+
+#     # Convert lists to arrays for faster computation
+#     risks = np.array(risks)
+#     times = np.array(times)
+#     disruption_times = np.array(disruption_times)
+#     disrupted = np.array(disrupted)
+
+#     alarms_triggered = risks[:, :, None] > thresholds
+#     warning_times = disruption_times[:, None] - times[:, :, None]
+
+#     valid_alarms = (warning_times > required_warning_time) & alarms_triggered & disrupted[:, None, None]
+#     false_alarms = alarms_triggered & ~disrupted[:, None, None]
+
+#     true_alarms_per_threshold = valid_alarms.sum(axis=0)
+#     false_alarms_per_threshold = false_alarms.sum(axis=0)
+
+#     true_alarm_rates = true_alarms_per_threshold / num_positives
+#     false_alarm_rates = false_alarms_per_threshold / num_negatives
+
+#     avg_warning_times = np.where(valid_alarms, warning_times, 0).sum(axis=0) / true_alarms_per_threshold
+#     avg_warning_times = np.nan_to_num(avg_warning_times)  # handle cases where true_alarms_per_threshold = 0
+
+#     std_warning_times = np.sqrt(((np.where(valid_alarms, warning_times - avg_warning_times, 0) ** 2).sum(axis=0)) / true_alarms_per_threshold)
+#     std_warning_times = np.nan_to_num(std_warning_times)  # handle cases where true_alarms_per_threshold = 0
+
+#     return true_alarm_rates, false_alarm_rates, avg_warning_times, std_warning_times
 
 
 # def compute_metrics_vs_thresholds(predictions, outcomes, required_warning_time, thresholds):
@@ -362,6 +405,12 @@ def compute_metrics_for_threshold(risks, times, disruption_times, disrupted, thr
 def compute_metrics_vs_thresholds_parallel(predictions, outcomes, required_warning_time, thresholds):
     num_negatives = sum(1 for outcome in outcomes if not outcome['disrupted'])
     num_positives = len(outcomes) - num_negatives
+
+    # Pad the predictions so that they are all the same length
+    max_length = max(len(pred['risk']) for pred in predictions)
+    for pred in predictions:
+        pred['risk'] = np.pad(pred['risk'], (0, max_length - len(pred['risk'])), 'constant', constant_values=0)
+        pred['time'] = np.pad(pred['time'], (0, max_length - len(pred['time'])), 'constant', constant_values=0)
 
     risks = np.array([pred['risk'] for pred in predictions])
     times = np.array([pred['time'] for pred in predictions])

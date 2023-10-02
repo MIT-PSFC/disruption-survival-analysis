@@ -6,10 +6,10 @@ from disruption_survival_analysis.Experiments import Experiment
 
 import time
 
-device = 'synthetic'
-dataset_path = 'test_2'
-#device = 'cmod'
-#dataset_path = 'preliminary_dataset_no_ufo'
+#device = 'synthetic'
+#dataset_path = 'test_2'
+device = 'cmod'
+dataset_path = 'preliminary_dataset_no_ufo'
 
 # models, alarms, metrics, and minimum warning times to use
 models = ['dsm', 'rf']
