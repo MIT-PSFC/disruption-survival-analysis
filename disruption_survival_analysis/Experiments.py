@@ -13,7 +13,7 @@ from sklearn.ensemble import RandomForestClassifier
 
 from disruption_survival_analysis.DisruptionPredictors import DisruptionPredictorSM, DisruptionPredictorRF, DisruptionPredictorKM
 
-from disruption_survival_analysis.critical_metrics import compute_metrics_vs_thresholds, compute_metrics_vs_thresholds_parallel
+from disruption_survival_analysis.critical_metrics import compute_metrics_vs_thresholds, compute_metrics_vs_false_alarm_rates
 
 class Experiment:
     """ Class that holds onto data shared between multiple experiments """
