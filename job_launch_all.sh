@@ -5,7 +5,7 @@
 source /etc/profile
 source ~/projects/disruption-survival-analysis/.venv/bin/activate
 
-device_dataset="cmod/preliminary_dataset_no_ufo"
+device_dataset="synthetic/test"
 directory="models/$device_dataset/sweeps"
 
 # Get names of all sweep config files in directory
