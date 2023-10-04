@@ -1,3 +1,4 @@
+import os
 import sys
 import yaml
 import optuna
@@ -79,6 +80,11 @@ if __name__ == "__main__":
         direction = "maximize"
     else:
         direction = "minimize"
+
+    # Create database folder if it doesn't exist yet
+    database_folder = os.path.dirname(database_path)
+    if not os.path.exists(database_folder):
+        os.makedirs(database_folder)
 
     lock_obj = optuna.storages.JournalFileOpenLock(database_path)
     storage = optuna.storages.JournalStorage(
