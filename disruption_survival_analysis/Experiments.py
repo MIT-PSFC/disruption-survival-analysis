@@ -429,8 +429,10 @@ class Experiment:
                 except:
                     # DSM expects horizon in a list
                     shot_predictions['risk'] = self.predictor.model.predict_risk(feature_data, [horizon])
-            elif isinstance(self.predictor.model, RandomForestClassifier):
+            elif isinstance(self.predictor, DisruptionPredictorRF):
                 shot_predictions['risk'] = self.predictor.model.predict_proba(feature_data)[:,1]
+            elif isinstance(self.predictor, DisruptionPredictorKM):
+                shot_predictions['risk'] = self.predictor._calculate_risk_at_times(feature_data, horizon)['risk']
             else:
                 raise ValueError('Model type not supported')
             
@@ -485,7 +487,7 @@ class Experiment:
         if horizon is None:
             horizon = self.predictor.horizon
         if required_warning_time is None:
-            required_warning_time = self.predictor.required_warning_time
+            required_warning_time = self.required_warning_time
 
         thresholds, predictions, outcomes = self.critical_metric_setup(horizon)
 
@@ -516,9 +518,9 @@ class Experiment:
         """
 
         if horizon is None:
-            horizon = self.predictor.horizon
+            horizon = self.predictor.trained_disruptive_window
         if required_warning_time is None:
-            required_warning_time = self.predictor.required_warning_time
+            required_warning_time = self.predictor.trained_required_warning_time
 
         thresholds, predictions, outcomes = self.critical_metric_setup(horizon)
 
