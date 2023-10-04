@@ -55,7 +55,7 @@ class Experiment:
 
         hyperparameters = config['hyperparameters']
 
-        if model_type in ['cph', 'dcph', 'dsm'] and isinstance(model, SurvivalModel):
+        if model_type in ['cph', 'dcph', 'dcm', 'dsm'] and isinstance(model, SurvivalModel):
             self.predictor = DisruptionPredictorSM(self.name, model, required_warning_time, hyperparameters['horizon'])
         elif model_type in ['rf'] and isinstance(model, RandomForestClassifier):
             self.predictor = DisruptionPredictorRF(self.name, model, required_warning_time, hyperparameters['class_time'])
