@@ -177,7 +177,10 @@ class DisruptionPredictorKM(DisruptionPredictor):
         # Replace all NaNs with the initial risk
         risks = np.nan_to_num(risks, nan=initial_risks)
 
-        return risks[:,0]
+        # Ensure all risks are between 0 and 1
+        risks = np.clip(risks, 0, 1)
+
+        return risks
 
 
 
