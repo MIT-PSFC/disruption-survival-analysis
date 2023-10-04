@@ -159,7 +159,7 @@ class TestAllCombos(unittest.TestCase):
     # metric_list = ['auroc', 'auwtc']
     # min_required_warning_times = [0.01, 0.05, 0.1, 0.2]
     
-    model_list = ['rf', 'dsm']
+    model_list = ['dsm', 'rf']
     alarm_type_list = ['sthr']
     metric_list = ['auroc']
     min_required_warning_times = [0.02]
@@ -183,7 +183,7 @@ class TestAllCombos(unittest.TestCase):
                 try:
                     experiment.evaluate_metric(metric)
                 except:
-                    self.fail(f"Failed to evaluate metric {metric} for experiment {experiment.name}")
+                    self.fail(f"Failed to evaluate metric {metric} for experiment {experiment.name} on the {experiment.experiment_type} set")
 
     def test_evaluate_single_metric(self):
         """Used to test a single metric for a single experiment"""
