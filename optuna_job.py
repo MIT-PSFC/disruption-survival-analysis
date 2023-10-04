@@ -72,7 +72,7 @@ if __name__ == "__main__":
     alarm_type = sweep_config["alarm_type"]
     metric = sweep_config["metric"]
     required_warning_time = int(sweep_config["required_warning_time"]*1000)
-    database_path = f"models/{device}/{dataset_path}/{model_type}_{alarm_type}_{metric}_{required_warning_time}ms_study.db"
+    database_path = f"models/{device}/{dataset_path}/studies/{model_type}_{alarm_type}_{metric}_{required_warning_time}ms_study.db"
 
     # Get the direction the study should be optimized in
     if metric in ["auroc", "auwtc", "maxf1"]:
@@ -87,7 +87,7 @@ if __name__ == "__main__":
 
     study = optuna.create_study(
         storage=storage, 
-        study_name="second",
+        study_name=f"{model_type}_{alarm_type}_{metric}_{required_warning_time}ms",
         direction=direction,
         load_if_exists=True
     )

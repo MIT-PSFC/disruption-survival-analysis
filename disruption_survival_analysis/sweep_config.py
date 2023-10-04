@@ -128,6 +128,7 @@ model_hyperparameters = {
     "km": ["class_time",
            "criterion",
            "fit_time",
+           "horizon",
            "max_features",
            "min_samples_leaf",
            "min_samples_split",
