@@ -6,7 +6,7 @@ source /etc/profile
 source ~/projects/disruption-survival-analysis/.venv/bin/activate
 
 device_dataset="cmod/preliminary_dataset_no_ufo"
-directory="models/$device_dataset"
+directory="models/$device_dataset/sweeps"
 
 # Get names of all sweep config files in directory
 files=$(ls $directory | grep "sweep")
@@ -22,5 +22,5 @@ do
     sed -i "s/--job-name=.*/--job-name=$sweep_id/g" job_instance.slurm
 
     # Launch the job
-    ./job_launch.sh 7 $device_dataset/$file
+    ./job_launch.sh 7 $device_dataset/sweeps/$file
 done
