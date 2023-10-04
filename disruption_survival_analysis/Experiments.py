@@ -67,7 +67,7 @@ class Experiment:
         # Get the alarm type from the config
         self.alarm_type = config['alarm_type']
 
-        # For now, all using 'athr' alarm type
+        # For now, all using 'sthr' alarm type
         self.thresholds = None
 
     # Simple helper methods
@@ -405,7 +405,6 @@ class Experiment:
             'disrupted' : bool
                 Whether or not the shot disrupted
         """
-        # 0. Set up the predictions and outcomes to calculate the metric
 
         # Group data by shot and sort by time
         shot_data_list = self.all_data.groupby('shot')
@@ -490,10 +489,8 @@ class Experiment:
 
         thresholds, predictions, outcomes = self.critical_metric_setup(horizon)
 
-        # NOW: Find the false positive rate and average warning times
         true_alarm_rates, false_alarm_rates, avg_warning_times, std_warning_times = compute_metrics_vs_thresholds(predictions, outcomes, required_warning_time, thresholds)
 
-        # 4. Return the false alarm rates and average warning times
         return thresholds, true_alarm_rates, false_alarm_rates, avg_warning_times, std_warning_times
 
     def get_critical_metrics_vs_false_alarm_rates(self, horizon=None, required_warning_time=None):

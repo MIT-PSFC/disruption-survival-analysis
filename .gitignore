@@ -206,10 +206,7 @@ wandb
 !data/synthetic/test/test.csv
 !data/synthetic/test/small.csv
 
-!models/synthetic/test/rf_sthr_auroc_20ms_sweep.yaml
-!models/synthetic/test/rf_sthr_auroc_20ms.yaml
-!models/synthetic/test/dsm_sthr_auroc_20ms_sweep.yaml
-!models/synthetic/test/dsm_sthr_auroc_20ms.yaml
+!models/synthetic/test/*ms.yaml
 
 # Ignore all others
 *.yaml
