@@ -417,7 +417,7 @@ class Experiment:
         feature_names.remove('time')
         feature_names.remove('time_until_disrupt')
 
-        all_thresholds = []
+        all_thresholds = [0, 1] # Ensure that 0 and 1 are included in the list of thresholds
         predictions = []
         outcomes = []
         for shot_data in shot_data_list:

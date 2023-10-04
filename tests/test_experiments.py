@@ -1,8 +1,6 @@
 """Test functions to ensure that the data preprocessing works as expected
 """
 import unittest
-import time
-
 import numpy as np
 
 from tests.test_manage_datasets import TEST_DEVICE, TEST_DATASET_PATH
@@ -16,7 +14,6 @@ class TestSimpleFunctions(unittest.TestCase):
     def setUp(self):
         """Set up the test case
         """
-
         # Load the config for a simple RF experiment
         experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'rf', 'sthr', 'auroc', 0.02)
         self.experiment = Experiment(experiment_config, 'test')
@@ -55,105 +52,108 @@ class TestSimpleFunctions(unittest.TestCase):
             else:
                 self.fail("Shot lists are not ordered consistently")
 
-class TestTrueAlarmRates(unittest.TestCase):
+class TestCriticalMetricsVsThresholds(unittest.TestCase):
 
     def setUp(self):
-        # Load simple RF experiment
-        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'rf', 'sthr', 'auroc', 0.02)
+        # Load the config for a simple RF experiment
+        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'rf', 'sthr', 'auroc', 0.05)
         self.experiment = Experiment(experiment_config, 'test')
 
-    def test_true_alarm_rates_constant_values(self):
-        """Ensures that the true alarm rates don't look wrong"""
+        # Get the metrics
+        self.thresholds, self.true_alarm_rates, self.false_alarm_rates, self.avg_warning_times, self.std_warning_times = self.experiment.get_critical_metrics_vs_thresholds()
 
-        # Get the true alarm rates
-        true_alarm_rates, _ = self.experiment.true_false_alarm_rates()
+    def test_alarm_rates_boundaries(self):
+        """Check that the alarm rates are between 0 and 1
+        """
+        if np.any(self.true_alarm_rates < 0) or np.any(self.true_alarm_rates > 1):
+            self.fail("True alarm rates are not between 0 and 1")
+        if np.any(self.false_alarm_rates < 0) or np.any(self.false_alarm_rates > 1):
+            self.fail("False alarm rates are not between 0 and 1")
 
-        # Check that the true alarm rates are not all 0 or 1
-        if (true_alarm_rates == 0).all():
-            self.fail("True alarm rates are all 0")
-        if (true_alarm_rates == 1).all():
-            self.fail("True alarm rates are all 1")
+        # Check that the alarm rates are 1 for a threshold of 0
+        if self.true_alarm_rates[0] != 1:
+            self.fail("True alarm rate is not 1 for threshold of 0")
+        if self.false_alarm_rates[0] != 1:
+            self.fail("False alarm rate is not 1 for threshold of 0")
 
-    def test_true_alarm_rates_decreasing(self):
-        """Ensures that the true alarm rates are decreasing with higher thresholds"""
+        # Check that the alarm rates are 0 for a threshold of 1
+        if self.true_alarm_rates[-1] != 0:
+            self.fail("True alarm rate is not 0 for threshold of 1")
+        if self.false_alarm_rates[-1] != 0:
+            self.fail("False alarm rate is not 0 for threshold of 1")
 
-        # Get the true alarm rates
-        true_alarm_rates, _ = self.experiment.true_false_alarm_rates()
-
-        # Check that the true alarm rates are increasing
-        for i in range(len(true_alarm_rates) - 1):
-            if true_alarm_rates[i] < true_alarm_rates[i + 1]:
+    def test_consistent_ordering(self):
+        """Check that the alarm rates and warning times are decreasing while threshold is increasing
+        """
+        for i in range(len(self.thresholds)-1):
+            if self.thresholds[i+1] < self.thresholds[i]:
+                self.fail("Thresholds are not increasing")
+            if self.true_alarm_rates[i+1] > self.true_alarm_rates[i]:
                 self.fail("True alarm rates are not decreasing")
+            if self.false_alarm_rates[i+1] > self.false_alarm_rates[i]:
+                self.fail("False alarm rates are not decreasing")
+            if self.avg_warning_times[i+1] > self.avg_warning_times[i]:
+                self.fail("Average warning times are not decreasing")
 
-    def test_true_alarm_rates_boundaries(self):
-        """Check that the true alarm rates are all between 0 and 1"""
-            
-        # Get the true alarm rates
-        true_alarm_rates, _ = self.experiment.true_false_alarm_rates()
+    def test_warning_times_true_alarm_rates_agree(self):
+        """For every threshold where the true alarm rate is greater than 0, 
+        the average warning time should also be greater than 0"""
 
-        # Check that the true alarm rates are between 0 and 1
-        for true_alarm_rate in true_alarm_rates:
-            if true_alarm_rate < 0 or true_alarm_rate > 1:
-                self.fail("True alarm rates are not between 0 and 1")
+        for i in range(len(self.thresholds)):
+            if self.true_alarm_rates[i] > 0 and self.avg_warning_times[i] == 0:
+                self.fail("Average warning time is 0 for a threshold where the true alarm rate is greater than 0")
+            if self.avg_warning_times[i] > 0 and self.true_alarm_rates[i] == 0:
+                self.fail("True alarm rate is 0 for a threshold where the average warning time is greater than 0")
 
-class TestFalseAlarmRates(unittest.TestCase):
+class TestCriticalMetricsVsFalseAlarmRates(unittest.TestCase):
 
     def setUp(self):
-
-        # Load simple dsm experiment
-        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'dsm', 'sthr', 'auroc', 0.02)
+        # Load the config for a simple RF experiment
+        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'rf', 'sthr', 'auroc', 0.05)
         self.experiment = Experiment(experiment_config, 'test')
-    
-    def test_false_alarm_rates_constant_values(self):
-        """Ensures that the false alarm rates don't look wrong"""
 
-        # Get the false alarm rates
-        _, false_alarm_rates = self.experiment.true_false_alarm_rates()
+        # Get the metrics
+        self.unique_false_alarm_rates, self.true_alarm_rates, self.avg_warning_times, self.std_warning_times = self.experiment.get_critical_metrics_vs_false_alarm_rates()
 
-        # Check that the false alarm rates are not all 0 or 1
-        if (false_alarm_rates == 0).all():
-            self.fail("False alarm rates are all 0")
-        if (false_alarm_rates == 1).all():
-            self.fail("False alarm rates are all 1")
+    def test_alarm_rates_boundaries(self):
+        """Check that the alarm rates are between 0 and 1
+        """
 
-    def test_false_alarm_rates_decreasing(self):
-        """Ensures that the false alarm rates are decreasing with higher thresholds"""
+        if np.any(self.unique_false_alarm_rates < 0) or np.any(self.unique_false_alarm_rates > 1):
+            self.fail("False alarm rates are not between 0 and 1")
+        if np.any(self.true_alarm_rates < 0) or np.any(self.true_alarm_rates > 1):
+            self.fail("True alarm rates are not between 0 and 1")
 
-        # Get the false alarm rates
-        _, false_alarm_rates = self.experiment.true_false_alarm_rates()
+        # Check that the minimum false alarm rate is 0 and the maximum is 1
+        if self.unique_false_alarm_rates[0] != 0:
+            self.fail("Minimum false alarm rate is not 0")
+        if self.unique_false_alarm_rates[-1] != 1:
+            self.fail("Maximum false alarm rate is not 1")
 
-        # Check that the false alarm rates are increasing
-        for i in range(len(false_alarm_rates) - 1):
-            if false_alarm_rates[i] < false_alarm_rates[i + 1]:
-                self.fail("False alarm rates are not decreasing")
+    def test_consistent_ordering(self):
+        """Check that the alarm rates and warning times are increasing while false alarm rate is increasing"
+        """
 
-    def test_false_alarm_rates_boundaries(self):
-        """Check that the false alarm rates are all between 0 and 1"""
-            
-        # Get the false alarm rates
-        _, false_alarm_rates = self.experiment.true_false_alarm_rates()
+        for i in range(len(self.unique_false_alarm_rates)-1):
+            if self.unique_false_alarm_rates[i+1] < self.unique_false_alarm_rates[i]:
+                self.fail("False alarm rates are not increasing")
+            if self.true_alarm_rates[i+1] < self.true_alarm_rates[i]:
+                self.fail("True alarm rates are not increasing")
+            if self.avg_warning_times[i+1] < self.avg_warning_times[i]:
+                self.fail("Average warning times are not increasing")
 
-        # Check that the false alarm rates are between 0 and 1
-        for false_alarm_rate in false_alarm_rates:
-            if false_alarm_rate < 0 or false_alarm_rate > 1:
-                self.fail("False alarm rates are not between 0 and 1")
+    def test_warning_times_true_alarm_rates_agree(self):
+        """For every false alarm rate where the true alarm rate is greater than 0, 
+        the average warning time should also be greater than 0"""
 
-    def test_false_alarm_rates_limits(self):
-        """Check that the false alarm rate is 0 when the threshold is 1 and 1 when the threshold is 0"""
-
-        # Get the false alarm rates
-        _, false_alarm_rates = self.experiment.true_false_alarm_rates()
-
-        # Check that the false alarm rates are 0 when the threshold is 1 and 1 when the threshold is 0
-        if false_alarm_rates[0] != 1:
-            self.fail("False alarm rate is not 1 when threshold is 0")
-        if false_alarm_rates[-1] != 0:
-            self.fail("False alarm rate is not 0 when threshold is 1")
+        for i in range(len(self.unique_false_alarm_rates)):
+            if self.true_alarm_rates[i] > 0 and self.avg_warning_times[i] == 0:
+                self.fail("Average warning time is 0 for a false alarm rate where the true alarm rate is greater than 0")
+            if self.avg_warning_times[i] > 0 and self.true_alarm_rates[i] == 0:
+                self.fail("True alarm rate is 0 for a false alarm rate where the average warning time is greater than 0")
 
 class TestAllCombos(unittest.TestCase):
-
     # Test for every combination of model, alarm type, and metric
-    # TODO: flesh this out
     # model_list = ['cph', 'dsm', 'rf', 'km']
     # alarm_type_list = ['sthr']
     # metric_list = ['auroc', 'auwtc']
@@ -175,7 +175,7 @@ class TestAllCombos(unittest.TestCase):
                     for min_required_warning_time in self.min_required_warning_times:
                         experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, model, alarm_type, metric, min_required_warning_time)
                         self.experiments.append(Experiment(experiment_config, 'test'))
-                        self.experiments.append(Experiment(experiment_config, 'val')))
+                        self.experiments.append(Experiment(experiment_config, 'val'))
 
         # Evaluate the metrics for each experiment
         for experiment in self.experiments:
@@ -196,115 +196,4 @@ class TestAllCombos(unittest.TestCase):
         experiment = Experiment(experiment_config, 'test')
 
         experiment.evaluate_metric(model_metric)
-
-
-class TestCriticalMetricsVsThresholds(unittest.TestCase):
-
-    def setUp(self):
-        """Set up the test case
-        """
-
-        # Load simple RF experiment
-        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'rf', 'athr', 'auroc', 0.02)
-        self.experiment = Experiment(experiment_config, 'test')
-        self.horizon = 0.05
-        self.required_warning_time = 0.02
-
-    def test_get_metric_both_ways(self):
-        """Test that the metrics are obtained correctly
-        """
-        start_time = time.time()
-        epsilon = 0.001
-
-        self.experiment.thresholds = self.experiment.get_all_thresholds(self.horizon)
-
-        # Get the metrics both ways
-        direct_true_alarm_rates, direct_false_alarm_rates, direct_avg_warning_times, direct_std_warning_times = self.experiment.get_critical_metrics_vs_thresholds(horizon=self.horizon, required_warning_time=self.required_warning_time)
-        
-        general_true_alarm_rates, general_false_alarm_rates = self.experiment.true_false_alarm_rates(horizon=self.horizon, required_warning_time=self.required_warning_time)
-        _, general_avg_warning_times, general_std_warning_times = self.experiment.warning_time_vs_threshold(horizon=self.horizon, required_warning_time=self.required_warning_time, method='average')
-        # Check that the metric is calculated correctly, within epsilon
-        if not np.allclose(direct_true_alarm_rates, general_true_alarm_rates, atol=epsilon):
-            self.fail("True alarm rates are not calculated correctly")
-        if not np.allclose(direct_false_alarm_rates, general_false_alarm_rates, atol=epsilon):
-            self.fail("False alarm rates are not calculated correctly")
-        #if not np.allclose(direct_avg_warning_times, general_avg_warning_times, atol=epsilon):
-        #    self.fail("Average warning times are not calculated correctly")
-        #if not np.allclose(direct_std_warning_times, general_std_warning_times, atol=epsilon):
-        #    self.fail("Standard deviation of warning times are not calculated correctly")
-
-    def test_no_nan(self):
-
-        # Get the metric
-        general_false_alarm_rates, general_avg_warning_times, general_std_warning_times = self.experiment.warning_time_vs_false_alarm_rate(horizon=0.05, required_warning_time=0.02)    
-
-        # Check that there are no NaNs
-        if (np.isnan(general_false_alarm_rates)).any():
-            self.fail("NaNs in false alarm rates")
-        if (np.isnan(general_avg_warning_times)).any():
-            self.fail("NaNs in average warning times")
-        if (np.isnan(general_std_warning_times)).any():
-            self.fail("NaNs in standard deviation of warning times")
-
-class TestWarningTimesList(unittest.TestCase):
-
-    def test_no_negative_warning_times(self):
-        """Ensure that there are no negative warning times
-        """
-
-        # Load hysteresis rf experiment
-        required_warning_time = 0.02
-        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'rf', 'sthr', 'auroc', required_warning_time)
-        experiment = Experiment(experiment_config, 'test')
-
-        # Get the warning times list
-        warning_times_list = experiment.get_warning_times_list()
-
-        # Check that there are no negative warning times
-        for warning_times in warning_times_list:
-            for warning_time in warning_times:
-                self.assertGreaterEqual(warning_time, 0)
-
-    def test_warning_times_nonzero_with_true_positives(self):
-        """In the case when the true positive rate is greater than zero for a given false positve rate,
-        ensure that the average warning time is greater than zero"""
-
-        # Load dsm simple threshold experiment
-        required_warning_time = 0.1
-        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'dsm', 'sthr', 'auroc', required_warning_time)
-        self.experiment = Experiment(experiment_config, 'test')
-
-        # Get the true alarm rate list
-        true_alarm_rates, _ = self.experiment.true_false_alarm_rates()
-        
-        # Get the warning time list
-        warning_times = self.experiment.get_warning_times_list(required_warning_time=required_warning_time)
-
-        # Get the average warning times
-        avg_warning_times = np.mean(warning_times, axis=1)
-
-        # Check that the warning times are empty when the true alarm rate is 0
-        for i, true_alarm_rate in enumerate(true_alarm_rates):
-            if true_alarm_rate != 0:
-                if avg_warning_times[i] == 0:
-                    self.fail(f"There are no warning times when there exist true positives {i}")
-
-    def test_warning_times_increasing(self):
-        """Ensure that the warning times are increasing with increasing false alarm rates
-        """
-
-        # Load dsm simple threshold experiment
-        required_warning_time = 0.1
-        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'dsm', 'sthr', 'auroc', required_warning_time)
-        self.experiment = Experiment(experiment_config, 'test')
-
-        general_false_alarm_rates, general_avg_warning_times, _ = self.experiment.warning_time_vs_false_alarm_rate()    
-
-        # Check that the warning times are increasing
-        for i in range(len(general_false_alarm_rates) - 1):
-            if general_avg_warning_times[i] > general_avg_warning_times[i + 1]:
-                self.fail("Warning times are not increasing")
-
-
-
 
