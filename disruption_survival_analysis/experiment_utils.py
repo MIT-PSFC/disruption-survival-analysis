@@ -1,5 +1,6 @@
 # Functions used by experiments but not actually part of the experiments
 
+import os
 import numpy as np
 import optuna
 import yaml
@@ -213,16 +214,16 @@ def load_experiment_config(device, dataset, model_type, alarm_type, metric, requ
     print("Attempting to load hyperparameters from yaml file...")
     yaml_file_name = f"{model_type}_{alarm_type}_{metric}_{int(required_warning_time*1000)}ms.yaml"
     try:
-        with open(f"models/configs/{device}/{dataset}/{yaml_file_name}", "r") as f:
+        with open(f"models/{device}/{dataset}/configs/{yaml_file_name}", "r") as f:
             hyperparameters = yaml.load(f, Loader=yaml.FullLoader)['hyperparameters']
-        print(f"Loaded hyperparameters for {device}/{dataset}/{yaml_file_name}")
+        print(f"Loaded hyperparameters for {device}/{dataset}/configs/{yaml_file_name}")
         print("---")
     except:
         print("YAML not found. Attempting to load hyperparameters from study database...")
         db_file_name = f"{model_type}_{alarm_type}_{metric}_{int(required_warning_time*1000)}ms_study.db"
         try:
             # Get the path to the database file
-            full_path = f"models/studies/{device}/{dataset}/{db_file_name}"
+            full_path = f"models/{device}/{dataset}/studies/{db_file_name}"
             
             # Check if the database file exists
             with open(full_path, "r") as f:
@@ -239,14 +240,22 @@ def load_experiment_config(device, dataset, model_type, alarm_type, metric, requ
             hyperparameters = study.best_trial.params
 
             # Save the hyperparameters to a yaml file
-            with open(f"models/configs/{device}/{dataset}/{yaml_file_name}", "w") as f:
+            # Create the configs folder if it doesn't exist yet
+            configs_folder = os.path.dirname(f"models/{device}/{dataset}/configs/{yaml_file_name}")
+            if not os.path.exists(configs_folder):
+                try:
+                    os.makedirs(configs_folder)
+                except:
+                    pass
+
+            with open(f"models/{device}/{dataset}/configs/{yaml_file_name}", "w") as f:
                 yaml.dump({'hyperparameters': hyperparameters}, f)
 
-            print(f"Loaded hyperparameters for {device}/{dataset}/{db_file_name}")
+            print(f"Loaded hyperparameters for {device}/{dataset}/studies/{db_file_name}")
             print(f"Best validation metric is {study.best_trial.value} from trial {study.best_trial.number}")
             print("---")
         except:
-            print(f"Could not load hyperparameters for {device}/{dataset}/{db_file_name}")
+            print(f"Could not load hyperparameters for {device}/{dataset}/studies/{db_file_name}")
             print("---")
             hyperparameters = None
 

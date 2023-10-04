@@ -473,9 +473,13 @@ class Experiment:
         """
 
         if horizon is None:
-            horizon = self.predictor.horizon
+            try:
+                horizon = self.predictor.trained_horizon
+            except:
+                # If horizon is not defined, in the case of a binary classifier, just pass
+                pass
         if required_warning_time is None:
-            required_warning_time = self.required_warning_time
+            required_warning_time = self.predictor.trained_required_warning_time
 
         thresholds, predictions, outcomes = self.critical_metric_setup(horizon)
 

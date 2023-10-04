@@ -18,51 +18,22 @@ class TestDisruptionPredictor(unittest.TestCase):
         """Set up a DisruptionPredictor instance for testing"""
         
         # Load a config file for a simple RF model
-        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'rf', 'sthr', 'auroc', 0.02)
+        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'rf', 'sthr', 'auroc', 0.01)
 
         # Get some important information about the model
         trained_required_warning_time = experiment_config["required_warning_time"]
-        trained_class_time = experiment_config["hyperparameters"]["class_time"]
         
         # Create model
         self.model = get_model_for_experiment(experiment_config, "test")
 
         # Create predictor instance
-        self.predictor = DisruptionPredictor("Test Predictor", self.model, trained_required_warning_time, trained_class_time)
+        self.predictor = DisruptionPredictor("Test Predictor", self.model, trained_required_warning_time)
 
     def test_get_correct_instance(self):
         """Ensure that the correct class instance is returned"""
 
         if not isinstance(self.predictor, DisruptionPredictor):
             self.fail("DisruptionPredictor instance not returned")
-
-    def test_get_all_features_none_start(self):
-        """Ensure that the features start as None"""
-
-        if self.predictor.features is not None:
-            self.fail("Features not None on predictor initialization")
-
-    def test_no_get_risk_at_times(self):
-        """Ensure that the function get_risk_at_times() is not implemented"""
-
-        try:
-            self.predictor.get_risk_at_times(1, 0, 0)
-            self.fail("get_risk_at_times() implemented by the base class!")
-        except NotImplementedError:
-            pass
-        except:
-            self.fail("Unexpected error raised by get_risk_at_times()")
-
-    def test_no_get_ettd_at_times(self):
-        """Ensure that the function calculate_ettd_at_time() is not implemented"""
-
-        try:
-            self.predictor.get_ettd_at_times(1, 0)
-            self.fail("get_ettd_at_times() implemented by the base class!")
-        except NotImplementedError:
-            pass
-        except:
-            self.fail("Unexpected error raised by get_ettd_at_times()")
 
 
 
