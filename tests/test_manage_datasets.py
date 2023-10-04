@@ -7,7 +7,7 @@ import numpy as np
 from disruption_survival_analysis.manage_datasets import make_training_sets, make_stacked_sets, load_dataset, load_shot_list, load_features_labels, load_features_outcomes, load_disruptive_shot_list, load_non_disruptive_shot_list, load_feature_list, DROPPED_FEATURES
 
 TEST_DEVICE = 'synthetic'
-TEST_DATASET_PATH = 'test_2'
+TEST_DATASET_PATH = 'test'
 
 class TestCreatedTrainingSets(unittest.TestCase):
     """Tests for the function make_training_sets()"""
