@@ -410,38 +410,26 @@ class Experiment:
         shot_data_list = self.all_data.groupby('shot')
         shot_data_list = [shot_data.sort_values('time') for _, shot_data in shot_data_list]
 
-        # Load the data and remove non-feature columns
-        feature_names = list(self.all_data.columns)
-        feature_names.remove('shot')
-        feature_names.remove('time')
-        feature_names.remove('time_until_disrupt')
-
-        all_thresholds = [0, 1] # Ensure that 0 and 1 are included in the list of thresholds
+        all_thresholds = np.array([0, 1]) # Ensure that 0 and 1 are included in the list of thresholds
         predictions = []
         outcomes = []
         for shot_data in shot_data_list:
             # Predict risk depending on the model type
             shot_predictions = {}
-            feature_data = shot_data[feature_names]
             if isinstance(self.predictor.model, SurvivalModel):
-                try:
-                    shot_predictions['risk'] = self.predictor.model.predict_risk(feature_data, horizon)
-                except:
-                    # DSM expects horizon in a list
-                    shot_predictions['risk'] = self.predictor.model.predict_risk(feature_data, [horizon])
+                shot_predictions['risk'] = self.predictor.get_risks(shot_data, horizon)
             elif isinstance(self.predictor, DisruptionPredictorRF):
-                shot_predictions['risk'] = self.predictor.model.predict_proba(feature_data)[:,1]
+                shot_predictions['risk'] = self.predictor.get_risks(shot_data)
             elif isinstance(self.predictor, DisruptionPredictorKM):
-                shot_predictions['risk'] = self.predictor._calculate_risk_at_times(feature_data, horizon)['risk']
+                shot_predictions['risk'] = self.predictor.get_risks(shot_data, horizon)
             else:
                 raise ValueError('Model type not supported')
             
             # Add the thresholds to the list of all thresholds
-            all_thresholds.extend(shot_predictions['risk'])
+            all_thresholds = np.concatenate((all_thresholds, shot_predictions['risk']))
 
             # Add prediction for this shot
             shot_predictions['time'] = shot_data['time'].values
-            shot_predictions['risk'] = np.array(shot_predictions['risk'])
             predictions.append(shot_predictions)
 
             # Determine the time of disruption and whether or not the shot actually disrupted
@@ -518,7 +506,11 @@ class Experiment:
         """
 
         if horizon is None:
-            horizon = self.predictor.trained_disruptive_window
+            try:
+                horizon = self.predictor.trained_horizon
+            except:
+                # If horizon is not defined, in the case of a binary classifier, just pass
+                pass
         if required_warning_time is None:
             required_warning_time = self.predictor.trained_required_warning_time
 

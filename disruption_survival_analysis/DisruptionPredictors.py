@@ -31,7 +31,7 @@ class DisruptionPredictor:
 
         self.trained_required_warning_time = trained_required_warning_time
 
-    def get_feature_data(shot_data):
+    def get_feature_data(self, shot_data):
         """Get the feature data from the shot data"""
         feature_names = list(shot_data.columns)
         feature_names.remove('shot')
@@ -78,7 +78,7 @@ class DisruptionPredictorSM(DisruptionPredictor):
             # DSM expects horizons in a list
             risks = self.model.predict_risk(feature_data, [horizon])
 
-        return risks
+        return risks[:,0]
 
 class DisruptionPredictorRF(DisruptionPredictor):
     """Disruption Predictors using RandomForestClassifier from sklearn"""
@@ -126,8 +126,8 @@ class DisruptionPredictorKM(DisruptionPredictor):
         ----------
         shot_data : pandas.DataFrame
             The data to calculate the risk for. Expects the data to include features the model was trained on.
-        horizon : float, optional
-            The horizon to calculate the risk for (in seconds). If None, use the horizon the model was trained on.
+        horizon : float
+            The horizon to calculate the risk for (in seconds).
         
         Returns
         -------
@@ -140,22 +140,15 @@ class DisruptionPredictorKM(DisruptionPredictor):
         # disruption risk at some future time
         # P_disrupt(t + horizon) = intercept + slope * (t + horizon)
         
-        if horizon is None:
-            horizon = self.trained_horizon
-
         times = shot_data['time'].values
         feature_data = self.get_feature_data(shot_data)
 
-        # Iterate through the data and calculate the initial risk for each time slice
         initial_risks = self.model.predict_proba(feature_data)[:,1]
 
         # This is a bit of a slow implementation, can speed up later if needed
 
-        fit_times = []
-        fit_points = []
-
-        fit_times.append(times[0])
-        fit_points.append(initial_risks[0])
+        fit_times = [times[0]]
+        fit_points = [initial_risks[0]]
 
         risks = np.zeros(len(initial_risks))
 
@@ -166,12 +159,12 @@ class DisruptionPredictorKM(DisruptionPredictor):
             # Get the time for the new time slice
             new_time = times[i]
 
-            # Add the new time to the fit
+            # Add the new datapoint to the fit
             fit_times.append(new_time)
             fit_points.append(initial_risks[i])
 
-            # If the new time is outside the time window, remove the oldest point
-            if new_time - fit_times[0] > self.trained_fit_time:
+            # Remove all points that are outside the fitting window
+            while fit_times[-1] - fit_times[0] > self.trained_fit_time:
                 fit_times.pop(0)
                 fit_points.pop(0)
             
@@ -184,7 +177,7 @@ class DisruptionPredictorKM(DisruptionPredictor):
         # Replace all NaNs with the initial risk
         risks = np.nan_to_num(risks, nan=initial_risks)
 
-        return risks
+        return risks[:,0]
 
 
 
