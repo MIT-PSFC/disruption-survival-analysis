@@ -57,21 +57,22 @@ Follow instructions in `Write Sweep Configs.ipynb` or use `write_sweep_configs.p
 
 After sweep configs are generated, run the following command to start a hyperparameter tuning session:
 ```bash
-python optuna_job.py models/[device]/[dataset_path]/[sweep].yaml
+python optuna_job.py models/[device]/[dataset_path]/sweeps/[sweep].yaml
 ```
 
 Open multiple terminals and execute the command to have several jobs performing sweeps at once. 
 - *probably need to re-activate virtual environment for each terminal*
-- scripts to execute many jobs via SLURM coming soon
+
+Or, edit job_launch_all.sh to have the correct paths and run the following command:
+```bash
+chmod +x job_launch_all.sh
+./job_launch_all.sh
+```
 
 To view results of hyperparameter tuning trials, execute the following command:
 ```bash
-optuna-dashboard sqlite:///models/[device]/[dataset]/[study].db
+optuna-dashboard sqlite:///models/[device]/[dataset]/studies/[study].db
 ```
-
-> [!warning]
-> The present implementation uses SQLite3, which may suffer performance issues when doing many parallel runs. 
-> This shouldn't be the bottleneck as I expect model training to take significantly longer than database writes, but to avoid possibility of deadlock we may switch to using MySQL in the future.
 
 ### 3. Running Experiments
 

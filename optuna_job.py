@@ -84,7 +84,10 @@ if __name__ == "__main__":
     # Create database folder if it doesn't exist yet
     database_folder = os.path.dirname(database_path)
     if not os.path.exists(database_folder):
-        os.makedirs(database_folder)
+        try:
+            os.makedirs(database_folder)
+        except:
+            pass
 
     lock_obj = optuna.storages.JournalFileOpenLock(database_path)
     storage = optuna.storages.JournalStorage(
