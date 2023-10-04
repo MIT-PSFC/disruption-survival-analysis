@@ -154,9 +154,10 @@ class TestAllCombos(unittest.TestCase):
 
     # Test for every combination of model, alarm type, and metric
     # TODO: flesh this out
-    # model_list = ['cph', 'dcph', 'dsm', 'rf', 'km']
-    # alarm_type_list = ['sthr', 'hyst']
+    # model_list = ['cph', 'dsm', 'rf', 'km']
+    # alarm_type_list = ['sthr']
     # metric_list = ['auroc', 'auwtc']
+    # min_required_warning_times = [0.01, 0.05, 0.1, 0.2]
     
     model_list = ['rf', 'dsm']
     alarm_type_list = ['sthr']
@@ -164,7 +165,7 @@ class TestAllCombos(unittest.TestCase):
     min_required_warning_times = [0.02]
 
     def test_evaluate_all_metrics(self):
-        """Test that all metrics can be evaluated for all experiments on the validation set"""
+        """Test that all metrics can be evaluated for all experiments on the test and validations sets"""
 
         # Load all experiments of the various types
         self.experiments = []
@@ -174,6 +175,7 @@ class TestAllCombos(unittest.TestCase):
                     for min_required_warning_time in self.min_required_warning_times:
                         experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, model, alarm_type, metric, min_required_warning_time)
                         self.experiments.append(Experiment(experiment_config, 'test'))
+                        self.experiments.append(Experiment(experiment_config, 'val')))
 
         # Evaluate the metrics for each experiment
         for experiment in self.experiments:
