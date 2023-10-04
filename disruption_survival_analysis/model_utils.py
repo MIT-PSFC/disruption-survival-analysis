@@ -218,18 +218,18 @@ def name_model(config):
     
 def save_model(model, model_name, device, dataset_path):
     """Save model to file"""
-    model_path = 'models/' + device + '/' + dataset_path
+    model_path = f"models/{device}/{dataset_path}"
     try:
         os.makedirs(model_path)
     except:
         pass
-    model_file = model_path + '/' + model_name + '.pkl'
+    model_file = f"{model_path}/{model_name}.pkl"
     dill.dump(model, open(model_file, 'wb'))
     print('Saved model to ' + model_file)
 
 def load_model(model_name, device, dataset_path):
     """Load model from file"""
-    model_file = 'models/' + device + '/' + dataset_path + '/' + model_name + '.pkl'
+    model_file = f"models/{device}/{dataset_path}/{model_name}.pkl"
     with open(model_file, 'rb') as f:
         model = dill.load(f)
     print('Loaded model from ' + model_file)

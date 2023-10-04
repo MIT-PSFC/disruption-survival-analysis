@@ -164,11 +164,13 @@ def write_sweep_config(sweep_config):
 
     sweep_config_name = f"{model_type}_{alarm_type}_{metric}_{int(required_warning_time*1000)}ms_sweep"
 
-    # Make directory if it doesn't already exist
-    if not os.path.exists(f"models/{device}/{dataset_path}"):
-        os.makedirs(f"models/{device}/{dataset_path}")
+    directory_name = f"models/{device}/{dataset_path}/sweeps"
 
-    with open(f"models/{device}/{dataset_path}/{sweep_config_name}.yaml", "w") as f:
+    # Make directory if it doesn't already exist
+    if not os.path.exists(directory_name):
+        os.makedirs(directory_name)
+
+    with open(f"{directory_name}/{sweep_config_name}.yaml", "w") as f:
         yaml.dump(sweep_config, f)
 
 
@@ -182,15 +184,9 @@ def create_experiment_groups(device, dataset_path, models, alarms, metrics, min_
             for metric in metrics:
                 for min_warning_time in min_warning_times:
                     # Load config for experiment 
-                    if alarm == 'athr':
-                        config = load_experiment_config(device, dataset_path, model, 'sthr', metric, min_warning_time)
-                        # Create test experiment from config
-                        config['alarm_type'] = 'athr'
-                        experiment = Experiment(config, 'test')
-                    else:
-                        config = load_experiment_config(device, dataset_path, model, alarm, metric, min_warning_time)
-                        # Create test experiment from config
-                        experiment = Experiment(config, 'test')
+                    config = load_experiment_config(device, dataset_path, model, alarm, metric, min_warning_time)
+                    # Create test experiment from config
+                    experiment = Experiment(config, 'test')
                     
                     try:
                         if experiment_groups[model] is None:
