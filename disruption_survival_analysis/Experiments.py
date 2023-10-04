@@ -60,7 +60,7 @@ class Experiment:
         elif model_type in ['rf'] and isinstance(model, RandomForestClassifier):
             self.predictor = DisruptionPredictorRF(self.name, model, required_warning_time, hyperparameters['class_time'])
         elif model_type in ['km'] and isinstance(model, RandomForestClassifier):
-            self.predictor = DisruptionPredictorKM(self.name, model, required_warning_time, hyperparameters['class_time'], hyperparameters['fit_time'])
+            self.predictor = DisruptionPredictorKM(self.name, model, required_warning_time, hyperparameters['class_time'], hyperparameters['fit_time'], hyperparameters['horizon'])
         else:
             raise ValueError('Model type not recognized')
         
