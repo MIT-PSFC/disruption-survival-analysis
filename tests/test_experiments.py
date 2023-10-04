@@ -15,7 +15,7 @@ class TestSimpleFunctions(unittest.TestCase):
         """Set up the test case
         """
         # Load the config for a simple RF experiment
-        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'rf', 'sthr', 'auroc', 0.02)
+        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'rf', 'sthr', 'auroc', 0.01)
         self.experiment = Experiment(experiment_config, 'test')
         
     def test_get_num_disrupt(self):
@@ -56,7 +56,7 @@ class TestCriticalMetricsVsThresholds(unittest.TestCase):
 
     def setUp(self):
         # Load the config for a simple RF experiment
-        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'rf', 'sthr', 'auroc', 0.05)
+        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'rf', 'sthr', 'auroc', 0.01)
         self.experiment = Experiment(experiment_config, 'test')
 
         # Get the metrics
@@ -109,7 +109,7 @@ class TestCriticalMetricsVsFalseAlarmRates(unittest.TestCase):
 
     def setUp(self):
         # Load the config for a simple RF experiment
-        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'rf', 'sthr', 'auroc', 0.05)
+        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'rf', 'sthr', 'auroc', 0.01)
         self.experiment = Experiment(experiment_config, 'test')
 
         # Get the metrics
@@ -159,10 +159,10 @@ class TestAllCombos(unittest.TestCase):
     # metric_list = ['auroc', 'auwtc']
     # min_required_warning_times = [0.01, 0.05, 0.1, 0.2]
     
-    model_list = ['dsm', 'rf']
+    model_list = ['cph', 'dsm', 'rf', 'km']
     alarm_type_list = ['sthr']
     metric_list = ['auroc']
-    min_required_warning_times = [0.02]
+    min_required_warning_times = [0.01]
 
     def test_evaluate_all_metrics(self):
         """Test that all metrics can be evaluated for all experiments on the test and validations sets"""
@@ -191,7 +191,7 @@ class TestAllCombos(unittest.TestCase):
         model = 'rf'
         alarm_type = 'sthr'
         model_metric = 'auroc'
-        min_required_warning_time = 0.02
+        min_required_warning_time = 0.01
         experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, model, alarm_type, model_metric, min_required_warning_time)
         experiment = Experiment(experiment_config, 'test')
 
