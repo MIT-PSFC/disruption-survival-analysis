@@ -1,9 +1,0 @@
-This is a synthetic dataset of 180 shots where 10% are disruptive
-
-It has the following features:
-ip,n_e,aminor,kappa,squareness,delta,li,Wmhd
-
-And these columns for the labels:
-time,shot,time_until_disrupt
-
-The signals have been adjusted to have a certain amount of noise and other fluctuations

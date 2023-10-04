@@ -1,3 +1,5 @@
+# Methods for computing the metrics which are absolutely critical for the project
+
 import numpy as np
 
 def compute_metrics_vs_thresholds(predictions, outcomes, required_warning_time, thresholds):

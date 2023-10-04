@@ -267,33 +267,73 @@ class Experiment:
 
         return auroc_list
     
-    # True Alarms, False Alarms methods
+    # Vs. Thresholds Metrics
         
-    def true_false_alarm_rates(self, horizon=None, required_warning_time=None):
-        """ Get statistics on false alarm rate vs threshold for a given horizon and required warning time
-            This is inherently a macro statistic, since a single shot can have only one alarm at a given threshold
+    def true_alarm_rates_vs_thresholds(self, horizon=None, required_warning_time=None):
         """
+        Returns:
+        --------
+        thresholds : np.array
+            Every unique float returned as a risk by the model for the entire dataset, to be use as alarm thresholds
+        true_alarm_rates : np.array
+            True alarm rates corresponding to each threshold
+        """
+        thresholds, true_alarm_rates, _, _, _ = self.get_critical_metrics_vs_thresholds(horizon, required_warning_time)
+        return thresholds, true_alarm_rates
 
-        true_alarms, false_alarms = self.get_true_false_alarms(horizon, required_warning_time)
-
-        true_alarm_rates = np.sum(true_alarms, axis=0) / self.get_num_disruptive_shots() 
-        false_alarm_rates = np.sum(false_alarms, axis=0) / self.get_num_non_disruptive_shots()
-
-        return true_alarm_rates, false_alarm_rates
-
-    def true_alarm_rate_vs_false_alarm_rate(self, horizon=None, required_warning_time=None):
-
-        avg_true_alarm_rates, unique_false_alarm_rates, _, _ = self.get_critical_metrics_vs_false_alarm_rate(horizon, required_warning_time)
-
-        return unique_false_alarm_rates, avg_true_alarm_rates
+    def false_alarm_rates_vs_thresholds(self, horizon=None, required_warning_time=None):
+        """
+        Returns:
+        --------
+        thresholds : np.array
+            Every unique float returned as a risk by the model for the entire dataset, to be use as alarm thresholds
+        false_alarm_rates : np.array
+            False alarm rates corresponding to each threshold
+        """
+        thresholds, _, false_alarm_rates, _, _ = self.get_critical_metrics_vs_thresholds(horizon, required_warning_time)
+        return thresholds, false_alarm_rates
     
-    def false_alarm_rate_vs_threshold(self, required_warning_time=None, horizon=None, method='average'):
+    def warning_times_vs_thresholds(self, required_warning_time=None, horizon=None):
+        """
+        Returns:
+        --------
+        thresholds : np.array
+            Every unique float returned as a risk by the model for the entire dataset, to be use as alarm thresholds
+        avg_warning_times : np.array
+            Average warning times corresponding to each threshold
+        std_warning_times : np.array
+            Standard deviations of warning times corresponding to each threshold
+        """
+        thresholds, _, _, avg_warning_times, std_warning_times = self.get_critical_metrics_vs_thresholds(horizon, required_warning_time)
+        return thresholds, avg_warning_times, std_warning_times
+    
+    # Vs. False Alarm Rate Metrics
 
-        _, false_alarm_rates = self.true_false_alarm_rates(horizon, required_warning_time)
-
-        unique_thresholds, typical_warning_times, spread_warning_times = unique_domain_mapping(self.thresholds, false_alarm_rates, method=method)
-
-        return unique_thresholds, typical_warning_times, spread_warning_times
+    def true_alarm_rates_vs_false_alarm_rates(self, horizon=None, required_warning_time=None):
+        """
+        Returns:
+        --------
+        unique_false_alarm_rates : np.array
+            Every unique false alarm rate for the entire dataset
+        true_alarm_rates : np.array
+            Average true alarm rates corresponding to each false alarm rate
+        """
+        unique_false_alarm_rates, true_alarm_rates, _, _ = self.get_critical_metrics_vs_false_alarm_rates(horizon, required_warning_time)
+        return unique_false_alarm_rates, true_alarm_rates
+    
+    def warning_times_vs_false_alarm_rates(self, horizon=None, required_warning_time=None):
+        """
+        Returns:
+        --------
+        unique_false_alarm_rates : np.array
+            Every unique false alarm rate for the entire dataset
+        avg_warning_times : np.array
+            Average warning times corresponding to each false alarm rate
+        std_warning_times : np.array
+            Standard deviations of warning times corresponding to each false alarm rate
+        """
+        unique_false_alarm_rates, _, avg_warning_times, std_warning_times = self.get_critical_metrics_vs_false_alarm_rates(horizon, required_warning_time)
+        return unique_false_alarm_rates, avg_warning_times, std_warning_times
     
     # Metrics methods
 
@@ -324,71 +364,21 @@ class Experiment:
             metric_val = timeslice_micro_avg(self.device, self.dataset_path, self.predictor.model, self.experiment_type)
         elif metric_type == 'auroc':
             # Area under ROC curve
-            false_alarm_rates, true_alarm_rates = self.true_alarm_rate_vs_false_alarm_rate(horizon, required_warning_time)
+            false_alarm_rates, true_alarm_rates = self.true_alarm_rates_vs_false_alarm_rates(horizon, required_warning_time)
             metric_val = area_under_curve(false_alarm_rates, true_alarm_rates)
         elif metric_type == 'auwtc':
             # Area under warning time curve
-            false_alarm_rates, warning_times, _ = self.warning_time_vs_false_alarm_rate(horizon, required_warning_time, method='average')
+            false_alarm_rates, warning_times, _ = self.warning_times_vs_false_alarm_rates(horizon, required_warning_time)
             metric_val = area_under_curve(false_alarm_rates, warning_times, x_cutoff=0.05)
         elif metric_type == 'maxf1':
             # Highest f1 score over all the thresholds
-            true_alarms, false_alarms = self.get_true_false_alarms(horizon, required_warning_time)
+            _, true_alarm_rates, false_alarm_rates, _, _ = self.get_critical_metrics_vs_thresholds(horizon, required_warning_time)
 
-            true_alarm_count_array = np.sum(true_alarms, axis=0)
-            false_alarm_count_array = np.sum(false_alarms, axis=0)
-
-            num_disruptive_shots = self.get_num_disruptive_shots()
-
-            f1_scores = calculate_f1_scores(true_alarm_count_array, false_alarm_count_array, num_disruptive_shots)
-
-            metric_val = np.max(f1_scores)
+            metric_val = None
         else:
             metric_val = None
 
         return metric_val
-    
-    def max_f1_info(self, horizon=None, required_warning_time=None):
-        # Get related info for the best f1 score
-
-        true_alarms, false_alarms = self.get_true_false_alarms(horizon, required_warning_time)
-
-        true_alarm_count_array = np.sum(true_alarms, axis=0)
-        false_alarm_count_array = np.sum(false_alarms, axis=0)
-
-        num_disruptive_shots = self.get_num_disruptive_shots()
-
-        f1_scores = calculate_f1_scores(true_alarm_count_array, false_alarm_count_array, num_disruptive_shots)
-
-        # Find the index of the best f1 score
-        best_f1_score_index = np.argmax(f1_scores)
-
-        # Get the true alarm rate, false alarm rate, and warning time at the best f1 score
-        true_alarm_rate = true_alarm_count_array[best_f1_score_index]/num_disruptive_shots
-        false_alarm_rate = false_alarm_count_array[best_f1_score_index]/(self.get_num_non_disruptive_shots())
-        
-        # Get threshold at the best f1 score
-        best_f1_threshold = self.thresholds[best_f1_score_index]
-
-        unique_thresholds, avg_warning_times, std_warning_times = self.warning_time_vs_threshold(horizon)
-        # Find index where threshold is equal to the best f1 score threshold
-        
-        if self.alarm_type != 'hyst':
-            warning_time_index = np.where(unique_thresholds == best_f1_threshold)
-        else:
-            # TODO make better
-            warning_time_index = -1
-            for i in range(len(unique_thresholds)):
-                unique_threshold_first = unique_thresholds[i][0]
-                unique_threshold_second = unique_thresholds[i][1]
-                unique_threshold_third = unique_thresholds[i][2]
-                if unique_threshold_first == best_f1_threshold[0] and unique_threshold_second == best_f1_threshold[1] and unique_threshold_third == best_f1_threshold[2]:
-                    warning_time_index = i
-                    break
-
-        avg_warning_time = avg_warning_times[warning_time_index]
-        std_warning_time = std_warning_times[warning_time_index]
-
-        return true_alarm_rate, false_alarm_rate, avg_warning_time, std_warning_time
     
     def critical_metric_setup(self, horizon):
         """ Set up data for calculating critical metrics 
@@ -482,15 +472,15 @@ class Experiment:
         Returns
         -------
         thresholds : np.array
-            List of every unique float returned as a risk by the model for the entire dataset, to be used as alarm thresholds
+            Every unique float returned as a risk by the model for the entire dataset, to be used as alarm thresholds
         true_alarm_rates : np.array
-            List of true alarm rates corresponding to each threshold
+            True alarm rates corresponding to each threshold
         false_alarm_rates : np.array
-            List of false alarm rates corresponding to each threshold
+            False alarm rates corresponding to each threshold
         avg_warning_times : np.array
-            List of average warning times corresponding to each threshold
+            Average warning times corresponding to each threshold
         std_warning_times : np.array
-            List of standard deviations of warning times corresponding to each threshold
+            Standard deviations of warning times corresponding to each threshold
         """
 
         if horizon is None:
@@ -506,8 +496,8 @@ class Experiment:
         # 4. Return the false alarm rates and average warning times
         return thresholds, true_alarm_rates, false_alarm_rates, avg_warning_times, std_warning_times
 
-    def get_critical_metrics_vs_false_alarm_rate(self, horizon=None, required_warning_time=None):
-        """ Get critical metrics for the experiment, where each metric is compared with false alarm rate
+    def get_critical_metrics_vs_false_alarm_rates(self, horizon=None, required_warning_time=None):
+        """ Get critical metrics for the experiment, where each metric is compared with false alarm rates
 
         Parameters
         ----------
@@ -519,13 +509,13 @@ class Experiment:
         Returns
         -------
         unique_false_alarm_rates : np.array
-            List of every unique false alarm rate for the entire dataset
+            Every unique false alarm rate for the entire dataset
         true_alarm_rates : np.array
-            List of average true alarm rates corresponding to each false alarm rate
+            Average true alarm rates corresponding to each false alarm rate
         avg_warning_times : np.array
-            List of average warning times corresponding to each false alarm rate
+            Average warning times corresponding to each false alarm rate
         std_warning_times : np.array
-            List of standard deviations of warning times corresponding to each false alarm rate
+            Standard deviations of warning times corresponding to each false alarm rate
         """
 
         if horizon is None:
