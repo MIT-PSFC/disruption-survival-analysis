@@ -197,6 +197,7 @@ wandb
 *.db
 *.db-journal
 *.rename
+*.lock
 
 # Keep files required for tests to run on first install
 !data/synthetic/test/description.txt
