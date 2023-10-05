@@ -49,20 +49,22 @@ def compute_metrics_vs_thresholds(predictions, outcomes, required_warning_time, 
         disruption_time = outcomes[i]['disruption_time']
         disrupted = outcomes[i]['disrupted']
         
-        alarms_triggered = (risk_values[:, np.newaxis] > thresholds).any(axis=0)
+        # Each row of alarms_triggered corresponds to a threshold
+        # Each column of alarms_triggered corresponds to a time
+        alarms_triggered = (risk_values[:, np.newaxis] > thresholds).T.astype(int)
 
         if disrupted:
-            if np.any(alarms_triggered):
-                first_alarm_time = np.where(alarms_triggered, time_values[:, np.newaxis], np.inf).min(axis=0)
-                warning_time = np.maximum(0, disruption_time - first_alarm_time) * disrupted
-            else:
-                warning_time = np.zeros(len(thresholds))
+            alarm_times = np.where(alarms_triggered==1, time_values[:, np.newaxis].T, np.inf)
+            first_alarm_times = alarm_times.min(axis=1)
+
+            warning_time = np.maximum(0, disruption_time - first_alarm_times)
+
             true_positives += (warning_time > required_warning_time)
             total_warning_time += warning_time
             warning_times[i] = warning_time
             disruptive_shots += 1
         else:
-            false_positives += (alarms_triggered).astype(int)
+            false_positives += alarms_triggered.any(axis=1).astype(int)
             non_disruptive_shots += 1
 
     true_alarm_rates = true_positives / disruptive_shots
