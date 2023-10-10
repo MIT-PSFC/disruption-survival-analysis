@@ -121,7 +121,32 @@ def plot_true_alarm_rates_vs_false_alarm_rates(experiment_list:list[Experiment],
 
     for experiment in experiment_list:
         false_alarm_rates, true_alarm_rates = experiment.true_alarm_rates_vs_false_alarm_rates()
-        plt.plot(false_alarm_rates, 1-true_alarm_rates, label=experiment.name)
+        plt.plot(false_alarm_rates, true_alarm_rates, label=experiment.name)
+
+    plt.xlim([0, 1])
+    plt.ylim([0, 1])
+    plt.yscale('symlog')
+
+    # Put ticks at 1%, 5%, 10%
+    plt.yticks([0.1, .2, .3])
+
+    plt.legend(fontsize=LEGEND_FONT_SIZE)
+    plt.xlabel("False Alarm Rate", fontsize=LABEL_FONT_SIZE)
+    plt.ylabel("True Alarm Rate", fontsize=LABEL_FONT_SIZE)
+
+    if not test:
+        plt.show()
+
+def plot_missed_alarm_rates_vs_false_alarm_rates(experiment_list:list[Experiment], test=False):
+    """ Plot the log of missed alarm rate vs false alarm rates for each experiment in the list.
+    
+    """
+
+    plt.figure()
+
+    for experiment in experiment_list:
+        false_alarm_rates, missed_alarm_rates = experiment.missed_alarm_rates_vs_false_alarm_rates()
+        plt.plot(false_alarm_rates, missed_alarm_rates, label=experiment.name)
 
     plt.xlim([0, 1])
     plt.ylim([0, 1])
@@ -136,6 +161,7 @@ def plot_true_alarm_rates_vs_false_alarm_rates(experiment_list:list[Experiment],
 
     if not test:
         plt.show()
+
 
 def plot_avg_warning_times_vs_false_alarm_rates(experiment_list:list[Experiment], required_warning_time, test=False):
     """ Plot the average warning time vs false alarm rate for each experiment in the list.
