@@ -50,9 +50,10 @@ def make_training_sets(device, dataset_path, random_seed=0, debug=False):
     # Remove where time_until_disrupt is negative, keeping where time_until_disrupt is null
     data = data[(data['time_until_disrupt'] >= DISRUPTION_DROPPED_TIME) | (data['time_until_disrupt'].isnull())]
     
-    """
     # Remove shots shorter than 0.5 seconds
     data = data.groupby('shot').filter(lambda x: x['time'].max() - x['time'].min() > 0.5)
+    
+    """
     # Find shots where one signal is constant for at least 0.5 seconds
     # Get the shots
     shots = data['shot'].unique()

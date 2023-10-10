@@ -175,51 +175,67 @@ def write_sweep_config(sweep_config):
         yaml.dump(sweep_config, f)
 
 
-def create_experiment_groups(device, dataset_path, models, alarms, metrics, min_warning_times):
+def create_experiment_groups(devices, dataset_paths, models, alarms, metrics, min_warning_times):
     # Create groups of experiments
     # This is used for setting up dictionaries of experiments to plot
     # For example, compare all the experiments using the same minimum warning time against eachother
     experiment_groups = {}
-    for model in models:
-        for alarm in alarms:
-            for metric in metrics:
-                for min_warning_time in min_warning_times:
-                    # Load config for experiment 
-                    config = load_experiment_config(device, dataset_path, model, alarm, metric, min_warning_time)
-                    # Create test experiment from config
-                    experiment = Experiment(config, 'test')
-                    
-                    try:
-                        if experiment_groups[model] is None:
-                            experiment_groups[model] = []
-                    except KeyError:
-                        experiment_groups[model] = []
-                    experiment_groups[model].append(experiment)
+    for device in devices:
+        for dataset_path in dataset_paths:
+            for model in models:
+                for alarm in alarms:
+                    for metric in metrics:
+                        for min_warning_time in min_warning_times:
+                            # Load config for experiment 
+                            config = load_experiment_config(device, dataset_path, model, alarm, metric, min_warning_time)
+                            # Create test experiment from config
+                            experiment = Experiment(config, 'test')
 
-                    try:
-                        if experiment_groups[alarm] is None:
-                            experiment_groups[alarm] = []
-                    except KeyError:
-                        experiment_groups[alarm] = []
-                    experiment_groups[alarm].append(experiment)
+                            try:
+                                if experiment_groups[device] is None:
+                                    experiment_groups[device] = []
+                            except KeyError:
+                                experiment_groups[device] = []
+                            experiment_groups[device].append(experiment)
 
-                    try:
-                        if experiment_groups[metric] is None:
-                            experiment_groups[metric] = []
-                    except KeyError:
-                        experiment_groups[metric] = []
-                    experiment_groups[metric].append(experiment)
+                            try:
+                                if experiment_groups[dataset_path] is None:
+                                    experiment_groups[dataset_path] = []
+                            except KeyError:
+                                experiment_groups[dataset_path] = []
+                            experiment_groups[dataset_path].append(experiment)
+                            
+                            try:
+                                if experiment_groups[model] is None:
+                                    experiment_groups[model] = []
+                            except KeyError:
+                                experiment_groups[model] = []
+                            experiment_groups[model].append(experiment)
 
-                    try:
-                        if experiment_groups[min_warning_time] is None:
-                            experiment_groups[min_warning_time] = []
-                    except KeyError:
-                        experiment_groups[min_warning_time] = []
-                    experiment_groups[min_warning_time].append(experiment)
+                            try:
+                                if experiment_groups[alarm] is None:
+                                    experiment_groups[alarm] = []
+                            except KeyError:
+                                experiment_groups[alarm] = []
+                            experiment_groups[alarm].append(experiment)
+
+                            try:
+                                if experiment_groups[metric] is None:
+                                    experiment_groups[metric] = []
+                            except KeyError:
+                                experiment_groups[metric] = []
+                            experiment_groups[metric].append(experiment)
+
+                            try:
+                                if experiment_groups[min_warning_time] is None:
+                                    experiment_groups[min_warning_time] = []
+                            except KeyError:
+                                experiment_groups[min_warning_time] = []
+                            experiment_groups[min_warning_time].append(experiment)
 
     return experiment_groups
 
-def get_experiments(experiment_groups, keys1, keys2=None):
+def get_experiments(experiment_groups, keys1, keys2=None, keys3=None, keys4=None):
     """Get list of experiments that match all keys"""
     experiment_list = []
     for experiment in experiment_groups[keys1[0]]:
@@ -228,6 +244,14 @@ def get_experiments(experiment_groups, keys1, keys2=None):
     if keys2 is not None:
         for experiment in experiment_groups[keys2[0]]:
             if all([experiment in experiment_groups[key] for key in keys2]):
+                experiment_list.append(experiment)
+    if keys3 is not None:
+        for experiment in experiment_groups[keys3[0]]:
+            if all([experiment in experiment_groups[key] for key in keys3]):
+                experiment_list.append(experiment)
+    if keys4 is not None:
+        for experiment in experiment_groups[keys4[0]]:
+            if all([experiment in experiment_groups[key] for key in keys4]):
                 experiment_list.append(experiment)
     
     return experiment_list

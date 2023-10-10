@@ -69,6 +69,15 @@ class Experiment:
 
         # For now, all using 'sthr' alarm type
         self.thresholds = None
+        self.true_alarm_rates_thresholds = None
+        self.false_alarm_rates_thresholds = None
+        self.avg_warning_times_thresholds = None
+        self.std_warning_times_thresholds = None
+
+        self.unique_false_alarm_rates = None
+        self.true_alarm_rates = None
+        self.avg_warning_times = None
+        self.std_warning_times = None
 
     # Simple helper methods
 
@@ -321,6 +330,19 @@ class Experiment:
         unique_false_alarm_rates, true_alarm_rates, _, _ = self.get_critical_metrics_vs_false_alarm_rates(horizon, required_warning_time)
         return unique_false_alarm_rates, true_alarm_rates
     
+    def missed_alarm_rates_vs_false_alarm_rates(self, horizon=None, required_warning_time=None):
+        """
+        Returns:
+        --------
+        unique_false_alarm_rates : np.array
+            Every unique false alarm rate for the entire dataset
+        missed_alarm_rates : np.array
+            Average missed alarm rates corresponding to each false alarm rate
+        """
+        unique_false_alarm_rates, true_alarm_rates, _, _ = self.get_critical_metrics_vs_false_alarm_rates(horizon, required_warning_time)
+        missed_alarm_rates = 1 - true_alarm_rates
+        return unique_false_alarm_rates, missed_alarm_rates
+
     def warning_times_vs_false_alarm_rates(self, horizon=None, required_warning_time=None):
         """
         Returns:
@@ -366,6 +388,14 @@ class Experiment:
             # Area under ROC curve
             false_alarm_rates, true_alarm_rates = self.true_alarm_rates_vs_false_alarm_rates(horizon, required_warning_time)
             metric_val = area_under_curve(false_alarm_rates, true_alarm_rates)
+        elif metric_type == 'aumal':
+            # Area under log(missed alarm rate) vs false alarm rate curve
+            # This is done to make the metric more sensitive to missed alarm rates
+            false_alarm_rates, missed_alarm_rates = self.missed_alarm_rates_vs_false_alarm_rates(horizon, required_warning_time)
+            # Replace 0s with 1e-6 to avoid log(0) errors
+            missed_alarm_rates[missed_alarm_rates == 0] = 1e-6
+            log_missed_alarm_rates = np.log10(missed_alarm_rates)
+            metric_val = area_under_curve(false_alarm_rates, log_missed_alarm_rates)
         elif metric_type == 'auwtc':
             # Area under warning time curve
             false_alarm_rates, warning_times, _ = self.warning_times_vs_false_alarm_rates(horizon, required_warning_time)
@@ -481,9 +511,17 @@ class Experiment:
         if required_warning_time is None:
             required_warning_time = self.predictor.trained_required_warning_time
 
-        thresholds, predictions, outcomes = self.critical_metric_setup(horizon)
+        # TODO: implement proper caching
 
-        true_alarm_rates, false_alarm_rates, avg_warning_times, std_warning_times = compute_metrics_vs_thresholds(predictions, outcomes, required_warning_time, thresholds)
+        if self.true_alarm_rates_thresholds is None:
+            self.thresholds, predictions, outcomes = self.critical_metric_setup(horizon)
+            self.true_alarm_rates_thresholds, self.false_alarm_rates_thresholds, self.avg_warning_times_thresholds, self.std_warning_times_thresholds = compute_metrics_vs_thresholds(predictions, outcomes, required_warning_time, self.thresholds)
+
+        thresholds = self.thresholds
+        true_alarm_rates = self.true_alarm_rates_thresholds
+        false_alarm_rates = self.false_alarm_rates_thresholds
+        avg_warning_times = self.avg_warning_times_thresholds
+        std_warning_times = self.std_warning_times_thresholds
 
         return thresholds, true_alarm_rates, false_alarm_rates, avg_warning_times, std_warning_times
 
@@ -518,8 +556,13 @@ class Experiment:
         if required_warning_time is None:
             required_warning_time = self.predictor.trained_required_warning_time
 
-        thresholds, predictions, outcomes = self.critical_metric_setup(horizon)
-
-        unique_false_alarm_rates, true_alarm_rates, avg_warning_times, std_warning_times = compute_metrics_vs_false_alarm_rates(predictions, outcomes, required_warning_time, thresholds)
+        if self.unique_false_alarm_rates is None:
+            thresholds, predictions, outcomes = self.critical_metric_setup(horizon)
+            self.unique_false_alarm_rates, self.true_alarm_rates, self.avg_warning_times, self.std_warning_times = compute_metrics_vs_false_alarm_rates(predictions, outcomes, required_warning_time, thresholds)
+        
+        unique_false_alarm_rates = self.unique_false_alarm_rates
+        true_alarm_rates = self.true_alarm_rates
+        avg_warning_times = self.avg_warning_times
+        std_warning_times = self.std_warning_times
 
         return unique_false_alarm_rates, true_alarm_rates, avg_warning_times, std_warning_times

@@ -33,6 +33,9 @@ def plot_true_alarm_rates_vs_thresholds(experiment_list:list[Experiment], test=F
     plt.xlim([0, 1])
     plt.ylim([0, 1])
 
+    # Put x on symlog, where the x axis under 0.01 is linear
+    plt.xscale('symlog', linthresh=0.01)
+
     plt.legend(fontsize=LEGEND_FONT_SIZE)
     plt.xlabel("Threshold", fontsize=LABEL_FONT_SIZE)
     plt.ylabel("True Alarm Rate", fontsize=LABEL_FONT_SIZE)
@@ -61,8 +64,8 @@ def plot_false_alarm_rates_vs_thresholds(experiment_list:list[Experiment], test=
     plt.xlim([0, 1])
     plt.ylim([0, 1])
 
-    # Put x on symlog
-    plt.xscale('symlog')
+    # Put x on symlog, where the x axis under 0.01 is linear
+    plt.xscale('symlog', linthresh=0.01)
 
     plt.legend(fontsize=LEGEND_FONT_SIZE)
     plt.xlabel("Threshold", fontsize=LABEL_FONT_SIZE)
@@ -90,8 +93,8 @@ def plot_warning_times_vs_thresholds(experiment_list:list[Experiment], test=Fals
         plt.plot(thresholds, avg_warning_times, label=experiment.name)
 
     plt.xlim([0, 1])
-    # Put x on symlog
-    plt.xscale('symlog')
+    #  Put x on symlog, where the x axis under 0.01 is linear
+    plt.xscale('symlog', linthresh=0.01)
 
     plt.legend(fontsize=LEGEND_FONT_SIZE)
     plt.xlabel("Threshold", fontsize=LABEL_FONT_SIZE)
@@ -118,17 +121,18 @@ def plot_true_alarm_rates_vs_false_alarm_rates(experiment_list:list[Experiment],
 
     for experiment in experiment_list:
         false_alarm_rates, true_alarm_rates = experiment.true_alarm_rates_vs_false_alarm_rates()
-        plt.plot(false_alarm_rates, true_alarm_rates, label=experiment.name)
+        plt.plot(false_alarm_rates, 1-true_alarm_rates, label=experiment.name)
 
     plt.xlim([0, 1])
     plt.ylim([0, 1])
+    plt.yscale('symlog')
 
-    # Put x on symlog
-    plt.xscale('symlog')
+    # Put ticks at 1%, 5%, 10%
+    plt.yticks([0.1, .2, .3])
 
     plt.legend(fontsize=LEGEND_FONT_SIZE)
     plt.xlabel("False Alarm Rate", fontsize=LABEL_FONT_SIZE)
-    plt.ylabel("True Alarm Rate", fontsize=LABEL_FONT_SIZE)
+    plt.ylabel("Missed Alarm Rate", fontsize=LABEL_FONT_SIZE)
 
     if not test:
         plt.show()
@@ -149,24 +153,25 @@ def plot_avg_warning_times_vs_false_alarm_rates(experiment_list:list[Experiment]
 
     for experiment in experiment_list:
         false_alarm_rates, avg_warning_times, std_warning_times = experiment.warning_times_vs_false_alarm_rates()
-        plt.plot(false_alarm_rates, avg_warning_times, label=experiment.name)
+        plt.plot(false_alarm_rates, avg_warning_times*1000, label=experiment.name)
 
     plt.xlim([0, 0.06])
+    plt.ylim([0, 120])
 
     plt.xscale('symlog')
 
     # Make x ticks go from 0 to 0.05 in increments of 0.01
-    plt.xticks(np.arange(0, 0.06, 0.01))
+    plt.xticks(np.linspace(0, 0.05, 6), np.linspace(0, 0.05, 6))
 
     plt.legend(fontsize=LEGEND_FONT_SIZE)
     plt.xlabel("False Alarm Rate", fontsize=LABEL_FONT_SIZE)
-    plt.ylabel("Average Warning Time", fontsize=LABEL_FONT_SIZE)
+    plt.ylabel("Average Warning Time [ms]", fontsize=LABEL_FONT_SIZE)
 
     # Put a vertical line at 0.05 false alarm rate
     plt.axvline(x=0.05, color='r', linestyle='--')
 
     # Put a horizontal line at the required warning time
-    plt.axhline(y=required_warning_time, color='k', linestyle='--')
+    plt.axhline(y=required_warning_time*1000, color='k', linestyle='--')
 
     if not test:
         plt.show()
