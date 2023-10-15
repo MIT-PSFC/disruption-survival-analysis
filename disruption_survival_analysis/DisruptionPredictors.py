@@ -79,6 +79,11 @@ class DisruptionPredictorSM(DisruptionPredictor):
             risks = self.model.predict_risk(feature_data, [horizon])
 
         return risks[:,0]
+    
+    def get_ettd(self, shot_data):
+        """Get the expected time to disruption for each feature vector in shot_data"""
+
+        return None
 
 class DisruptionPredictorRF(DisruptionPredictor):
     """Disruption Predictors using RandomForestClassifier from sklearn"""
@@ -108,6 +113,21 @@ class DisruptionPredictorRF(DisruptionPredictor):
         risks = self.model.predict_proba(feature_data)[:,1]
 
         return risks
+    
+    def get_ettd(self, shot_data):
+        """Get the expected time to disruption for each feature vector in shot_data"""
+
+        risks = self.get_risks(shot_data)
+
+        # Calculate the expected time to disruption
+        # For a random forest (binary classifier) this is (class time / 2) / risk
+
+        ettd = (self.trained_class_time / 2) / risks
+
+        # Limit maximum ettd to be 10x the class time
+        ettd = np.clip(ettd, 0, self.trained_class_time * 10)
+
+        return ettd
     
 class DisruptionPredictorKM(DisruptionPredictor):
     """Kaplan-Meier Disruption predictor like Tinguely et al. 2019"""

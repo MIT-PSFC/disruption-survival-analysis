@@ -566,3 +566,8 @@ class Experiment:
         std_warning_times = self.std_warning_times
 
         return unique_false_alarm_rates, true_alarm_rates, avg_warning_times, std_warning_times
+
+    # Expected time to disruption
+    def get_expected_time_to_disruption_shot(self, shot):
+        """ Returns the expected time to disruption for each timeslice in a given shot"""
+        return self.predictor.get_ettd(self.get_shot_data(shot))

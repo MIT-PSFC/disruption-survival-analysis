@@ -222,6 +222,24 @@ def plot_avg_warning_times_vs_false_alarm_rates(experiment_list:list[Experiment]
 
 # Expected Time To Disruption
 
+def plot_expected_time_to_disruption_shot(experiment_list:list[Experiment], shot_number, test=False):
+    """Plot the expected time to disruption for a given shot for each experiment in the list."""
+
+    plt.figure()
+
+    times = experiment_list[0].get_shot_data(shot_number)['time'].values
+
+    for experiment in experiment_list:
+        ettd = experiment.get_expected_time_to_disruption_shot(shot_number)
+        plt.plot(times, ettd, label=pretty_name(experiment.name))
+
+    plt.legend(fontsize=LEGEND_FONT_SIZE)
+    plt.xlabel("Time [s]", fontsize=LABEL_FONT_SIZE)
+    plt.ylabel("Expected Time To Disruption [s]", fontsize=LABEL_FONT_SIZE)
+
+    if not test:
+        plt.show()
+
 
 
 def pretty_name(experiment_name:str, alarm_types=False, metrics=False, required_warning_times=False):
