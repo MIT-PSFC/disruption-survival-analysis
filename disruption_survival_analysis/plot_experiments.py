@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 from disruption_survival_analysis.Experiments import Experiment
 
-LEGEND_FONT_SIZE = 14
+LEGEND_FONT_SIZE = 12
 TICK_FONT_SIZE = 14
 LABEL_FONT_SIZE = 16
 TITLE_FONT_SIZE = 18
@@ -144,18 +144,36 @@ def plot_missed_alarm_rates_vs_false_alarm_rates(experiment_list:list[Experiment
 
     plt.figure()
 
+    # Check what type of plot this is going to be (comparing models or comparing required warning times)
+    if len(experiment_list) == 1:
+        plot_type = 'no_title'
+    else:
+        first_time = experiment_list[0].predictor.trained_required_warning_time
+        second_time = experiment_list[1].predictor.trained_required_warning_time
+        if  first_time != second_time:
+            plot_type = 'comparing_required_warning_times'
+        else:
+            plot_type = 'comparing_models'
+            plt.title(f"Required Warning Time: {first_time*1000:.0f} ms", fontsize=TITLE_FONT_SIZE)
+
+
     for experiment in experiment_list:
         false_alarm_rates, missed_alarm_rates = experiment.missed_alarm_rates_vs_false_alarm_rates()
-        plt.plot(false_alarm_rates, missed_alarm_rates, label=experiment.name)
+        if plot_type == 'comparing_models':
+            name = pretty_name(experiment.name)
+        elif plot_type == 'comparing_required_warning_times':
+            name = pretty_name(experiment.name, required_warning_times=True)
+        plt.plot(false_alarm_rates, missed_alarm_rates, label=name, linewidth=2)
 
     plt.xlim([0, 1])
     plt.ylim([0, 1])
-    plt.yscale('symlog')
+    plt.yscale('symlog', linthresh=0.1)
 
     # Put ticks at 1%, 5%, 10%
-    plt.yticks([0.1, .2, .3])
+    plt.yticks([0.01, .05, .1, .5],
+               ["1%", "5%", "10%", "50%"])
 
-    plt.legend(fontsize=LEGEND_FONT_SIZE)
+    #plt.legend(fontsize=LEGEND_FONT_SIZE, loc='upper right')
     plt.xlabel("False Alarm Rate", fontsize=LABEL_FONT_SIZE)
     plt.ylabel("Missed Alarm Rate", fontsize=LABEL_FONT_SIZE)
 
@@ -201,3 +219,28 @@ def plot_avg_warning_times_vs_false_alarm_rates(experiment_list:list[Experiment]
 
     if not test:
         plt.show()
+
+# Expected Time To Disruption
+
+
+
+def pretty_name(experiment_name:str, alarm_types=False, metrics=False, required_warning_times=False):
+    """ Return a pretty name for the experiment name."""
+
+    split_sections = experiment_name.split("_")
+
+    pretty_name = ""
+    # Set the first part based on the model type
+    if split_sections[0] == "rf":
+        pretty_name += "Random Forest"
+    elif split_sections[0] == "km":
+        pretty_name += "Kaplan-Meier"
+    elif split_sections[0] == "cph":
+        pretty_name += "Cox Proportional Hazards"
+    elif split_sections[0] == "dsm":
+        pretty_name += "Deep Survival Machines"
+
+    if required_warning_times:
+        pretty_name += " " + split_sections[-1]
+
+    return pretty_name
