@@ -201,6 +201,57 @@ class DisruptionPredictorKM(DisruptionPredictor):
         risks = np.clip(risks, 0, 1)
 
         return risks
+    
+    def get_ettd(self, shot_data):
+        """Get the expected time to disruption for each feature vector in shot_data"""
+
+        ettd = np.zeros(len(shot_data))
+        max_ettd = 10*self.trained_class_time
+
+        times = shot_data['time'].values
+        feature_data = self.get_feature_data(shot_data)
+
+        initial_risks = self.model.predict_proba(feature_data)[:,1]
+
+        # This is a bit of a slow implementation, can speed up later if needed
+
+        fit_times = [times[0]]
+        fit_points = [initial_risks[0]]
+
+        risks = np.zeros(len(initial_risks))
+
+        # Iterate through the data and calculate the slope for each time slice
+        # Slope is calculated using a linear fit over the previous t_fit seconds
+        for i in range(1, len(initial_risks)):
+
+            # Get the time for the new time slice
+            new_time = times[i]
+
+            # Add the new datapoint to the fit
+            fit_times.append(new_time)
+            fit_points.append(initial_risks[i])
+
+            # Remove all points that are outside the fitting window
+            while fit_times[-1] - fit_times[0] > self.trained_fit_time:
+                fit_times.pop(0)
+                fit_points.pop(0)
+            
+            # Create a linear fit for the points
+            slope, intercept = np.polyfit(fit_times, fit_points, 1)
+
+            # Extrapolate the risk into the future using this line
+            ttd = 0
+            risks[i] = intercept + (slope * (times[i]))
+            while (risks[i] > 0) and (risks[i] < 0.9) and ttd < max_ettd:
+                ttd += 0.001
+                risks[i] = intercept + (slope * (times[i] + ttd))
+            if (risks[i] > 0):
+                ettd[i] = ttd
+            else:
+                ettd[i] = max_ettd
+
+        return ettd
+    
 
 
 
