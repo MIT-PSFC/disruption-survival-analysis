@@ -88,11 +88,11 @@ def make_training_sets(device, dataset_path, random_seed=0, debug=False):
 
     # Save the training, test, and validation sets
     try:
-        train_data.to_csv('../data/{}/{}/train.csv'.format(device, dataset_path), index=False)
+        train_data.to_csv('../data/{}/{}/train_full.csv'.format(device, dataset_path), index=False)
         test_data.to_csv('../data/{}/{}/test.csv'.format(device, dataset_path), index=False)
         val_data.to_csv('../data/{}/{}/val.csv'.format(device, dataset_path), index=False)
     except:
-        train_data.to_csv('data/{}/{}/train.csv'.format(device, dataset_path), index=False)
+        train_data.to_csv('data/{}/{}/train_full.csv'.format(device, dataset_path), index=False)
         test_data.to_csv('data/{}/{}/test.csv'.format(device, dataset_path), index=False)
         val_data.to_csv('data/{}/{}/val.csv'.format(device, dataset_path), index=False)
 
@@ -161,6 +161,51 @@ def make_stacked_sets(device, dataset_path, dataset_category, stack_size):
         os.makedirs(new_dataset_path)
 
     stacked_features.to_csv(new_dataset_path + f'/{dataset_category}.csv', index=False)
+
+def focus_training_set(device, dataset_path, random_seed=0):
+    """ Take the training set and remove some data from the non-disruptive shots to improve the class balance
+    in the training set.
+    
+    Parameters
+    ----------
+    device : str
+        The device to use
+    dataset_path : str
+        The path to the dataset
+    random_seed : int, optional
+        The random seed to use for picking which data to remove
+    """
+
+    # Load the training set
+    data = load_dataset(device, dataset_path, 'train_full')
+
+    # Find the list of non-disruptive shots
+    non_disrupt_shots = load_non_disruptive_shot_list(device, dataset_path, 'train_full')
+
+    # Iterate through each disruptive shot
+    for shot in non_disrupt_shots:
+            
+        # Get the timeslices for the shot
+        shot_data = data[data['shot'] == shot]
+
+        # Find the number of timeslices in the shot
+        num_timeslices = len(shot_data)
+
+        # Find the number of timeslices to remove
+        num_remove = int(num_timeslices * 0.9)
+
+        # Choose the timeslices to remove
+        remove_indices = np.random.choice(num_timeslices, size=num_remove, replace=False)
+
+        # Remove the chosen timeslices
+        shot_data = shot_data.drop(shot_data.index[remove_indices])
+
+        # Replace the data for the shot
+        data = data[data['shot'] != shot]
+        data = pd.concat([data, shot_data], ignore_index=True)
+    
+    # Save the new training set
+    data.to_csv(f'data/{device}/{dataset_path}/train.csv', index=False)
 
 # Functions for loading datasets or other information directly from saved .csv files
 
