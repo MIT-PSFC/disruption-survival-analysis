@@ -83,7 +83,16 @@ class DisruptionPredictorSM(DisruptionPredictor):
     def get_ettd(self, shot_data):
         """Get the expected time to disruption for each feature vector in shot_data"""
 
-        return None
+        risk_times = np.linspace(0.001, 2, 200)
+        risk_vals = []
+        for i in range(1, len(risk_times)):
+            risk_in_interval = self.get_risks(shot_data, horizon=risk_times[i]) - self.get_risks(shot_data, horizon=risk_times[i-1])
+            interval_weight = (risk_times[i] + risk_times[i-1]) / 2
+            risk_vals.append(risk_in_interval * interval_weight)
+
+        ettd = np.sum(risk_vals, axis=0)
+
+        return ettd
 
 class DisruptionPredictorRF(DisruptionPredictor):
     """Disruption Predictors using RandomForestClassifier from sklearn"""
@@ -242,7 +251,7 @@ class DisruptionPredictorKM(DisruptionPredictor):
             # Extrapolate the risk into the future using this line
             ttd = 0
             risks[i] = intercept + (slope * (times[i]))
-            while (risks[i] > 0) and (risks[i] < 0.9) and ttd < max_ettd:
+            while (risks[i] > 0) and (risks[i] < 0.3) and ttd < max_ettd:
                 ttd += 0.001
                 risks[i] = intercept + (slope * (times[i] + ttd))
             if (risks[i] > 0):

@@ -50,42 +50,6 @@ def make_training_sets(device, dataset_path, random_seed=0, debug=False):
     # Remove where time_until_disrupt is negative, keeping where time_until_disrupt is null
     data = data[(data['time_until_disrupt'] >= DISRUPTION_DROPPED_TIME) | (data['time_until_disrupt'].isnull())]
     
-    # Remove shots shorter than 0.5 seconds
-    data = data.groupby('shot').filter(lambda x: x['time'].max() - x['time'].min() > 0.5)
-    
-    """
-    # Find shots where one signal is constant for at least 0.5 seconds
-    # Get the shots
-    shots = data['shot'].unique()
-    # For each shot, check if any signal is constant for at least 0.5 seconds
-    for shot in shots:
-        shot_data = data[data['shot'] == shot]
-
-        # Get the signals
-        signals = shot_data.columns[~shot_data.columns.isin(['shot', 'time', 'time_until_disrupt'])]
-        # For each signal, check if it is the same value for at least 100 time slices
-        for signal in signals:
-            # Get the number of timeslices where the signal is the same value
-            num_same = shot_data[signal].value_counts().max()
-            # If the signal is the same value for at least 100 timeslices, drop the shot
-            if num_same >= 100:
-                data = data[data['shot'] != shot]
-                break
-    
-    # Only keep the last 420 ms of each shot
-    # Get the shots
-    shots = data['shot'].unique()
-    # For each shot, only keep the last 420 ms
-    for shot in shots:
-        shot_data = data[data['shot'] == shot]
-        # Get the timeslices where the time is less than the last 420 ms
-        last_timeslices = shot_data[shot_data['time'] < shot_data['time'].max() - 0.42]
-        # Drop the timeslices where the time is less than the last 420 ms
-        data = data.drop(last_timeslices.index)
-    # Save the dataset HERE for debugging
-    data.to_csv('data/{}/{}/first_filter.csv'.format(device, dataset_path), index=False)
-    """
-    
     # Find the shots that have a disruption
     disrupt_shots = load_disruptive_shot_list(device, dataset_path, 'raw')
     # Find the shots that do not have a disruption

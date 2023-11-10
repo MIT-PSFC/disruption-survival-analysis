@@ -55,7 +55,7 @@ hyperparameter_ranges = {
     },
     "layer_width": {
         "min": 50,
-        "max": 200,
+        "max": 1000,
         "distribution": "int"
     },
     "learning_rate": { # Default: 0.001
@@ -82,7 +82,7 @@ hyperparameter_ranges = {
     },
     "n_estimators": { # Number of trees in the forest. Default: 100
         "min": 50,
-        "max": 200,
+        "max": 1000,
         "distribution": "int"
     },
     "horizon": { # How many seconds into the future to predict

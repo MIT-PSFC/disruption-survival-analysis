@@ -65,9 +65,14 @@ class Experiment:
             raise ValueError('Model type not recognized')
         
         # Get the alarm type from the config
+        # For now, all using 'sthr' alarm type
         self.alarm_type = config['alarm_type']
 
-        # For now, all using 'sthr' alarm type
+        # These are the main cached values, used in bootstrapping and non-bootstrapped metrics
+        self.predictions = None
+        self.outcomes = None
+
+        # These are caches for the main non-bootstrapped metrics
         self.thresholds = None
         self.true_alarm_rates_thresholds = None
         self.false_alarm_rates_thresholds = None
@@ -478,7 +483,7 @@ class Experiment:
 
         return unique_thresholds, predictions, outcomes
 
-    def get_critical_metrics_vs_thresholds(self, horizon=None, required_warning_time=None):
+    def get_critical_metrics_vs_thresholds(self, horizon=None, required_warning_time=None, bootstrap_seed=None):
         """ Get critical metrics for the experiment, where each metric is compared at alarm thresholds
         
         Parameters
@@ -487,6 +492,8 @@ class Experiment:
             The horizon for the survival models to predict at. If None, use the horizon the model was hyperparameter tuned for
         required_warning_time : float, optional
             The required warning time to evaluate the metric at. If None, use the required warning time the model was trained on
+        bootstrap_seed : int, optional
+            If None, do not bootstrap. If an integer, use that as the seed for the bootstrap sampling
         
         Returns
         -------
@@ -511,17 +518,31 @@ class Experiment:
         if required_warning_time is None:
             required_warning_time = self.predictor.trained_required_warning_time
 
-        # TODO: implement proper caching
+        if self.predictions is None:
+            self.thresholds, self.predictions, self.outcomes = self.critical_metric_setup(horizon)
 
-        if self.true_alarm_rates_thresholds is None:
-            self.thresholds, predictions, outcomes = self.critical_metric_setup(horizon)
-            self.true_alarm_rates_thresholds, self.false_alarm_rates_thresholds, self.avg_warning_times_thresholds, self.std_warning_times_thresholds = compute_metrics_vs_thresholds(predictions, outcomes, required_warning_time, self.thresholds)
+        # Original, non-bootstrapped way
+        if bootstrap_seed is None:
+            if self.true_alarm_rates_thresholds is None:
+                self.true_alarm_rates_thresholds, self.false_alarm_rates_thresholds, self.avg_warning_times_thresholds, self.std_warning_times_thresholds = compute_metrics_vs_thresholds(self.predictions, self.outcomes, required_warning_time, self.thresholds)
 
-        thresholds = self.thresholds
-        true_alarm_rates = self.true_alarm_rates_thresholds
-        false_alarm_rates = self.false_alarm_rates_thresholds
-        avg_warning_times = self.avg_warning_times_thresholds
-        std_warning_times = self.std_warning_times_thresholds
+            thresholds = self.thresholds
+            true_alarm_rates = self.true_alarm_rates_thresholds
+            false_alarm_rates = self.false_alarm_rates_thresholds
+            avg_warning_times = self.avg_warning_times_thresholds
+            std_warning_times = self.std_warning_times_thresholds
+        else:
+            # Bootstrapping, using multiple samples of data
+            # Set the random seed
+            np.random.seed(bootstrap_seed)
+            # Randomly sample with replacement from self.predictions and self.outcomes
+            num_shots = len(self.predictions)
+            sample_indices = np.random.choice(num_shots, num_shots, replace=True)
+            sample_predictions = [self.predictions[i] for i in sample_indices]
+            sample_outcomes = [self.outcomes[i] for i in sample_indices]
+
+            # Compute metrics on the sample
+            thresholds, true_alarm_rates, false_alarm_rates, avg_warning_times, std_warning_times = compute_metrics_vs_thresholds(sample_predictions, sample_outcomes, required_warning_time, self.thresholds)
 
         return thresholds, true_alarm_rates, false_alarm_rates, avg_warning_times, std_warning_times
 

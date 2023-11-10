@@ -2,13 +2,17 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 
 from disruption_survival_analysis.Experiments import Experiment
 
 LEGEND_FONT_SIZE = 12
-TICK_FONT_SIZE = 14
-LABEL_FONT_SIZE = 16
-TITLE_FONT_SIZE = 18
+TICK_FONT_SIZE = 18
+LABEL_FONT_SIZE = 22
+TITLE_FONT_SIZE = 24
+
+#PLOT_STYLE = 'seaborn-v0_8-colorblind'
+PLOT_STYLE = 'seaborn-v0_8-poster'
 
 # Plots of the metrics vs thresholds
 
@@ -119,23 +123,38 @@ def plot_true_alarm_rates_vs_false_alarm_rates(experiment_list:list[Experiment],
 
     plt.figure()
 
+    plt.style.use(PLOT_STYLE)
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
+    
+    plt.grid(True, color='w', linestyle='-', linewidth=1.5)
+    plt.gca().patch.set_facecolor('0.92')
+
     for experiment in experiment_list:
         false_alarm_rates, true_alarm_rates = experiment.true_alarm_rates_vs_false_alarm_rates()
-        plt.plot(false_alarm_rates, true_alarm_rates, label=experiment.name)
+        plt.plot(false_alarm_rates, true_alarm_rates, label=experiment.name, linewidth=2)
 
     plt.xlim([0, 1])
     plt.ylim([0, 1])
-    plt.yscale('symlog')
-
-    # Put ticks at 1%, 5%, 10%
-    plt.yticks([0.1, .2, .3])
 
     plt.legend(fontsize=LEGEND_FONT_SIZE)
     plt.xlabel("False Alarm Rate", fontsize=LABEL_FONT_SIZE)
     plt.ylabel("True Alarm Rate", fontsize=LABEL_FONT_SIZE)
 
+    # Set x tick font size
+    plt.xticks(fontsize=TICK_FONT_SIZE)
+    plt.yticks(fontsize=TICK_FONT_SIZE)
+
+    # Put ticks at percents
+    plt.yticks([0, 0.2, 0.4, 0.6, 0.8, 1],
+                ["0\%", "20\%", "40\%", "60\%", "80\%", "100\%"])
+    plt.xticks([0, 0.2, 0.4, 0.6, 0.8, 1],
+                ["0\%", "20\%", "40\%", "60\%", "80\%", "100\%"])
+
     if not test:
         plt.show()
+
+    plt.rcParams.update(mpl.rcParamsDefault)
 
 def plot_missed_alarm_rates_vs_false_alarm_rates(experiment_list:list[Experiment], test=False):
     """ Plot the log of missed alarm rate vs false alarm rates for each experiment in the list.
@@ -143,6 +162,13 @@ def plot_missed_alarm_rates_vs_false_alarm_rates(experiment_list:list[Experiment
     """
 
     plt.figure()
+
+    plt.style.use(PLOT_STYLE)
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
+
+    plt.grid(True, color='w', linestyle='-', linewidth=1.5)
+    plt.gca().patch.set_facecolor('0.92')
 
     # Check what type of plot this is going to be (comparing models or comparing required warning times)
     if len(experiment_list) == 1:
@@ -171,7 +197,13 @@ def plot_missed_alarm_rates_vs_false_alarm_rates(experiment_list:list[Experiment
 
     # Put ticks at 1%, 5%, 10%
     plt.yticks([0.01, .05, .1, .5],
-               ["1%", "5%", "10%", "50%"])
+               ["1\%", "5\%", "10\%", "50\%"])
+    plt.xticks([0, 0.2, 0.4, 0.6, 0.8, 1],
+                ["0\%", "20\%", "40\%", "60\%", "80\%", "100\%"])
+    
+    # Make ticks bigger
+    plt.xticks(fontsize=TICK_FONT_SIZE)
+    plt.yticks(fontsize=TICK_FONT_SIZE)
 
     #plt.legend(fontsize=LEGEND_FONT_SIZE, loc='upper right')
     plt.xlabel("False Alarm Rate", fontsize=LABEL_FONT_SIZE)
@@ -179,6 +211,8 @@ def plot_missed_alarm_rates_vs_false_alarm_rates(experiment_list:list[Experiment
 
     if not test:
         plt.show()
+
+    plt.rcParams.update(mpl.rcParamsDefault)
 
 
 def plot_avg_warning_times_vs_false_alarm_rates(experiment_list:list[Experiment], required_warning_time, test=False):
@@ -195,30 +229,44 @@ def plot_avg_warning_times_vs_false_alarm_rates(experiment_list:list[Experiment]
 
     plt.figure()
 
+    plt.style.use(PLOT_STYLE)
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
+
+    plt.grid(True, color='w', linestyle='-', linewidth=1.5)
+    plt.gca().patch.set_facecolor('0.92')
+
     for experiment in experiment_list:
         false_alarm_rates, avg_warning_times, std_warning_times = experiment.warning_times_vs_false_alarm_rates()
-        plt.plot(false_alarm_rates, avg_warning_times*1000, label=experiment.name)
+        plt.plot(false_alarm_rates, avg_warning_times*1000, label=experiment.name, linewidth=2)
 
-    plt.xlim([0, 0.06])
+    plt.xlim([0, 0.05])
     plt.ylim([0, 120])
 
     plt.xscale('symlog')
 
     # Make x ticks go from 0 to 0.05 in increments of 0.01
-    plt.xticks(np.linspace(0, 0.05, 6), np.linspace(0, 0.05, 6))
+    plt.xticks([0, 0.01, 0.02, 0.03, 0.04, 0.05],
+                ["0\%", "1\%", "2\%", "3\%", "4\%", "5\%"])
+    
+    # Make ticks bigger
+    plt.xticks(fontsize=TICK_FONT_SIZE)
+    plt.yticks(fontsize=TICK_FONT_SIZE)
 
-    plt.legend(fontsize=LEGEND_FONT_SIZE)
+    #plt.legend(fontsize=LEGEND_FONT_SIZE)
     plt.xlabel("False Alarm Rate", fontsize=LABEL_FONT_SIZE)
     plt.ylabel("Average Warning Time [ms]", fontsize=LABEL_FONT_SIZE)
 
     # Put a vertical line at 0.05 false alarm rate
-    plt.axvline(x=0.05, color='r', linestyle='--')
+    #plt.axvline(x=0.05, color='r', linestyle='--')
 
     # Put a horizontal line at the required warning time
-    plt.axhline(y=required_warning_time*1000, color='k', linestyle='--')
+    #plt.axhline(y=required_warning_time*1000, color='k', linestyle='--')
 
     if not test:
         plt.show()
+
+    plt.rcParams.update(mpl.rcParamsDefault)
 
 # Expected Time To Disruption
 
@@ -227,18 +275,39 @@ def plot_expected_time_to_disruption_shot(experiment_list:list[Experiment], shot
 
     plt.figure()
 
+    plt.style.use(PLOT_STYLE)
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
+
     times = experiment_list[0].get_shot_data(shot_number)['time'].values
+
+    # Set boolean disruptive if shot number is in the disruptive shot list
+    disruptive = shot_number in experiment_list[0].get_disruptive_shot_list()
 
     for experiment in experiment_list:
         ettd = experiment.get_expected_time_to_disruption_shot(shot_number)
         plt.plot(times, ettd, label=pretty_name(experiment.name))
 
-    plt.legend(fontsize=LEGEND_FONT_SIZE)
+    plt.xlim([min(times), max(times)])
+    plt.ylim([0, 0.8])
+
+    # Set tick font sizes
+    plt.xticks(fontsize=TICK_FONT_SIZE)
+    plt.yticks(fontsize=TICK_FONT_SIZE)
+
+    #plt.legend(fontsize=LEGEND_FONT_SIZE)
     plt.xlabel("Time [s]", fontsize=LABEL_FONT_SIZE)
     plt.ylabel("Expected Time To Disruption [s]", fontsize=LABEL_FONT_SIZE)
 
+    if disruptive:
+        plt.title(f"Shot {int(shot_number)}, Disrupted", fontsize=TITLE_FONT_SIZE)
+    else:
+        plt.title(f"Shot {int(shot_number)}, Not Disrupted", fontsize=TITLE_FONT_SIZE)
+
     if not test:
         plt.show()
+
+    plt.rcParams.update(mpl.rcParamsDefault)
 
 
 
