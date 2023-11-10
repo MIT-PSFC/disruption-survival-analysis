@@ -182,6 +182,9 @@ def focus_training_set(device, dataset_path, random_seed=0):
     # Find the list of non-disruptive shots
     non_disrupt_shots = load_non_disruptive_shot_list(device, dataset_path, 'train_full')
 
+    # Make a new training set with the same columns
+    new_data = pd.DataFrame(columns=data.columns)
+
     # Iterate through each disruptive shot
     for shot in non_disrupt_shots:
             
@@ -200,12 +203,17 @@ def focus_training_set(device, dataset_path, random_seed=0):
         # Remove the chosen timeslices
         shot_data = shot_data.drop(shot_data.index[remove_indices])
 
-        # Replace the data for the shot
+        # Add the remaining timeslices to the new training set
+        new_data = pd.concat([new_data, shot_data], ignore_index=True)
+
+        # Remove data from the shot in the original training set
         data = data[data['shot'] != shot]
-        data = pd.concat([data, shot_data], ignore_index=True)
+
+    # Add the disruptive shots to the new training set
+    new_data = pd.concat([new_data, data], ignore_index=True)
     
     # Save the new training set
-    data.to_csv(f'data/{device}/{dataset_path}/train.csv', index=False)
+    new_data.to_csv(f'data/{device}/{dataset_path}/train.csv', index=False)
 
 # Functions for loading datasets or other information directly from saved .csv files
 

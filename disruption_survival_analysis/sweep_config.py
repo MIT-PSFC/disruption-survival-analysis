@@ -50,12 +50,12 @@ hyperparameter_ranges = {
     },
     "layer_depth": {
         "min": 1,
-        "max": 5,
+        "max": 3,
         "distribution": "int"
     },
     "layer_width": {
-        "min": 50,
-        "max": 1000,
+        "min": 42,
+        "max": 413,
         "distribution": "int"
     },
     "learning_rate": { # Default: 0.001
