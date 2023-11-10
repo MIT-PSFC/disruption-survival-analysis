@@ -3,22 +3,22 @@
 from disruption_survival_analysis.sweep_config import make_sweep_config, write_sweep_config
 
 # Datasets to use
-devices = ["cmod"]
-dataset_paths = ["sql_all_no_ufo", "sql_all_no_ufo/stack_5", "sql_all_no_ufo/stack_10"]
+devices = ["d3d"]
+dataset_paths = ["flattop_no_overlap/stack_10"]
 #devices = ["synthetic"]
 #dataset_paths = ["test"]
 
 # List of models to create sweeps for
 # cph, dcph, dcm, dsm, rf, km
-model_types = ["cph", "dsm", "rf", "km"]
+model_types = ["cph", "dsm", "dcph", "rf", "km"]
 
 # List of alarm types to use
 # sthr, hyst, ettd, ethy
 alarm_types = ["sthr"]
 
 # List of validation metrics to use
-# auroc, auwtc, maxf1
-metrics = ["auroc", "aumal"]
+# auroc, aumal, auwtc, maxf1
+metrics = ["auroc"]
 
 # List of required warning times to train on (in seconds)
 required_warning_times = [0.01, 0.05, 0.1]
