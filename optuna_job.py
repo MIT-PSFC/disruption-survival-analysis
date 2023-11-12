@@ -93,7 +93,7 @@ if __name__ == "__main__":
     storage = optuna.storages.JournalStorage(
         optuna.storages.JournalFileStorage(database_path, lock_obj=lock_obj)
     )
-
+    
     study = optuna.create_study(
         storage=storage, 
         study_name=f"{model_type}_{alarm_type}_{metric}_{required_warning_time}ms",
@@ -101,4 +101,4 @@ if __name__ == "__main__":
         load_if_exists=True
     )
 
-    study.optimize(lambda trial: objective(trial, sweep_config), n_trials=1000)
+    study.optimize(lambda trial: objective(trial, sweep_config), n_trials=10)
