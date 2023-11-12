@@ -13,9 +13,9 @@ if __name__ == "__main__":
     model_type = sys.argv[3]
     alarm_type = sys.argv[4]
     metric = sys.argv[5]
-    min_warning_time = sys.argv[6]
+    min_warning_time_ms = sys.argv[6]
     
-    experiment_name = f"{model_type}_{alarm_type}_{metric}_{int(min_warning_time*1000)}ms_experiment"
+    experiment_name = f"{model_type}_{alarm_type}_{metric}_{min_warning_time_ms}ms_experiment"
 
     # Load the experiment
     experiment_path = f"models/{device}/{dataset_path}/experiments/{experiment_name}.pkl"
@@ -80,7 +80,7 @@ if __name__ == "__main__":
     if not os.path.exists(directory_name):
         os.makedirs(directory_name)
 
-    bootstrap_name = f"{model_type}_{alarm_type}_{metric}_{int(min_warning_time*1000)}ms_bootstrap"
+    bootstrap_name = f"{model_type}_{alarm_type}_{metric}_{min_warning_time_ms}ms_bootstrap"
 
     with open(f"{directory_name}/{bootstrap_name}.pkl", 'wb') as f:
         dill.dump(bootstrapped_metrics, f)

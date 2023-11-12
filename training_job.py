@@ -20,9 +20,9 @@ if __name__ == "__main__":
     model_type = sys.argv[3]
     alarm_type = sys.argv[4]
     metric = sys.argv[5]
-    required_warning_time = sys.argv[6]
+    required_warning_time_ms = sys.argv[6]
     
-    study_name = f"{model_type}_{alarm_type}_{metric}_{int(required_warning_time*1000)}ms_study"
+    study_name = f"{model_type}_{alarm_type}_{metric}_{required_warning_time_ms}ms_study"
 
     # Load the study
     study_path = f"models/{device}/{dataset_path}/studies/{study_name}.db"
@@ -50,7 +50,7 @@ if __name__ == "__main__":
     config['model_type'] = model_type
     config['alarm_type'] = alarm_type
     config['metric'] = metric
-    config['required_warning_time'] = required_warning_time
+    config['required_warning_time'] = int(required_warning_time_ms)/1000
 
     config['hyperparameters'] = hyperparameters
 
