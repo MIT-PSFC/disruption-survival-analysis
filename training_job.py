@@ -69,7 +69,7 @@ if __name__ == "__main__":
     experiment.get_critical_metrics_vs_false_alarm_rates()
 
     # Save experiment results to file
-    experiment_name = f"{model_type}_{alarm_type}_{metric}_{int(required_warning_time*1000)}ms_experiment"
+    experiment_name = f"{model_type}_{alarm_type}_{metric}_{required_warning_time_ms}ms_experiment"
 
     # Make directory if it doesn't already exist
     directory_name = f"models/{device}/{dataset_path}/experiments"
