@@ -180,7 +180,6 @@ def compute_metrics_vs_false_alarm_rates(predictions, outcomes, required_warning
         The average warning times corresponding to each unique false alarm rate
     std_warning_times : numpy array
         The standard deviation of the warning times corresponding to each unique false alarm rate
-    
     """
 
     if threshold_type == 'risk':

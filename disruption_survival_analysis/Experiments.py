@@ -53,7 +53,12 @@ class Experiment:
 
         model_type = config['model_type']
 
+        # Get the alarm type from the config
+        self.alarm_type = config['alarm_type']
+
         hyperparameters = config['hyperparameters']
+        if self.alarm_type in ['ettd']:
+            hyperparameters['horizon'] = None
 
         if model_type in ['cph', 'dcph', 'dcm', 'dsm'] and isinstance(model, SurvivalModel):
             self.predictor = DisruptionPredictorSM(self.name, model, required_warning_time, hyperparameters['horizon'])
@@ -64,14 +69,10 @@ class Experiment:
         else:
             raise ValueError('Model type not recognized')
         
-        # Get the alarm type from the config
-        self.alarm_type = config['alarm_type']
-
         # These are the main cached values, used in bootstrapping and non-bootstrapped metrics
         self.predictions = None
         self.outcomes = None
 
-        
         # If alarm type is 'sthr', this is the list of all unique risks returned by the model
         # If alarm type is 'ettd', this is the list of all unique expected times to disruption returned by the model
         self.thresholds = None
@@ -480,6 +481,9 @@ class Experiment:
                 
                 # Add the thresholds to the list of all thresholds
                 all_thresholds = np.concatenate((all_thresholds, shot_predictions['ettd']))
+            
+            else:
+                raise ValueError(f"Encountered unimplemented alarm type when setting up critical metrics: {self.alarm_type}")
 
             # Add prediction for this shot
             shot_predictions['time'] = shot_data['time'].values
@@ -599,14 +603,13 @@ class Experiment:
                 horizon = self.predictor.trained_horizon
             except:
                 # If horizon is not defined, in the case of a binary classifier, just pass
-                # Horizon is also not defined when using an 'ettd' alarm
+                # Horizon is also not defined when using time-based alarms
                 pass
         if required_warning_time is None:
             required_warning_time = self.predictor.trained_required_warning_time
 
         if self.predictions is None:
             self.thresholds, self.predictions, self.outcomes = self.critical_metric_setup(horizon)
-
         
         if bootstrap_seed is None:
             # Original, non-bootstrapped way

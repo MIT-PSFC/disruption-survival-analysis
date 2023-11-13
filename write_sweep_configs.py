@@ -4,7 +4,7 @@ from disruption_survival_analysis.sweep_config import make_sweep_config, write_s
 
 # Datasets to use
 devices = ["d3d"]
-dataset_paths = ["flattop_no_overlap/stack_10"]
+dataset_paths = ["matlab_flattop/stack_10"]
 #devices = ["synthetic"]
 #dataset_paths = ["test"]
 

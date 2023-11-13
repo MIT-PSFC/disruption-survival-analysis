@@ -150,6 +150,9 @@ def make_sweep_config(device, dataset_path, model_type, alarm_type, metric, requ
     hyperparameters = {}
     for hyperparameter in model_hyperparameters[model_type]:
         hyperparameters[hyperparameter] = hyperparameter_ranges[hyperparameter]
+    # If alarm type is time-based (like ettd), remove the horizon hyperparameter
+    if alarm_type == "ettd":
+        hyperparameters.pop("horizon", None)
     sweep_config["hyperparameters"] = hyperparameters
 
     return sweep_config
