@@ -9,6 +9,8 @@ from disruption_survival_analysis.manage_datasets import make_training_sets, mak
 TEST_DEVICE = 'synthetic'
 TEST_DATASET_PATH = 'test'
 
+DATASET_CATEGORIES = ['train_full', 'test', 'val']
+
 class TestCreatedTrainingSets(unittest.TestCase):
     """Tests for the function make_training_sets()"""
 
@@ -17,7 +19,7 @@ class TestCreatedTrainingSets(unittest.TestCase):
         """
 
         # Remove training sets if they exist
-        for category in ['train', 'test', 'val']:
+        for category in DATASET_CATEGORIES:
             path = f'data/{TEST_DEVICE}/{TEST_DATASET_PATH}/{category}.csv'
             if os.path.exists(path):
                 os.remove(path)
@@ -28,14 +30,14 @@ class TestCreatedTrainingSets(unittest.TestCase):
             self.fail("make_training_sets() raised an exception unexpectedly!")
 
         # Ensure that the training sets that exist are actually new
-        for category in ['train', 'test', 'val']:
+        for category in DATASET_CATEGORIES:
             path = f'data/{TEST_DEVICE}/{TEST_DATASET_PATH}/{category}.csv'
             self.assertTrue(os.path.exists(path))
 
     def test_no_null_values(self):
         """Ensure there are no null values in the training sets"""
 
-        for category in ['train', 'test', 'val']:
+        for category in DATASET_CATEGORIES:
             data = load_dataset(TEST_DEVICE, TEST_DATASET_PATH, category)
             # Ignore the time_until_disrupt column, since it is allowed to be null
             data = data.drop(columns=['time_until_disrupt'])
@@ -45,7 +47,7 @@ class TestCreatedTrainingSets(unittest.TestCase):
     def test_no_short_shots(self):
         """Ensure there are no shots with less than 10 slices"""
 
-        for category in ['train', 'test', 'val']:
+        for category in DATASET_CATEGORIES:
             data = load_dataset(TEST_DEVICE, TEST_DATASET_PATH, category)
             shots = data.groupby('shot').size()
 
@@ -54,7 +56,7 @@ class TestCreatedTrainingSets(unittest.TestCase):
     def test_no_dropped_features(self):
         """Ensure that the dropped features are actually gone"""
 
-        for category in ['train', 'test', 'val']:
+        for category in DATASET_CATEGORIES:
             data = load_dataset(TEST_DEVICE, TEST_DATASET_PATH, category)
             # Ensure that the dropped features are not in the data
             for feature in DROPPED_FEATURES:
@@ -67,19 +69,18 @@ class TestCreatedTrainingSets(unittest.TestCase):
         ratio = {}
         ratio_epsilon = 0.06
 
-        for category in ['train', 'test', 'val']:
+        for category in DATASET_CATEGORIES:
             num_disrupt = len(load_disruptive_shot_list(TEST_DEVICE, TEST_DATASET_PATH, category))
             total_size = len(load_shot_list(TEST_DEVICE, TEST_DATASET_PATH, category))
 
             ratio[category] = num_disrupt / total_size
         
         # Ensure that the ratios are roughly equal
-        if abs(ratio['train'] - ratio['test']) > ratio_epsilon:
-            self.fail(f"Class Imbalance! train: {ratio['train']}, test: {ratio['test']}")
-        if abs(ratio['train'] - ratio['val']) > ratio_epsilon:
-            self.fail(f"Class Imbalance! train: {ratio['train']}, val: {ratio['val']}")
-        if abs(ratio['test'] - ratio['val']) > ratio_epsilon:
-            self.fail(f"Class Imbalance! test: {ratio['test']}, val: {ratio['val']}")
+        for category in DATASET_CATEGORIES:
+            compared_categories = [c for c in DATASET_CATEGORIES if c != category]
+            for compared_category in compared_categories:
+                if abs(ratio[category] - ratio[compared_category]) > ratio_epsilon:
+                    self.fail(f"Class Imbalance! {category}: {ratio[category]}, {compared_category}: {ratio[compared_category]}")
 
 class TestCreatedStackedSets(unittest.TestCase):
     """Tests for the function make_stacked_sets()"""
@@ -92,19 +93,19 @@ class TestCreatedStackedSets(unittest.TestCase):
         """
 
         # Remove stacked sets if they exist
-        for category in ['train_full', 'test', 'val']:
+        for category in DATASET_CATEGORIES:
             path = f'data/{TEST_DEVICE}/{self.stack_dataset_path}/{category}.csv'
             if os.path.exists(path):
                 os.remove(path)
 
         try:
-            for category in ['train_full', 'test', 'val']:
+            for category in DATASET_CATEGORIES:
                 make_stacked_sets(TEST_DEVICE, TEST_DATASET_PATH, category, self.stack_number)
         except:
             self.fail("make_stacked_sets() raised an exception unexpectedly!")
 
         # Ensure that the stacked sets that exist are actually new
-        for category in ['train_full', 'test', 'val']:
+        for category in DATASET_CATEGORIES:
             path = f'data/{TEST_DEVICE}/{self.stack_dataset_path}/{category}.csv'
             if not os.path.exists(path):
                 self.fail(f"make_stacked_sets() did not create {path}!")
@@ -112,7 +113,7 @@ class TestCreatedStackedSets(unittest.TestCase):
     def test_no_null_values(self):
         """Ensure there are no null values in the stacked sets"""
 
-        for category in ['train_full', 'test', 'val']:
+        for category in DATASET_CATEGORIES:
             data = load_dataset(TEST_DEVICE, self.stack_dataset_path, category)
             # Ignore the time_until_disrupt column, since it is allowed to be null
             data = data.drop(columns=['time_until_disrupt'])
@@ -122,7 +123,7 @@ class TestCreatedStackedSets(unittest.TestCase):
     def test_no_short_shots(self):
         """Ensure there are no shots with less than 10 slices"""
 
-        for category in ['train_full', 'test', 'val']:
+        for category in DATASET_CATEGORIES:
             data = load_dataset(TEST_DEVICE, self.stack_dataset_path, category)
             shots = data.groupby('shot').size()
 
@@ -135,7 +136,7 @@ class TestCreatedStackedSets(unittest.TestCase):
         ratio = {}
         ratio_epsilon = 0.06
 
-        for category in ['train_full', 'test', 'val']:
+        for category in DATASET_CATEGORIES:
             num_disrupt = len(load_disruptive_shot_list(TEST_DEVICE, self.stack_dataset_path, category))
             total_size = len(load_shot_list(TEST_DEVICE, self.stack_dataset_path, category))
 
@@ -152,7 +153,7 @@ class TestCreatedStackedSets(unittest.TestCase):
     def test_no_repeat(self):
         """Ensure that the stacked sets actually have unique data in each slice"""
 
-        for category in ['train_full', 'test', 'val']:
+        for category in DATASET_CATEGORIES:
             data = load_dataset(TEST_DEVICE, self.stack_dataset_path, category)
 
             # Pick the first shot
@@ -186,7 +187,7 @@ class TestLoadDataset(unittest.TestCase):
         """Ensure there is no negative time in the experiment datasets
         """
 
-        for category in ['train', 'test', 'val']:
+        for category in DATASET_CATEGORIES:
             data = load_dataset(TEST_DEVICE, TEST_DATASET_PATH, category)
             self.assertTrue((data['time'] >= 0).all())
 
@@ -195,7 +196,7 @@ class TestLoadDataset(unittest.TestCase):
         Ensure the time_until_disrupt is not negative
         """
 
-        for category in ['train', 'test', 'val']:
+        for category in DATASET_CATEGORIES:
             data = load_dataset(TEST_DEVICE, TEST_DATASET_PATH, category)
             # Remove NaN slices (don't care about that for this test)
             data = data[~data['time_until_disrupt'].isnull()]
@@ -205,7 +206,7 @@ class TestLoadDataset(unittest.TestCase):
         """Ensure that the data is sorted by shot number and time
         """
 
-        for category in ['train', 'test', 'val']:
+        for category in DATASET_CATEGORIES:
             data = load_dataset(TEST_DEVICE, TEST_DATASET_PATH, category)
 
             # Check that the data is sorted by shot number
@@ -232,7 +233,7 @@ class TestLoadFeaturesOutcomes(unittest.TestCase):
     def test_updated_time(self):
         """Ensure that the time to event in outcomes is different from the regular input time 
         """
-        for category in ['train', 'test', 'val']:
+        for category in DATASET_CATEGORIES:
             _, outcomes = load_features_outcomes(TEST_DEVICE, TEST_DATASET_PATH, category)
 
             data = load_dataset(TEST_DEVICE, TEST_DATASET_PATH, category)
@@ -243,7 +244,7 @@ class TestLoadFeaturesOutcomes(unittest.TestCase):
         """Ensure there are no negative time to event in the outcomes
         """
 
-        for category in ['train', 'test', 'val']:
+        for category in DATASET_CATEGORIES:
             _, outcomes = load_features_outcomes(TEST_DEVICE, TEST_DATASET_PATH, category)
             
             # Assert that there are no negative times
@@ -252,7 +253,7 @@ class TestLoadFeaturesOutcomes(unittest.TestCase):
     def test_no_zero_outcome_time(self):
         """Ensure there are no zero time to event in the outcomes"""
 
-        for category in ['train', 'test', 'val']:
+        for category in DATASET_CATEGORIES:
             _, outcomes = load_features_outcomes(TEST_DEVICE, TEST_DATASET_PATH, category)
             
             # Assert that there are no zero times
@@ -261,7 +262,7 @@ class TestLoadFeaturesOutcomes(unittest.TestCase):
     def test_binary_outcomes(self):
         """Ensure that the outcomes are binary and not all 1's or all 0's"""
 
-        for category in ['train', 'test', 'val']:
+        for category in DATASET_CATEGORIES:
             _, outcomes = load_features_outcomes(TEST_DEVICE, TEST_DATASET_PATH, category)
             
             # Assert that there are both 0's and 1's
@@ -291,7 +292,7 @@ class TestLoadFeaturesOutcomes(unittest.TestCase):
     def test_no_non_features(self):
         """Ensure that time, shot, and time_until_disrupt are not in the features"""
 
-        features, _ = load_features_outcomes(TEST_DEVICE, TEST_DATASET_PATH, "train")
+        features, _ = load_features_outcomes(TEST_DEVICE, TEST_DATASET_PATH, DATASET_CATEGORIES[0])
 
         self.assertTrue('time' not in features.columns)
         self.assertTrue('shot' not in features.columns)
@@ -320,7 +321,7 @@ class TestLoadFeaturesLabels(unittest.TestCase):
     def test_no_non_features(self):
         """Ensure that time, shot, and time_until_disrupt are not in the features"""
 
-        features, _ = load_features_labels(TEST_DEVICE, TEST_DATASET_PATH, "train", 5)
+        features, _ = load_features_labels(TEST_DEVICE, TEST_DATASET_PATH, DATASET_CATEGORIES[0], 5)
 
         self.assertTrue('time' not in features.columns)
         self.assertTrue('shot' not in features.columns)
@@ -363,7 +364,7 @@ class TestShotLists(unittest.TestCase):
         """Ensure that all shots are covered by the disruptive and non-disruptive shot loading functions
         """
 
-        for category in ['train', 'test', 'val']:
+        for category in DATASET_CATEGORIES:
             # Get the list of shots
             shot_list = load_shot_list(TEST_DEVICE, TEST_DATASET_PATH, category)
 
@@ -379,7 +380,7 @@ class TestShotLists(unittest.TestCase):
         """Ensure that there is no overlap between the disruptive and non-disruptive shot lists
         """
 
-        for category in ['train', 'test', 'val']:
+        for category in DATASET_CATEGORIES:
             disruptive_shot_list = load_disruptive_shot_list(TEST_DEVICE, TEST_DATASET_PATH, category)
             non_disruptive_shot_list = load_non_disruptive_shot_list(TEST_DEVICE, TEST_DATASET_PATH, category)
 
