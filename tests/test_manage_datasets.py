@@ -148,6 +148,35 @@ class TestCreatedStackedSets(unittest.TestCase):
             self.fail(f"Class Imbalance! train: {ratio['train']}, val: {ratio['val']}")
         if abs(ratio['test'] - ratio['val']) > ratio_epsilon:
             self.fail(f"Class Imbalance! test: {ratio['test']}, val: {ratio['val']}")
+        
+    def test_no_repeat(self):
+        """Ensure that the stacked sets actually have unique data in each slice"""
+
+        for category in ['train', 'test', 'val']:
+            data = load_dataset(TEST_DEVICE, self.stack_dataset_path, category)
+
+            # Pick the first shot
+            shot = data['shot'].unique()[0]
+            shot_data = data[data['shot'] == shot]
+            # Sort shot data by time
+            shot_data = shot_data.sort_values(by='time')
+
+            # Drop the time_until_disrupt, shot, and time columns
+            shot_data = shot_data.drop(columns=['time_until_disrupt', 'shot', 'time'])
+
+            # Get the 'base column names' (i.e. the column names without the stack number)
+            # Should be the first 8 columns
+            base_column_names = shot_data.columns[:8]
+
+            for base_column_name in base_column_names:
+                stack_column_names = [f'{base_column_name}_{i}' for i in range(self.stack_number)]
+
+                # Get the stacked values for this column
+                stacked_values = shot_data[stack_column_names].values
+                # For each row after the first 10, ensure that the values are not the same
+
+
+
 
 class TestLoadDataset(unittest.TestCase):
     """Tests for the function load_dataset()"""

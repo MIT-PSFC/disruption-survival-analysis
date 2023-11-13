@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 
-from disruption_survival_analysis.critical_metrics import compute_metrics_vs_thresholds
+from disruption_survival_analysis.critical_metrics import compute_metrics_vs_risk_thresholds
 
 class TestComputeMetricsVsThresholds(unittest.TestCase):
 
@@ -31,7 +31,7 @@ class TestComputeMetricsVsThresholds(unittest.TestCase):
 
         unique_thresholds = np.unique(np.concatenate((shot_1_risk, shot_2_risk)))
 
-        true_alarm_rates, false_alarm_rates, avg_warning_times, std_warning_times = compute_metrics_vs_thresholds(predictions, outcomes, required_warning_time, unique_thresholds)
+        true_alarm_rates, false_alarm_rates, avg_warning_times, std_warning_times = compute_metrics_vs_risk_thresholds(predictions, outcomes, required_warning_time, unique_thresholds)
 
         # Check that the length of these arrays lines up with the length of the thresholds
         if len(true_alarm_rates) != len(unique_thresholds):
@@ -91,7 +91,7 @@ class TestComputeMetricsVsThresholds(unittest.TestCase):
 
         unique_thresholds = np.unique(np.concatenate((shot_0_risk, shot_1_risk, shot_2_risk, shot_3_risk, np.array([0, 1]))))
 
-        true_alarm_rates, false_alarm_rates, avg_warning_times, std_warning_times = compute_metrics_vs_thresholds(predictions, outcomes, required_warning_time, unique_thresholds)
+        true_alarm_rates, false_alarm_rates, avg_warning_times, std_warning_times = compute_metrics_vs_risk_thresholds(predictions, outcomes, required_warning_time, unique_thresholds)
 
         # For each threshold, check that the true alarm rate is correct
         corrct_true_alarm_rates = np.array([1, 1, 1, 1, 1, 1, 0.5, 0.5, 0, 0, 0])

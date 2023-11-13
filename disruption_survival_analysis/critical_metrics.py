@@ -182,9 +182,9 @@ def compute_metrics_vs_false_alarm_rates(predictions, outcomes, required_warning
         The standard deviation of the warning times corresponding to each unique false alarm rate
     """
 
-    if threshold_type == 'risk':
+    if threshold_type == 'sthr':
         threshold_true_alarm_rates, threshold_false_alarm_rates, threshold_avg_warning_times, threshold_std_warning_times = compute_metrics_vs_risk_thresholds(predictions, outcomes, required_warning_time, thresholds)
-    elif threshold_type == 'time':
+    elif threshold_type == 'ettd':
         threshold_true_alarm_rates, threshold_false_alarm_rates, threshold_avg_warning_times, threshold_std_warning_times = compute_metrics_vs_time_thresholds(predictions, outcomes, required_warning_time, thresholds)
 
     # 1. Get the unique false alarm rates from the threshold false alarm rates
