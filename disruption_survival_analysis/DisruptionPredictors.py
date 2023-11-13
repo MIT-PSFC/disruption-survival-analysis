@@ -96,6 +96,8 @@ class DisruptionPredictorSM(DisruptionPredictor):
         risk_vals = []
         for i in range(1, len(risk_times)):
             risks_in_interval = risks_at_horizons[:,i] - risks_at_horizons[:,i-1]
+            # Replace NaNs with 0
+            risks_in_interval = np.nan_to_num(risks_in_interval)
             interval_weight = (risk_times[i] + risk_times[i-1]) / 2
             risk_vals.append(risks_in_interval * interval_weight)
 
