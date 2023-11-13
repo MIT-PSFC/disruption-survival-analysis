@@ -12,7 +12,7 @@ from sklearn.ensemble import RandomForestClassifier # RF, KM
 
 from disruption_survival_analysis.DisruptionPredictors import DisruptionPredictorSM, DisruptionPredictorRF, DisruptionPredictorKM
 
-from disruption_survival_analysis.critical_metrics import compute_metrics_vs_thresholds, compute_metrics_vs_false_alarm_rates
+from disruption_survival_analysis.critical_metrics import compute_metrics_vs_risk_thresholds, compute_metrics_vs_time_thresholds, compute_metrics_vs_false_alarm_rates
 
 class Experiment:
     """ Class that holds onto data shared between multiple experiments """
@@ -65,15 +65,18 @@ class Experiment:
             raise ValueError('Model type not recognized')
         
         # Get the alarm type from the config
-        # For now, all using 'sthr' alarm type
         self.alarm_type = config['alarm_type']
 
         # These are the main cached values, used in bootstrapping and non-bootstrapped metrics
         self.predictions = None
         self.outcomes = None
 
-        # These are caches for the main non-bootstrapped metrics
+        
+        # If alarm type is 'sthr', this is the list of all unique risks returned by the model
+        # If alarm type is 'ettd', this is the list of all unique expected times to disruption returned by the model
         self.thresholds = None
+
+        # These are caches for the main non-bootstrapped metrics
         self.true_alarm_rates_thresholds = None
         self.false_alarm_rates_thresholds = None
         self.avg_warning_times_thresholds = None
@@ -429,8 +432,8 @@ class Experiment:
             List of every unique float returned as a risk by the model for the entire dataset, to be use as alarm thresholds
         predictions : list of dicts
             List of dictionaries containing the following keys:
-            'risk' : np.array
-                Array of predicted risks for the shot
+            'value' : np.array ('risk' for risk-based alarms, 'ettd' for time-based alarms)
+                    Array of predicted 'risks' or 'expected time to disruption' for the shot
             'time' : np.array
                 Array of times for the shot
         outcomes : list of dicts
@@ -450,18 +453,33 @@ class Experiment:
         outcomes = []
         for shot_data in shot_data_list:
             # Predict risk depending on the model type
-            shot_predictions = {}
-            if isinstance(self.predictor.model, SurvivalModel):
-                shot_predictions['risk'] = self.predictor.get_risks(shot_data, horizon)
-            elif isinstance(self.predictor, DisruptionPredictorRF):
-                shot_predictions['risk'] = self.predictor.get_risks(shot_data)
-            elif isinstance(self.predictor, DisruptionPredictorKM):
-                shot_predictions['risk'] = self.predictor.get_risks(shot_data, horizon)
-            else:
-                raise ValueError('Model type not supported')
-            
-            # Add the thresholds to the list of all thresholds
-            all_thresholds = np.concatenate((all_thresholds, shot_predictions['risk']))
+            if self.alarm_type == 'sthr':
+                shot_predictions = {}
+                if isinstance(self.predictor.model, SurvivalModel):
+                    shot_predictions['risk'] = self.predictor.get_risks(shot_data, horizon)
+                elif isinstance(self.predictor, DisruptionPredictorRF):
+                    shot_predictions['risk'] = self.predictor.get_risks(shot_data)
+                elif isinstance(self.predictor, DisruptionPredictorKM):
+                    shot_predictions['risk'] = self.predictor.get_risks(shot_data, horizon)
+                else:
+                    raise ValueError('Model type not supported')
+                
+                # Add the thresholds to the list of all thresholds
+                all_thresholds = np.concatenate((all_thresholds, shot_predictions['risk']))
+
+            elif self.alarm_type == 'ettd':
+                shot_predictions = {}
+                if isinstance(self.predictor.model, SurvivalModel):
+                    shot_predictions['ettd'] = self.predictor.get_ettd(shot_data)
+                elif isinstance(self.predictor, DisruptionPredictorRF):
+                    shot_predictions['ettd'] = self.predictor.get_ettd(shot_data)
+                elif isinstance(self.predictor, DisruptionPredictorKM):
+                    shot_predictions['ettd'] = self.predictor.get_ettd(shot_data)
+                else:
+                    raise ValueError('Model type not supported')
+                
+                # Add the thresholds to the list of all thresholds
+                all_thresholds = np.concatenate((all_thresholds, shot_predictions['ettd']))
 
             # Add prediction for this shot
             shot_predictions['time'] = shot_data['time'].values
@@ -524,7 +542,10 @@ class Experiment:
         # Original, non-bootstrapped way
         if bootstrap_seed is None:
             if self.true_alarm_rates_thresholds is None:
-                self.true_alarm_rates_thresholds, self.false_alarm_rates_thresholds, self.avg_warning_times_thresholds, self.std_warning_times_thresholds = compute_metrics_vs_thresholds(self.predictions, self.outcomes, required_warning_time, self.thresholds)
+                if self.alarm_type == 'sthr':
+                    self.true_alarm_rates_thresholds, self.false_alarm_rates_thresholds, self.avg_warning_times_thresholds, self.std_warning_times_thresholds = compute_metrics_vs_risk_thresholds(self.predictions, self.outcomes, required_warning_time, self.thresholds)
+                elif self.alarm_type == 'ettd':
+                    self.true_alarm_rates_thresholds, self.false_alarm_rates_thresholds, self.avg_warning_times_thresholds, self.std_warning_times_thresholds = compute_metrics_vs_time_thresholds(self.predictions, self.outcomes, required_warning_time, self.thresholds)
 
             thresholds = self.thresholds
             true_alarm_rates = self.true_alarm_rates_thresholds
@@ -542,7 +563,10 @@ class Experiment:
             sample_outcomes = [self.outcomes[i] for i in sample_indices]
 
             # Compute metrics on the sample
-            thresholds, true_alarm_rates, false_alarm_rates, avg_warning_times, std_warning_times = compute_metrics_vs_thresholds(sample_predictions, sample_outcomes, required_warning_time, self.thresholds)
+            if self.alarm_type == 'sthr':
+                thresholds, true_alarm_rates, false_alarm_rates, avg_warning_times, std_warning_times = compute_metrics_vs_risk_thresholds(sample_predictions, sample_outcomes, required_warning_time, self.thresholds)
+            elif self.alarm_type == 'ettd':
+                thresholds, true_alarm_rates, false_alarm_rates, avg_warning_times, std_warning_times = compute_metrics_vs_time_thresholds(sample_predictions, sample_outcomes, required_warning_time, self.thresholds)
 
         return thresholds, true_alarm_rates, false_alarm_rates, avg_warning_times, std_warning_times
 
@@ -575,6 +599,7 @@ class Experiment:
                 horizon = self.predictor.trained_horizon
             except:
                 # If horizon is not defined, in the case of a binary classifier, just pass
+                # Horizon is also not defined when using an 'ettd' alarm
                 pass
         if required_warning_time is None:
             required_warning_time = self.predictor.trained_required_warning_time
@@ -586,7 +611,7 @@ class Experiment:
         if bootstrap_seed is None:
             # Original, non-bootstrapped way
             if self.unique_false_alarm_rates is None:
-                self.unique_false_alarm_rates, self.true_alarm_rates, self.avg_warning_times, self.std_warning_times = compute_metrics_vs_false_alarm_rates(self.predictions, self.outcomes, required_warning_time, self.thresholds)
+                self.unique_false_alarm_rates, self.true_alarm_rates, self.avg_warning_times, self.std_warning_times = compute_metrics_vs_false_alarm_rates(self.predictions, self.outcomes, required_warning_time, self.thresholds, self.alarm_type)
             
             unique_false_alarm_rates = self.unique_false_alarm_rates
             true_alarm_rates = self.true_alarm_rates
