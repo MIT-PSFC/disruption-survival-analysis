@@ -14,7 +14,7 @@ model_types = ["cph", "dsm", "dcph", "rf", "km"]
 
 # List of alarm types to use
 # sthr, hyst, ettd, ethy
-alarm_types = ["sthr"]
+alarm_types = ["sthr", "ettd"]
 
 # List of validation metrics to use
 # auroc, aumal, auwtc, maxf1

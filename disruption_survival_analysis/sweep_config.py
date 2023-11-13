@@ -13,7 +13,7 @@ hyperparameter_ranges = {
     },
     "class_time": { # Time in seconds before a disruption labeled as 'disruptive
         "min": 0.001,
-        "max": 0.4,
+        "max": 0.3,
         "distribution": "float",
         "log": False
     },

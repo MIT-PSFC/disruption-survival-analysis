@@ -83,7 +83,7 @@ class DisruptionPredictorSM(DisruptionPredictor):
     def get_ettd(self, shot_data):
         """Get the expected time to disruption for each feature vector in shot_data"""
 
-        risk_times = np.linspace(0.001, 2, 200)
+        risk_times = np.linspace(0.001, 4, 400)
         risk_vals = []
         for i in range(1, len(risk_times)):
             risk_in_interval = self.get_risks(shot_data, horizon=risk_times[i]) - self.get_risks(shot_data, horizon=risk_times[i-1])
