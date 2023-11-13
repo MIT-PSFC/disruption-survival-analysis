@@ -146,7 +146,7 @@ def make_stacked_sets(device, dataset_path, dataset_category, stack_size):
 
         for feature in feature_list:
             for i in range(stack_size):
-                shot_stack[f'{feature}_{i}'] = shot_stack[feature].shift(stack_size)
+                shot_stack[f'{feature}_{i}'] = shot_stack[feature].shift(i)
 
         # Replace all feature NaN's with 0's
         shot_stack[extended_feature_list] = shot_stack[extended_feature_list].fillna(0)
@@ -400,7 +400,7 @@ def load_feature_list(device, dataset):
     """
 
     # Load the training dataset
-    data = load_dataset(device, dataset, 'train')
+    data = load_dataset(device, dataset, 'train_full')
 
     # Get the features (ignoring non-feature columns)
     feature_data = data.drop(columns=NOT_FEATURES).columns.values

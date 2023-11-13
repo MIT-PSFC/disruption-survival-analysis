@@ -92,19 +92,19 @@ class TestCreatedStackedSets(unittest.TestCase):
         """
 
         # Remove stacked sets if they exist
-        for category in ['train', 'test', 'val']:
+        for category in ['train_full', 'test', 'val']:
             path = f'data/{TEST_DEVICE}/{self.stack_dataset_path}/{category}.csv'
             if os.path.exists(path):
                 os.remove(path)
 
         try:
-            for category in ['train', 'test', 'val']:
+            for category in ['train_full', 'test', 'val']:
                 make_stacked_sets(TEST_DEVICE, TEST_DATASET_PATH, category, self.stack_number)
         except:
             self.fail("make_stacked_sets() raised an exception unexpectedly!")
 
         # Ensure that the stacked sets that exist are actually new
-        for category in ['train', 'test', 'val']:
+        for category in ['train_full', 'test', 'val']:
             path = f'data/{TEST_DEVICE}/{self.stack_dataset_path}/{category}.csv'
             if not os.path.exists(path):
                 self.fail(f"make_stacked_sets() did not create {path}!")
@@ -112,7 +112,7 @@ class TestCreatedStackedSets(unittest.TestCase):
     def test_no_null_values(self):
         """Ensure there are no null values in the stacked sets"""
 
-        for category in ['train', 'test', 'val']:
+        for category in ['train_full', 'test', 'val']:
             data = load_dataset(TEST_DEVICE, self.stack_dataset_path, category)
             # Ignore the time_until_disrupt column, since it is allowed to be null
             data = data.drop(columns=['time_until_disrupt'])
@@ -122,7 +122,7 @@ class TestCreatedStackedSets(unittest.TestCase):
     def test_no_short_shots(self):
         """Ensure there are no shots with less than 10 slices"""
 
-        for category in ['train', 'test', 'val']:
+        for category in ['train_full', 'test', 'val']:
             data = load_dataset(TEST_DEVICE, self.stack_dataset_path, category)
             shots = data.groupby('shot').size()
 
@@ -135,31 +135,29 @@ class TestCreatedStackedSets(unittest.TestCase):
         ratio = {}
         ratio_epsilon = 0.06
 
-        for category in ['train', 'test', 'val']:
+        for category in ['train_full', 'test', 'val']:
             num_disrupt = len(load_disruptive_shot_list(TEST_DEVICE, self.stack_dataset_path, category))
             total_size = len(load_shot_list(TEST_DEVICE, self.stack_dataset_path, category))
 
             ratio[category] = num_disrupt / total_size
         
         # Ensure that the ratios are roughly equal
-        if abs(ratio['train'] - ratio['test']) > ratio_epsilon:
-            self.fail(f"Class Imbalance! train: {ratio['train']}, test: {ratio['test']}")
-        if abs(ratio['train'] - ratio['val']) > ratio_epsilon:
-            self.fail(f"Class Imbalance! train: {ratio['train']}, val: {ratio['val']}")
+        if abs(ratio['train_full'] - ratio['test']) > ratio_epsilon:
+            self.fail(f"Class Imbalance! train: {ratio['train_full']}, test: {ratio['test']}")
+        if abs(ratio['train_full'] - ratio['val']) > ratio_epsilon:
+            self.fail(f"Class Imbalance! train: {ratio['train_full']}, val: {ratio['val']}")
         if abs(ratio['test'] - ratio['val']) > ratio_epsilon:
             self.fail(f"Class Imbalance! test: {ratio['test']}, val: {ratio['val']}")
         
     def test_no_repeat(self):
         """Ensure that the stacked sets actually have unique data in each slice"""
 
-        for category in ['train', 'test', 'val']:
+        for category in ['train_full', 'test', 'val']:
             data = load_dataset(TEST_DEVICE, self.stack_dataset_path, category)
 
             # Pick the first shot
             shot = data['shot'].unique()[0]
             shot_data = data[data['shot'] == shot]
-            # Sort shot data by time
-            shot_data = shot_data.sort_values(by='time')
 
             # Drop the time_until_disrupt, shot, and time columns
             shot_data = shot_data.drop(columns=['time_until_disrupt', 'shot', 'time'])
@@ -173,10 +171,13 @@ class TestCreatedStackedSets(unittest.TestCase):
 
                 # Get the stacked values for this column
                 stacked_values = shot_data[stack_column_names].values
-                # For each row after the first 10, ensure that the values are not the same
-
-
-
+                # For each row after the first 10, find the number of unique values
+                for i in range(10, len(stacked_values)):
+                    row_values = stacked_values[i]
+                    num_unique_values = len(np.unique(row_values))
+                    # Ensure that there are at least 2 unique values
+                    if num_unique_values <= 2:
+                        self.fail(f"Stacked sets have repeated values! {num_unique_values} unique values in {row_values}")
 
 class TestLoadDataset(unittest.TestCase):
     """Tests for the function load_dataset()"""
