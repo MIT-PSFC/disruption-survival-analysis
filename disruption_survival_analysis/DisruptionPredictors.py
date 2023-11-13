@@ -83,12 +83,21 @@ class DisruptionPredictorSM(DisruptionPredictor):
     def get_ettd(self, shot_data):
         """Get the expected time to disruption for each feature vector in shot_data"""
 
+        feature_data = self.get_feature_data(shot_data)
+        
         risk_times = np.linspace(0.001, 4, 400)
+
+        try:
+            risks_at_horizons = self.model.predict_risk(feature_data, risk_times)
+        except:
+            # DSM expects horizons in a list
+            risks_at_horizons = self.model.predict_risk(feature_data, [risk_times])
+
         risk_vals = []
         for i in range(1, len(risk_times)):
-            risk_in_interval = self.get_risks(shot_data, horizon=risk_times[i]) - self.get_risks(shot_data, horizon=risk_times[i-1])
+            risks_in_interval = risks_at_horizons[:,i] - risks_at_horizons[:,i-1]
             interval_weight = (risk_times[i] + risk_times[i-1]) / 2
-            risk_vals.append(risk_in_interval * interval_weight)
+            risk_vals.append(risks_in_interval * interval_weight)
 
         ettd = np.sum(risk_vals, axis=0)
 

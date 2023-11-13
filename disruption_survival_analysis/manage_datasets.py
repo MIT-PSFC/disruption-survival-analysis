@@ -131,7 +131,7 @@ def make_stacked_sets(device, dataset_path, dataset_category, stack_size):
     extended_feature_list = feature_list.copy()
     for feature in feature_list:
         for i in range(stack_size):
-            extended_feature_list.append(f'{feature}_{i}')
+            extended_feature_list.append(f'{feature}_{i+1}')
 
     stacked_features = pd.DataFrame(columns=extended_feature_list)
 
@@ -146,7 +146,7 @@ def make_stacked_sets(device, dataset_path, dataset_category, stack_size):
 
         for feature in feature_list:
             for i in range(stack_size):
-                shot_stack[f'{feature}_{i}'] = shot_stack[feature].shift(i)
+                shot_stack[f'{feature}_{i+1}'] = shot_stack[feature].shift(i+1)
 
         # Replace all feature NaN's with 0's
         shot_stack[extended_feature_list] = shot_stack[extended_feature_list].fillna(0)
