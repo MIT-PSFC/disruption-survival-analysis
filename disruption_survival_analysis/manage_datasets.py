@@ -87,14 +87,9 @@ def make_training_sets(device, dataset_path, random_seed=0, debug=False):
     val_data[features] = transformer.transform(val_data[features])
 
     # Save the training, test, and validation sets
-    try:
-        train_data.to_csv('../data/{}/{}/train_full.csv'.format(device, dataset_path), index=False)
-        test_data.to_csv('../data/{}/{}/test.csv'.format(device, dataset_path), index=False)
-        val_data.to_csv('../data/{}/{}/val.csv'.format(device, dataset_path), index=False)
-    except:
-        train_data.to_csv('data/{}/{}/train_full.csv'.format(device, dataset_path), index=False)
-        test_data.to_csv('data/{}/{}/test.csv'.format(device, dataset_path), index=False)
-        val_data.to_csv('data/{}/{}/val.csv'.format(device, dataset_path), index=False)
+    train_data.to_csv('data/{}/{}/train_full.csv'.format(device, dataset_path), index=False)
+    test_data.to_csv('data/{}/{}/test.csv'.format(device, dataset_path), index=False)
+    val_data.to_csv('data/{}/{}/val.csv'.format(device, dataset_path), index=False)
 
     # Print the number of shots in each set
     if debug:
@@ -219,6 +214,7 @@ def focus_training_set(device, dataset_path, random_seed=0):
 
 def load_dataset(device, dataset_path, dataset_category):
     """ Load a dataset from a specific device, sorted by shot number and time. Does not do any further processing.
+    Takes everything as a float
 
     Parameters
     ----------
@@ -238,11 +234,10 @@ def load_dataset(device, dataset_path, dataset_category):
         In the form of data sorted first by shot then by time
     """
 
-    try:
-        data = pkgutil.get_data(__name__, f'../data/{device}/{dataset_path}/{dataset_category}.csv')
-    except FileNotFoundError:
-        data = pkgutil.get_data(__name__, f'data/{device}/{dataset_path}/{dataset_category}.csv')
-    data = pd.read_csv(io.BytesIO(data)) # type: ignore
+    filename = f"data/{device}/{dataset_path}/{dataset_category}.csv"
+
+    # Read into csv, with all feature values as floats
+    data = pd.read_csv(filename, dtype=float)
 
     # Sort by shot number and time
     data = data.sort_values(['shot','time'])

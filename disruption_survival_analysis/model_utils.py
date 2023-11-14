@@ -179,8 +179,7 @@ def get_model_for_experiment(config, experiment_type):
         except FileNotFoundError:
             # If the model does not exist, it must be trained
             pass
-    
-    # Make and train model
+
     model = make_model(config)
 
     # Fit the model to the training data

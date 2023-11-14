@@ -168,7 +168,7 @@ class TestCreatedStackedSets(unittest.TestCase):
             base_column_names = shot_data.columns[:8]
 
             for base_column_name in base_column_names:
-                stack_column_names = [f'{base_column_name}_{i}' for i in range(self.stack_number)]
+                stack_column_names = [f'{base_column_name}_{i+1}' for i in range(self.stack_number-1)]
 
                 # Get the stacked values for this column
                 stacked_values = shot_data[stack_column_names].values

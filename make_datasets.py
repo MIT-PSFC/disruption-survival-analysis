@@ -11,7 +11,7 @@ make_training_sets(device, dataset_path, random_seed=0)
 # focus_training_set(device, dataset_path)
 
 # Make temporal datasets
-stack_sizes = [5]
+stack_sizes = [10]
 for stack_size in stack_sizes:
     make_stacked_sets(device, dataset_path, 'train_full', stack_size)
     make_stacked_sets(device, dataset_path, 'test', stack_size)
