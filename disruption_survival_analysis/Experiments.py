@@ -631,7 +631,7 @@ class Experiment:
             sample_outcomes = [self.outcomes[i] for i in sample_indices]
 
             # Compute metrics on the sample
-            unique_false_alarm_rates, true_alarm_rates, avg_warning_times, std_warning_times = compute_metrics_vs_false_alarm_rates(sample_predictions, sample_outcomes, required_warning_time, self.thresholds)
+            unique_false_alarm_rates, true_alarm_rates, avg_warning_times, std_warning_times = compute_metrics_vs_false_alarm_rates(sample_predictions, sample_outcomes, required_warning_time, self.thresholds, self.alarm_type)
 
         return unique_false_alarm_rates, true_alarm_rates, avg_warning_times, std_warning_times
 

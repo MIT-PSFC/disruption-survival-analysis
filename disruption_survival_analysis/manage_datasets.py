@@ -158,8 +158,8 @@ def make_stacked_sets(device, dataset_path, dataset_category, stack_size):
     stacked_features.to_csv(new_dataset_path + f'/{dataset_category}.csv', index=False)
 
 def focus_training_set(device, dataset_path, random_seed=0):
-    """ Take the training set and remove some data from the non-disruptive shots to improve the class balance
-    in the training set.
+    """ Take the training set and remove some data from the non-disruptive shots (and 'stable' region in non-disruptive shots)
+    to improve the class balance in the training set.
     
     Parameters
     ----------
@@ -203,6 +203,9 @@ def focus_training_set(device, dataset_path, random_seed=0):
 
         # Remove data from the shot in the original training set
         data = data[data['shot'] != shot]
+
+    # Find the list of disruptive shots
+    disrupt_shots = load_disruptive_shot_list(device, dataset_path, 'train_full')
 
     # Add the disruptive shots to the new training set
     new_data = pd.concat([new_data, data], ignore_index=True)

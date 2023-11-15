@@ -1,9 +1,9 @@
 from disruption_survival_analysis.manage_datasets import make_training_sets, make_stacked_sets, focus_training_set
 
-device = 'd3d'
-dataset_path = 'matlab_flattop'
-#device = 'synthetic'
-#dataset_path = 'test'
+#device = 'd3d'
+#dataset_path = 'matlab_flattop'
+device = 'synthetic'
+dataset_path = 'small'
 
 
 # Make training sets if they haven't been created yet
