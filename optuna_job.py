@@ -5,6 +5,8 @@ import optuna
 
 from disruption_survival_analysis.Experiments import Experiment
 
+MAX_TRIAL_TIME = 7.5 * 60 * 60 # 7.5 hours
+
 def objective(trial, sweep_config):
 
     experiment_config = {}
@@ -104,4 +106,4 @@ if __name__ == "__main__":
         load_if_exists=True
     )
 
-    study.optimize(lambda trial: objective(trial, sweep_config), n_trials=10)
+    study.optimize(lambda trial: objective(trial, sweep_config), n_trials=10, timeout=MAX_TRIAL_TIME)
