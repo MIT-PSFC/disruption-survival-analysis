@@ -51,9 +51,12 @@ def objective(trial, sweep_config):
         # Create the experiment and try to get the evaluation metric
         experiment = Experiment(experiment_config, 'val')
         metric_val = experiment.evaluate_metric(sweep_config["metric"])
-    except:
-        # If anything goes wrong during training or validation, log a NaN
-        metric_val = float("nan")
+    except Exception as e:
+        print("Error during training or validation!")
+        print(e)
+        # If anything goes wrong during training or validation, say that the trial was pruned
+        # This will cause optuna to avoid hyperparameters that cause errors
+        raise optuna.TrialPruned()
 
     return metric_val
 
