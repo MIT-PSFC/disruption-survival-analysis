@@ -52,7 +52,9 @@ def objective(trial, sweep_config):
     try:
         # Create the experiment and try to get the evaluation metric
         experiment = Experiment(experiment_config, 'val')
+        print("Model trained successfully!")
         metric_val = experiment.evaluate_metric(sweep_config["metric"])
+        print(f"Metric value calculated: {metric_val}")
     except Exception as e:
         print("Error during training or validation!")
         print(e)

@@ -4,7 +4,7 @@
 #SBATCH -n 1
 #SBATCH --cpus-per-task=1
 #SBATCH -p sched_mit_psfc_r8
-#SBATCH --time=08:00:00
+#SBATCH --time=1-00:00:00
 #SBATCH -o ./slurm/slurm-%j.out
 
 source /etc/profile

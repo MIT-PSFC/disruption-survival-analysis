@@ -1,5 +1,6 @@
 import os
 import yaml
+import dill
 
 from disruption_survival_analysis.Experiments import Experiment
 from disruption_survival_analysis.experiment_utils import load_experiment_config
@@ -189,11 +190,18 @@ def create_experiment_groups(devices, dataset_paths, models, alarms, metrics, mi
                 for alarm in alarms:
                     for metric in metrics:
                         for min_warning_time in min_warning_times:
-                            # Load config for experiment 
-                            config = load_experiment_config(device, dataset_path, model, alarm, metric, min_warning_time)
-                            # Create test experiment from config
-                            experiment = Experiment(config, 'test')
-
+                            try:
+                                # Load experiment if it exists
+                                file_name = f"models/{device}/{dataset_path}/experiments/{model}_{alarm}_{metric}_{int(min_warning_time*1000)}ms_experiment.pkl"
+                                with open(file_name, 'rb') as f:
+                                    experiment = dill.load(f)
+                            except:
+                                # Create experiment if it doesn't exist
+                                # Load config for experiment 
+                                config = load_experiment_config(device, dataset_path, model, alarm, metric, min_warning_time)
+                                # Create test experiment from config
+                                experiment = Experiment(config, 'test')
+                            
                             try:
                                 if experiment_groups[device] is None:
                                     experiment_groups[device] = []

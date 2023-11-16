@@ -3,6 +3,7 @@ import sys
 
 import dill
 import numpy as np
+import datetime
 
 BOOTSTRAP_ITERATIONS = 50
 
@@ -23,6 +24,8 @@ if __name__ == "__main__":
     with open(experiment_path, 'rb') as f:
         experiment = dill.load(f)
 
+    print(f"Loaded experiment {experiment_name}")
+
     # Calculate the bootstrapped metrics
     tars_list = []
     fars_list = []
@@ -33,6 +36,8 @@ if __name__ == "__main__":
         tars_list.append(true_alarm_rates)
         fars_list.append(false_alarm_rates)
         warns_list.append(avg_warning_times)
+        # Print when each bootstrap iteration is finished
+        print(f"Finished bootstrap iteration {i} at {datetime.datetime.now()}")
 
     # Find all the unique false alarm rates and sort them
     unique_fars = np.unique(np.concatenate(fars_list))
@@ -84,3 +89,5 @@ if __name__ == "__main__":
 
     with open(f"{directory_name}/{bootstrap_name}.pkl", 'wb') as f:
         dill.dump(bootstrapped_metrics, f)
+
+    print("Saved bootstrapped metrics")
