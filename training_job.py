@@ -63,12 +63,12 @@ if __name__ == "__main__":
 
     # Create the experiment
     experiment = Experiment(config, 'test')
-    print("Experiment Trained Successfully!")
+    sys.stdout.write("Experiment Trained Successfully!")
 
     # Cache the basic metrics
     experiment.get_critical_metrics_vs_thresholds()
     experiment.get_critical_metrics_vs_false_alarm_rates()
-    print("Experiment Metrics calculated")
+    sys.stdout.write("Experiment Metrics calculated")
 
     # Save experiment results to file
     experiment_name = f"{model_type}_{alarm_type}_{metric}_{required_warning_time_ms}ms_experiment"
@@ -81,4 +81,4 @@ if __name__ == "__main__":
     with open(f"{directory_name}/{experiment_name}.pkl", 'wb') as f:
         dill.dump(experiment, f)
 
-    print("Experiment saved to file")
+    sys.stdout.write("Experiment saved to file")

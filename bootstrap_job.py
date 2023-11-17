@@ -5,6 +5,8 @@ import dill
 import numpy as np
 import datetime
 
+from multiprocessing import Pool
+
 BOOTSTRAP_ITERATIONS = 50
 
 if __name__ == "__main__":
@@ -24,20 +26,29 @@ if __name__ == "__main__":
     with open(experiment_path, 'rb') as f:
         experiment = dill.load(f)
 
-    print(f"Loaded experiment {experiment_name}")
+    sys.stdout.write(f"Loaded experiment {experiment_name}")
 
-    # Calculate the bootstrapped metrics
+
+
+    # Where the answers are stored
     tars_list = []
     fars_list = []
     warns_list = []
 
+    pool = Pool()
+    sys.stdout.write(f"Created POOL with {os.cpu_count()} processes\n")
+
+    # Array where all threads put their results asynchronously
+    results = []
+
     for i in range(BOOTSTRAP_ITERATIONS):
-        false_alarm_rates, true_alarm_rates, avg_warning_times, _ = experiment.get_critical_metrics_vs_false_alarm_rates(bootstrap_seed=i)
+        results.append(pool.apply_async(experiment.get_critical_metrics_vs_false_alarm_rates, [None, None, i]))
+
+    for result in results:
+        false_alarm_rates, true_alarm_rates, avg_warning_times, _ = result.get(timeout=100000)
         tars_list.append(true_alarm_rates)
         fars_list.append(false_alarm_rates)
         warns_list.append(avg_warning_times)
-        # Print when each bootstrap iteration is finished
-        print(f"Finished bootstrap iteration {i} at {datetime.datetime.now()}")
 
     # Find all the unique false alarm rates and sort them
     unique_fars = np.unique(np.concatenate(fars_list))
@@ -81,7 +92,7 @@ if __name__ == "__main__":
     bootstrapped_metrics['min_warns'] = min_warns
 
     # Make directory if it doesn't already exist
-    directory_name = f"models/{device}/{dataset_path}/bootstrapped_metrics"
+    directory_name = f"models/{device}/{dataset_path}/bootstraps"
     if not os.path.exists(directory_name):
         os.makedirs(directory_name)
 
@@ -90,4 +101,4 @@ if __name__ == "__main__":
     with open(f"{directory_name}/{bootstrap_name}.pkl", 'wb') as f:
         dill.dump(bootstrapped_metrics, f)
 
-    print("Saved bootstrapped metrics")
+    sys.stdout.write("Saved bootstrapped metrics")

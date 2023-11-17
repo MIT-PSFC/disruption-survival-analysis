@@ -108,4 +108,4 @@ if __name__ == "__main__":
         load_if_exists=True
     )
 
-    study.optimize(lambda trial: objective(trial, sweep_config), n_trials=10, timeout=MAX_TRIAL_TIME)
+    study.optimize(lambda trial: objective(trial, sweep_config), n_trials=1, timeout=MAX_TRIAL_TIME)
