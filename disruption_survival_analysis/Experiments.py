@@ -43,11 +43,12 @@ class Experiment:
 
         # Set the type of experiment
         self.experiment_type = experiment_type
-        # Load data for experiment: all data, including shot, time, time_until_disrupt, and features fed to predictor
-        self.all_data = load_dataset(self.device, self.dataset_path, experiment_type)
 
         # Create the model and predictor for the experiment
         model = get_model_for_experiment(config, experiment_type)
+
+        # Load data for experiment: all data, including shot, time, time_until_disrupt, and features fed to predictor
+        self.all_data = load_dataset(self.device, self.dataset_path, experiment_type)
         required_warning_time = config['required_warning_time']
         self.name = name_model(config)
 
