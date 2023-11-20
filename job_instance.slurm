@@ -14,19 +14,15 @@ source /etc/profile
 # Activate Python environment
 source ~/projects/disruption-survival-analysis/.venv/bin/activate
 
-python optuna_job.py "$1"
-
-# Run 10 training jobs in parallel
-#srun --exclusive --ntasks=1 --mem-per-cpu 7168MB python optuna_job.py "$1" &
-#srun --exclusive --ntasks=1 --mem-per-cpu 7168MB python optuna_job.py "$1" &
-#srun --exclusive --ntasks=1 --mem-per-cpu 7168MB python optuna_job.py "$1" &
-#srun --exclusive --ntasks=1 --mem-per-cpu 7168MB python optuna_job.py "$1" &
-#srun --exclusive --ntasks=1 --mem-per-cpu 7168MB python optuna_job.py "$1" &
-#srun --exclusive --ntasks=1 --mem-per-cpu 7168MB python optuna_job.py "$1" &
-#srun --exclusive --ntasks=1 --mem-per-cpu 7168MB python optuna_job.py "$1" &
-#srun --exclusive --ntasks=1 --mem-per-cpu 7168MB python optuna_job.py "$1" &
-#srun --exclusive --ntasks=1 --mem-per-cpu 7168MB python optuna_job.py "$1" &
-#srun --exclusive --ntasks=1 --mem-per-cpu 7168MB python optuna_job.py "$1" &
+# Run 8 training jobs in parallel
+srun --exclusive --ntasks=1 --mem-per-cpu 16384MB python optuna_job.py "$1" &
+srun --exclusive --ntasks=1 --mem-per-cpu 16384MB python optuna_job.py "$1" &
+srun --exclusive --ntasks=1 --mem-per-cpu 16384MB python optuna_job.py "$1" &
+srun --exclusive --ntasks=1 --mem-per-cpu 16384MB python optuna_job.py "$1" &
+srun --exclusive --ntasks=1 --mem-per-cpu 16384MB python optuna_job.py "$1" &
+srun --exclusive --ntasks=1 --mem-per-cpu 16384MB python optuna_job.py "$1" &
+srun --exclusive --ntasks=1 --mem-per-cpu 16384MB python optuna_job.py "$1" &
+srun --exclusive --ntasks=1 --mem-per-cpu 16384MB python optuna_job.py "$1" &
 #wait
 
 # Deactivate Python environment

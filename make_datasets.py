@@ -1,6 +1,6 @@
 from disruption_survival_analysis.manage_datasets import make_training_sets, make_stacked_sets
 
-device = 'd3d'
+device = 'cmod'
 dataset_path = 'paper'
 #device = 'synthetic'
 #dataset_path = 'small'

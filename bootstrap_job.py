@@ -28,8 +28,6 @@ if __name__ == "__main__":
 
     sys.stdout.write(f"Loaded experiment {experiment_name}")
 
-
-
     # Where the answers are stored
     tars_list = []
     fars_list = []

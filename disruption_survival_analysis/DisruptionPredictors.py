@@ -87,6 +87,8 @@ class DisruptionPredictorSM(DisruptionPredictor):
         
         risk_times = np.linspace(0.001, 4, 400)
 
+        # Split up risk times into intervals and calculate the risk in each interval
+
         try:
             risks_at_horizons = self.model.predict_risk(feature_data, risk_times)
         except:
