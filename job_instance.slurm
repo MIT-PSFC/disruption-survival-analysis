@@ -1,10 +1,10 @@
 #!/bin/bash
 #SBATCH --job-name=tuning_job
-#SBATCH --ntasks 10
-#SBATCH --cpus-per-task=1
+#SBATCH --ntasks 1
+#SBATCH --cpus-per-task=8
 #SBATCH -p sched_mit_psfc_r8
 #SBATCH --time=08:00:00
-#SBATCH --mem=71700MB
+#SBATCH --mem=131072MB
 #SBATCH -o ./slurm/slurm-%j.out
 
 source /etc/profile
@@ -14,18 +14,20 @@ source /etc/profile
 # Activate Python environment
 source ~/projects/disruption-survival-analysis/.venv/bin/activate
 
+python optuna_job.py "$1"
+
 # Run 10 training jobs in parallel
-srun --exclusive --ntasks=1 --mem-per-cpu 7168MB python optuna_job.py "$1" &
-srun --exclusive --ntasks=1 --mem-per-cpu 7168MB python optuna_job.py "$1" &
-srun --exclusive --ntasks=1 --mem-per-cpu 7168MB python optuna_job.py "$1" &
-srun --exclusive --ntasks=1 --mem-per-cpu 7168MB python optuna_job.py "$1" &
-srun --exclusive --ntasks=1 --mem-per-cpu 7168MB python optuna_job.py "$1" &
-srun --exclusive --ntasks=1 --mem-per-cpu 7168MB python optuna_job.py "$1" &
-srun --exclusive --ntasks=1 --mem-per-cpu 7168MB python optuna_job.py "$1" &
-srun --exclusive --ntasks=1 --mem-per-cpu 7168MB python optuna_job.py "$1" &
-srun --exclusive --ntasks=1 --mem-per-cpu 7168MB python optuna_job.py "$1" &
-srun --exclusive --ntasks=1 --mem-per-cpu 7168MB python optuna_job.py "$1" &
-wait
+#srun --exclusive --ntasks=1 --mem-per-cpu 7168MB python optuna_job.py "$1" &
+#srun --exclusive --ntasks=1 --mem-per-cpu 7168MB python optuna_job.py "$1" &
+#srun --exclusive --ntasks=1 --mem-per-cpu 7168MB python optuna_job.py "$1" &
+#srun --exclusive --ntasks=1 --mem-per-cpu 7168MB python optuna_job.py "$1" &
+#srun --exclusive --ntasks=1 --mem-per-cpu 7168MB python optuna_job.py "$1" &
+#srun --exclusive --ntasks=1 --mem-per-cpu 7168MB python optuna_job.py "$1" &
+#srun --exclusive --ntasks=1 --mem-per-cpu 7168MB python optuna_job.py "$1" &
+#srun --exclusive --ntasks=1 --mem-per-cpu 7168MB python optuna_job.py "$1" &
+#srun --exclusive --ntasks=1 --mem-per-cpu 7168MB python optuna_job.py "$1" &
+#srun --exclusive --ntasks=1 --mem-per-cpu 7168MB python optuna_job.py "$1" &
+#wait
 
 # Deactivate Python environment
 deactivate

@@ -145,7 +145,7 @@ def train_random_forest_model(model:RandomForestClassifier, device, dataset_path
     model.fit(x_train, labels_train)
 
 # Methods to be used by experiment utils
-def get_model_for_experiment(config, experiment_type):
+def get_model_for_experiment(config, experiment_type, training_data=None):
     """
     Get the model to be used for the experiment.
 

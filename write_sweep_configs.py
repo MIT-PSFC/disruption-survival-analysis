@@ -3,10 +3,10 @@
 from disruption_survival_analysis.sweep_config import make_sweep_config, write_sweep_config
 
 # Datasets to use
-#devices = ["d3d"]
-#dataset_paths = ["matlab_flattop/stack_10"]
-devices = ["synthetic"]
-dataset_paths = ["small/stack_10"]
+devices = ["d3d"]
+dataset_paths = ["paper/stack_10"]
+#devices = ["synthetic"]
+#dataset_paths = ["small/stack_10"]
 
 # List of models to create sweeps for
 # cph, dcph, dcm, dsm, rf, km

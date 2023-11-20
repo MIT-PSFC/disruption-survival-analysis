@@ -55,6 +55,10 @@ def objective(trial, sweep_config):
         print("Model trained successfully!")
         metric_val = experiment.evaluate_metric(sweep_config["metric"])
         print(f"Metric value calculated: {metric_val}")
+    except MemoryError as e:
+        print("Ran out of memory")
+        print(e)
+        metric_val = float("nan")
     except Exception as e:
         print("Error during training or validation!")
         print(e)
@@ -82,6 +86,8 @@ if __name__ == "__main__":
     required_warning_time = int(sweep_config["required_warning_time"]*1000)
     database_path = f"models/{device}/{dataset_path}/studies/{model_type}_{alarm_type}_{metric}_{required_warning_time}ms_study.db"
 
+    # Load training data
+
     # Get the direction the study should be optimized in
     if metric in ["auroc", "auwtc", "maxf1"]:
         direction = "maximize"
@@ -108,4 +114,4 @@ if __name__ == "__main__":
         load_if_exists=True
     )
 
-    study.optimize(lambda trial: objective(trial, sweep_config), n_trials=1, timeout=MAX_TRIAL_TIME)
+    study.optimize(lambda trial: objective(trial, sweep_config), n_trials=8, n_jobs=-1, timeout=MAX_TRIAL_TIME)

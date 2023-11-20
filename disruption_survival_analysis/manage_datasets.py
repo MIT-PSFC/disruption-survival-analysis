@@ -241,7 +241,9 @@ def load_dataset(device, dataset_path, dataset_category):
     filename = f"data/{device}/{dataset_path}/{dataset_category}.csv"
 
     # Read into csv, with all feature values as floats
-    data = pd.read_csv(filename, dtype=float)
+    # Use chunksize to avoid memory issues
+    reader = pd.read_csv(filename, dtype=np.float64, chunksize=100000)
+    data = pd.concat(reader)
 
     # Sort by shot number and time
     data = data.sort_values(['shot','time'])
@@ -344,7 +346,7 @@ def load_features_outcomes(device, dataset_path, dataset_category, epsilon=1e-4)
 #     # TODO fill this out after get DPRF working
 #     return None
 
-def load_features_labels(device, dataset_path, dataset_category, disruptive_window):
+def load_features_labels(device, dataset_path, dataset_category, disruptive_window, training_data=None):
     """Load the features from a dataset and label each timeslice based on some disruptive window.
     In disruptive shots, the timeslice is labeled '1' if it is within the disruptive window, and '0' otherwise.
     In non-disruptive shots, the timeslice is labeled '0' always.
@@ -370,7 +372,10 @@ def load_features_labels(device, dataset_path, dataset_category, disruptive_wind
         
     """
 
-    data = load_dataset(device, dataset_path, dataset_category)
+    if training_data is None:
+        data = load_dataset(device, dataset_path, dataset_category)
+    else:
+        data = training_data
 
     # label is '1' if time_until_disrupt is less than disruptive_window, '0' otherwise
     labels = (data['time_until_disrupt'] < disruptive_window).astype(int)
