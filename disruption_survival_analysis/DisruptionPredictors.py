@@ -105,6 +105,9 @@ class DisruptionPredictorSM(DisruptionPredictor):
 
         ettd = np.sum(risk_vals, axis=0)
 
+        # If any values in ettd are negative, set them to 0
+        ettd = np.clip(ettd, 0, None)
+
         return ettd
 
 class DisruptionPredictorRF(DisruptionPredictor):

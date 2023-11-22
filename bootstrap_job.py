@@ -4,6 +4,7 @@ import sys
 import dill
 import numpy as np
 import datetime
+import time
 
 from multiprocessing import Pool
 
@@ -23,8 +24,15 @@ if __name__ == "__main__":
     # Load the experiment
     experiment_path = f"models/{device}/{dataset_path}/experiments/{experiment_name}.pkl"
 
-    with open(experiment_path, 'rb') as f:
-        experiment = dill.load(f)
+    try:
+        with open(experiment_path, 'rb') as f:
+            experiment = dill.load(f)
+    except:
+        sys.stdout.write("Unable to load experiment due to pickle file not being read. Waiting 5 min")
+        time.sleep(5*60)
+
+        with open(experiment_path, 'rb') as f:
+            experiment = dill.load(f)
 
     sys.stdout.write(f"Loaded experiment {experiment_name}")
 

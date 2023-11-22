@@ -158,61 +158,61 @@ def make_stacked_sets(device, dataset_path, dataset_category, stack_size):
     stacked_features.to_csv(new_dataset_path + f'/{dataset_category}.csv', index=False)
 
 # Not being used. "This is 2010 machine learning. We don't do that here."
-# def focus_training_set(device, dataset_path, random_seed=0):
-#     """ Take the training set and remove some data from the non-disruptive shots (and 'stable' region in non-disruptive shots)
-#     to improve the class balance in the training set.
+def focus_training_set(device, dataset_path, random_seed=0):
+    """ Take the training set and remove some data from the non-disruptive shots (and 'stable' region in non-disruptive shots)
+    to improve the class balance in the training set.
     
-#     Parameters
-#     ----------
-#     device : str
-#         The device to use
-#     dataset_path : str
-#         The path to the dataset
-#     random_seed : int, optional
-#         The random seed to use for picking which data to remove
-#     """
+    Parameters
+    ----------
+    device : str
+        The device to use
+    dataset_path : str
+        The path to the dataset
+    random_seed : int, optional
+        The random seed to use for picking which data to remove
+    """
 
-#     # Load the training set
-#     data = load_dataset(device, dataset_path, 'train_full')
+    # Load the training set
+    data = load_dataset(device, dataset_path, 'train_full')
 
-#     # Find the list of non-disruptive shots
-#     non_disrupt_shots = load_non_disruptive_shot_list(device, dataset_path, 'train_full')
+    # Find the list of non-disruptive shots
+    non_disrupt_shots = load_non_disruptive_shot_list(device, dataset_path, 'train_full')
 
-#     # Make a new training set with the same columns
-#     new_data = pd.DataFrame(columns=data.columns)
+    # Make a new training set with the same columns
+    new_data = pd.DataFrame(columns=data.columns)
 
-#     # Iterate through each disruptive shot
-#     for shot in non_disrupt_shots:
+    # Iterate through each disruptive shot
+    for shot in non_disrupt_shots:
             
-#         # Get the timeslices for the shot
-#         shot_data = data[data['shot'] == shot]
+        # Get the timeslices for the shot
+        shot_data = data[data['shot'] == shot]
 
-#         # Find the number of timeslices in the shot
-#         num_timeslices = len(shot_data)
+        # Find the number of timeslices in the shot
+        num_timeslices = len(shot_data)
 
-#         # Find the number of timeslices to remove
-#         num_remove = int(num_timeslices * 0.9)
+        # Find the number of timeslices to remove
+        num_remove = int(num_timeslices * 0.5)
 
-#         # Choose the timeslices to remove
-#         remove_indices = np.random.choice(num_timeslices, size=num_remove, replace=False)
+        # Choose the timeslices to remove
+        remove_indices = np.random.choice(num_timeslices, size=num_remove, replace=False)
 
-#         # Remove the chosen timeslices
-#         shot_data = shot_data.drop(shot_data.index[remove_indices])
+        # Remove the chosen timeslices
+        shot_data = shot_data.drop(shot_data.index[remove_indices])
 
-#         # Add the remaining timeslices to the new training set
-#         new_data = pd.concat([new_data, shot_data], ignore_index=True)
+        # Add the remaining timeslices to the new training set
+        new_data = pd.concat([new_data, shot_data], ignore_index=True)
 
-#         # Remove data from the shot in the original training set
-#         data = data[data['shot'] != shot]
+        # Remove data from the shot in the original training set
+        data = data[data['shot'] != shot]
 
-#     # Find the list of disruptive shots
-#     disrupt_shots = load_disruptive_shot_list(device, dataset_path, 'train_full')
+    # Find the list of disruptive shots
+    disrupt_shots = load_disruptive_shot_list(device, dataset_path, 'train_full')
 
-#     # Add the disruptive shots to the new training set
-#     new_data = pd.concat([new_data, data], ignore_index=True)
+    # Add the disruptive shots to the new training set
+    new_data = pd.concat([new_data, data], ignore_index=True)
     
-#     # Save the new training set
-#     new_data.to_csv(f'data/{device}/{dataset_path}/train.csv', index=False)
+    # Save the new training set
+    new_data.to_csv(f'data/{device}/{dataset_path}/train.csv', index=False)
 
 # Functions for loading datasets or other information directly from saved .csv files
 
