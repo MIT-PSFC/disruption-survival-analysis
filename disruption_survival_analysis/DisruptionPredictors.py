@@ -85,15 +85,18 @@ class DisruptionPredictorSM(DisruptionPredictor):
 
         feature_data = self.get_feature_data(shot_data)
         
-        risk_times = np.linspace(0.001, 4, 400)
+        risk_times = np.linspace(0.001, 10, 1000)
+        # Create chunks of risk times
+        risk_times_chunks = np.array_split(risk_times, 10)
 
         # Split up risk times into intervals and calculate the risk in each interval
-
-        try:
-            risks_at_horizons = self.model.predict_risk(feature_data, risk_times)
-        except:
-            # DSM expects horizons in a list
-            risks_at_horizons = self.model.predict_risk(feature_data, [risk_times])
+        risks_at_horizons = []
+        for chunk in risk_times_chunks:
+            try:
+                risks_at_horizons.extend(self.model.predict_risk(feature_data, chunk))
+            except:
+                # If anything goes wrong, just start appending zeros
+                risks_at_horizons.extend(np.zeros(len(chunk)))
 
         risk_vals = []
         for i in range(1, len(risk_times)):

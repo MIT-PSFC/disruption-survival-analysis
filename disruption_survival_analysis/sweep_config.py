@@ -201,7 +201,6 @@ def create_experiment_groups(devices, dataset_paths, models, alarms, metrics, mi
                                 config = load_experiment_config(device, dataset_path, model, alarm, metric, min_warning_time)
                                 # Create test experiment from config
                                 experiment = Experiment(config, 'test')
-                            
                             try:
                                 if experiment_groups[device] is None:
                                     experiment_groups[device] = []
@@ -246,7 +245,9 @@ def create_experiment_groups(devices, dataset_paths, models, alarms, metrics, mi
 
     return experiment_groups
 
-def get_experiments(experiment_groups, keys1, keys2=None, keys3=None, keys4=None):
+
+
+def get_experiments(experiment_groups, keys1, keys2=None, keys3=None, keys4=None, keys5=None):
     """Get list of experiments that match all keys"""
     experiment_list = []
     for experiment in experiment_groups[keys1[0]]:
@@ -264,5 +265,52 @@ def get_experiments(experiment_groups, keys1, keys2=None, keys3=None, keys4=None
         for experiment in experiment_groups[keys4[0]]:
             if all([experiment in experiment_groups[key] for key in keys4]):
                 experiment_list.append(experiment)
+    if keys5 is not None:
+        for experiment in experiment_groups[keys5[0]]:
+            if all([experiment in experiment_groups[key] for key in keys5]):
+                experiment_list.append(experiment)
     
     return experiment_list
+
+
+def create_bootstrap_list(devices, dataset_paths, models, alarms, metrics, min_warning_times):
+    # Create list of bootstraps
+    # This is used for setting up dictionaries of bootstraps to plot
+    # For example, compare all the bootstraps using the same minimum warning time against eachother
+    bootstrap_list = []
+    for device in devices:
+        for dataset_path in dataset_paths:
+            for model in models:
+                for alarm in alarms:
+                    for metric in metrics:
+                        for min_warning_time in min_warning_times:
+                            try:
+                                # Load bootstrap if it exists
+                                file_name = f"models/{device}/{dataset_path}/bootstraps/{model}_{alarm}_{metric}_{int(min_warning_time*1000)}ms_bootstrap.pkl"
+                                with open(file_name, 'rb') as f:
+                                    bootstrap = dill.load(f)
+                            except Exception as e:
+                                print(f"ERROR: problem with bootstrap {file_name}")
+                                print(e)
+                                continue
+                            
+                            bootstrap['name'] = f"{model}_{alarm}_{metric}_{int(min_warning_time*1000)}ms"
+                            bootstrap['device'] = device
+                            bootstrap['dataset_path'] = dataset_path
+                            bootstrap_list.append(bootstrap)
+
+    return bootstrap_list
+
+
+def get_bootstraps(bootstrap_groups, keys1, keys2=None, keys3=None, keys4=None):
+    """Get list of bootstraps that match all keys"""
+    bootstrap_list = []
+    for bootstrap in bootstrap_groups[keys1[0]]:
+        if all([bootstrap in bootstrap_groups[key] for key in keys1]):
+            bootstrap_list.append(bootstrap)
+    if keys2 is not None:
+        for bootstrap in bootstrap_groups:
+            if all([bootstrap in bootstrap_groups[key] for key in keys2]):
+                bootstrap_list.append(bootstrap)
+    
+    return bootstrap_list

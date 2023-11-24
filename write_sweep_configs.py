@@ -3,8 +3,8 @@
 from disruption_survival_analysis.sweep_config import make_sweep_config, write_sweep_config
 
 # Datasets to use
-devices = ["cmod"]
-dataset_paths = ["paper"]
+devices = ["d3d"]
+dataset_paths = ["paper/stack_10"]
 #devices = ["synthetic"]
 #dataset_paths = ["small/stack_10"]
 
@@ -14,11 +14,11 @@ model_types = ["cph", "dsm", "dcph", "rf", "km"]
 
 # List of alarm types to use
 # sthr, hyst, ettd, ethy
-alarm_types = ["sthr", "ettd"]
+alarm_types = ["sthr"]
 
 # List of validation metrics to use
 # auroc, aumal, auwtc, maxf1
-metrics = ["auroc"]
+metrics = ["auroc", "auwtc"]
 
 # List of required warning times to train on (in seconds)
 required_warning_times = [0.01, 0.05, 0.1]

@@ -132,7 +132,7 @@ def plot_true_alarm_rates_vs_false_alarm_rates(experiment_list:list[Experiment],
 
     for experiment in experiment_list:
         false_alarm_rates, true_alarm_rates = experiment.true_alarm_rates_vs_false_alarm_rates()
-        plt.plot(false_alarm_rates, true_alarm_rates, label=experiment.name, linewidth=2)
+        plt.plot(false_alarm_rates, true_alarm_rates, label=pretty_name(experiment.name), linewidth=2)
 
     plt.xlim([0, 1])
     plt.ylim([0, 1])
@@ -150,6 +150,8 @@ def plot_true_alarm_rates_vs_false_alarm_rates(experiment_list:list[Experiment],
                 ["0\%", "20\%", "40\%", "60\%", "80\%", "100\%"])
     plt.xticks([0, 0.2, 0.4, 0.6, 0.8, 1],
                 ["0\%", "20\%", "40\%", "60\%", "80\%", "100\%"])
+
+    plt.title("C-Mod, 100ms Required Warning Time", fontsize=TITLE_FONT_SIZE)
 
     if not test:
         plt.show()
@@ -289,7 +291,7 @@ def plot_expected_time_to_disruption_shot(experiment_list:list[Experiment], shot
         plt.plot(times, ettd, label=pretty_name(experiment.name))
 
     plt.xlim([min(times), max(times)])
-    plt.ylim([0, 0.8])
+    plt.ylim([0, 4])
 
     # Set tick font sizes
     plt.xticks(fontsize=TICK_FONT_SIZE)
@@ -324,6 +326,8 @@ def pretty_name(experiment_name:str, alarm_types=False, metrics=False, required_
         pretty_name += "Kaplan-Meier"
     elif split_sections[0] == "cph":
         pretty_name += "Cox Proportional Hazards"
+    elif split_sections[0] == "dcph":
+        pretty_name += "Deep Cox Proportional Hazards"
     elif split_sections[0] == "dsm":
         pretty_name += "Deep Survival Machines"
 
