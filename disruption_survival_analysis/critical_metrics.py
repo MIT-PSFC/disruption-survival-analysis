@@ -62,12 +62,21 @@ def compute_metrics_vs_risk_thresholds(predictions, outcomes, required_warning_t
 
             warning_time = np.maximum(0, disruption_time - first_alarm_times)
 
-            if warning_time < WARNING_TIME_CUTOFF:
-                true_positives += (warning_time > required_warning_time)
-            else:
-                false_positives += 1
+            true_positives += ((warning_time > required_warning_time) * (warning_time <= WARNING_TIME_CUTOFF))
+            
+            false_positives += (warning_time > WARNING_TIME_CUTOFF).astype(int)
+            
             total_warning_time += warning_time
             warning_times[i] = warning_time
+
+            # For a shot where a disruption occurs, we are basically splitting it into
+            # a non-disruptive shot and a disruptive shot (if it is long enough)
+            # This allows us to count early warnings as a false positive
+            # without letting the false positive rate go above 1
+            shot_duration = time_values[-1] - time_values[0]
+            if shot_duration > WARNING_TIME_CUTOFF:
+                non_disruptive_shots += 1
+            
             disruptive_shots += 1
         else:
             false_positives += alarms_triggered.any(axis=1).astype(int)
