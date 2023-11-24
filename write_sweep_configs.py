@@ -3,8 +3,8 @@
 from disruption_survival_analysis.sweep_config import make_sweep_config, write_sweep_config
 
 # Datasets to use
-devices = ["d3d"]
-dataset_paths = ["paper/stack_10"]
+devices = ["cmod"]
+dataset_paths = ["paper_2/stack_10"]
 #devices = ["synthetic"]
 #dataset_paths = ["small/stack_10"]
 

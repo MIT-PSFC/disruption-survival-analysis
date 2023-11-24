@@ -62,12 +62,12 @@ def compute_metrics_vs_risk_thresholds(predictions, outcomes, required_warning_t
 
             warning_time = np.maximum(0, disruption_time - first_alarm_times)
 
-            if warning_time > WARNING_TIME_CUTOFF:
+            if warning_time < WARNING_TIME_CUTOFF:
                 true_positives += (warning_time > required_warning_time)
-                total_warning_time += warning_time
-                warning_times[i] = warning_time
             else:
                 false_positives += 1
+            total_warning_time += warning_time
+            warning_times[i] = warning_time
             disruptive_shots += 1
         else:
             false_positives += alarms_triggered.any(axis=1).astype(int)
