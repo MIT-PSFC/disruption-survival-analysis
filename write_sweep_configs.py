@@ -4,13 +4,13 @@ from disruption_survival_analysis.sweep_config import make_sweep_config, write_s
 
 # Datasets to use
 devices = ["cmod"]
-dataset_paths = ["paper_2/stack_10"]
+dataset_paths = ["paper_3/stack_10"]
 #devices = ["synthetic"]
 #dataset_paths = ["small/stack_10"]
 
 # List of models to create sweeps for
 # cph, dcph, dcm, dsm, rf, km
-model_types = ["cph", "dsm", "dcph", "rf", "km"]
+model_types = ["km"]
 
 # List of alarm types to use
 # sthr, hyst, ettd, ethy

@@ -7,8 +7,11 @@ import datetime
 import time
 
 from multiprocessing import Pool
+import multiprocessing
 
 BOOTSTRAP_ITERATIONS = 50
+ALLOCATED_CPUS = 20
+
 
 if __name__ == "__main__":
     # Get the device, dataset path, model, alarm, metric, and min_warning_time from the command line
@@ -41,8 +44,8 @@ if __name__ == "__main__":
     fars_list = []
     warns_list = []
 
-    pool = Pool()
-    sys.stdout.write(f"Created POOL with {os.cpu_count()} processes\n")
+    pool = Pool(ALLOCATED_CPUS)
+    sys.stdout.write(f"Created POOL with {ALLOCATED_CPUS} processes\n")
 
     # Array where all threads put their results asynchronously
     results = []

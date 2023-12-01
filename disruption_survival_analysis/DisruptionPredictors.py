@@ -85,18 +85,19 @@ class DisruptionPredictorSM(DisruptionPredictor):
 
         feature_data = self.get_feature_data(shot_data)
         
-        risk_times = np.linspace(0.001, 10, 1000)
+        risk_times = np.linspace(0.001, 5, 600)
         # Create chunks of risk times
         risk_times_chunks = np.array_split(risk_times, 10)
 
         # Split up risk times into intervals and calculate the risk in each interval
-        risks_at_horizons = []
-        for chunk in risk_times_chunks:
+        risks_at_horizons = np.zeros((len(shot_data), len(risk_times)))
+        for i, chunk in enumerate(risk_times_chunks):
+            indices = np.arange(len(chunk)) + i*len(chunk)
             try:
-                risks_at_horizons.extend(self.model.predict_risk(feature_data, chunk))
+                risks_at_horizons[:, indices] = self.model.predict_risk(feature_data, chunk)
             except:
                 # If anything goes wrong, just start appending zeros
-                risks_at_horizons.extend(np.zeros(len(chunk)))
+                risks_at_horizons[:, indices] = np.zeros((len(chunk), len(shot_data)))
 
         risk_vals = []
         for i in range(1, len(risk_times)):
@@ -152,8 +153,8 @@ class DisruptionPredictorRF(DisruptionPredictor):
 
         ettd = (self.trained_class_time / 2) / risks
 
-        # Limit maximum ettd to be 10x the class time
-        ettd = np.clip(ettd, 0, self.trained_class_time * 10)
+        # Limit maximum ettd to be 20x the class time
+        ettd = np.clip(ettd, 0, self.trained_class_time * 20)
 
         return ettd
     
@@ -165,6 +166,8 @@ class DisruptionPredictorKM(DisruptionPredictor):
         self.trained_class_time = trained_class_time    # Time before disruption time slices labeled as 'disruptive'
         self.trained_fit_time = trained_fit_time        # Time in seconds to do linear fit over. In paper, used 0.05, 0.1, 0.2
         self.trained_horizon = trained_horizon          # Time in seconds to extrapolate risk into the future
+        self.start_fit_points = 5
+
 
     def get_risks(self, shot_data, horizon=None):
         """
@@ -195,14 +198,14 @@ class DisruptionPredictorKM(DisruptionPredictor):
 
         # This is a bit of a slow implementation, can speed up later if needed
 
-        fit_times = [times[0]]
-        fit_points = [initial_risks[0]]
+        fit_times = times[0:self.start_fit_points].tolist()
+        fit_points = initial_risks[0:self.start_fit_points].tolist()
 
         risks = np.zeros(len(initial_risks))
 
         # Iterate through the data and calculate the slope for each time slice
         # Slope is calculated using a linear fit over the previous t_fit seconds
-        for i in range(1, len(initial_risks)):
+        for i in range(self.start_fit_points+1, len(initial_risks)):
 
             # Get the time for the new time slice
             new_time = times[i]
@@ -233,8 +236,10 @@ class DisruptionPredictorKM(DisruptionPredictor):
     def get_ettd(self, shot_data):
         """Get the expected time to disruption for each feature vector in shot_data"""
 
+        self.start_fit_points = 5
+
         ettd = np.zeros(len(shot_data))
-        max_ettd = 10*self.trained_class_time
+        max_ettd = 20*self.trained_class_time
 
         times = shot_data['time'].values
         feature_data = self.get_feature_data(shot_data)
@@ -243,14 +248,15 @@ class DisruptionPredictorKM(DisruptionPredictor):
 
         # This is a bit of a slow implementation, can speed up later if needed
 
-        fit_times = [times[0]]
-        fit_points = [initial_risks[0]]
+        fit_times = times[0:self.start_fit_points].tolist()
+        fit_points = initial_risks[0:self.start_fit_points].tolist()
 
         risks = np.zeros(len(initial_risks))
+        ettd = np.ones(len(initial_risks)) * max_ettd
 
         # Iterate through the data and calculate the slope for each time slice
         # Slope is calculated using a linear fit over the previous t_fit seconds
-        for i in range(1, len(initial_risks)):
+        for i in range(self.start_fit_points+1, len(initial_risks)):
 
             # Get the time for the new time slice
             new_time = times[i]
@@ -270,7 +276,7 @@ class DisruptionPredictorKM(DisruptionPredictor):
             # Extrapolate the risk into the future using this line
             ttd = 0
             risks[i] = intercept + (slope * (times[i]))
-            while (risks[i] > 0) and (risks[i] < 0.3) and ttd < max_ettd:
+            while (risks[i] > 0) and (risks[i] < 1) and ttd < max_ettd:
                 ttd += 0.001
                 risks[i] = intercept + (slope * (times[i] + ttd))
             if (risks[i] > 0):

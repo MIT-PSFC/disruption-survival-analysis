@@ -2,7 +2,8 @@
 
 import numpy as np
 
-WARNING_TIME_CUTOFF = 0.5 # Ignore warnings that are more than 500ms before disruption
+# Not being used, set to very high number
+WARNING_TIME_CUTOFF = 500 # If enabled, ignore warnings that are more than this time before disruption
 
 def compute_metrics_vs_risk_thresholds(predictions, outcomes, required_warning_time, thresholds):
     """ Compute the true alarm rate, false alarm rate, and average/standard deviation of warning time

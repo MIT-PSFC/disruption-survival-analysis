@@ -291,7 +291,7 @@ def plot_expected_time_to_disruption_shot(experiment_list:list[Experiment], shot
         plt.plot(times, ettd, label=pretty_name(experiment.name))
 
     plt.xlim([min(times), max(times)])
-    plt.ylim([0, 4])
+    plt.ylim([0, 6.1])
 
     # Set tick font sizes
     plt.xticks(fontsize=TICK_FONT_SIZE)
