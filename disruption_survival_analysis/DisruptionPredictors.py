@@ -85,7 +85,7 @@ class DisruptionPredictorSM(DisruptionPredictor):
 
         feature_data = self.get_feature_data(shot_data)
         
-        risk_times = np.linspace(0.001, 5, 600)
+        risk_times = np.linspace(0.001, 2, 2000)
         # Create chunks of risk times
         risk_times_chunks = np.array_split(risk_times, 10)
 
@@ -167,7 +167,81 @@ class DisruptionPredictorKM(DisruptionPredictor):
         self.trained_fit_time = trained_fit_time        # Time in seconds to do linear fit over. In paper, used 0.05, 0.1, 0.2
         self.trained_horizon = trained_horizon          # Time in seconds to extrapolate risk into the future
 
-    def get_risks(self, shot_data, horizon=None):
+    def calc_slopes(self, probs, times):
+        """
+        Calculate the extrapolation fit slope for each time slice in shot_data
+
+        Parameters
+        ----------
+        probs : numpy array
+            The output of random forest model for each time slice
+        times : numpy array
+            The time of each time slice in seconds
+
+        Returns
+        -------
+        slopes : numpy array
+            The slope of the extrapolation fit for each time slice
+        """
+
+        # Count how many points are required for the initial fit
+        num_fit_points = int(self.trained_fit_time / times[1] - times[0])
+
+        slopes = np.zeros(len(probs))
+        slopes[0:num_fit_points] = np.nan
+
+
+        fit_times = times[0:num_fit_points].tolist()
+        fit_probs = probs[0:num_fit_points].tolist()
+
+        for i in range(num_fit_points, len(times)):
+            # Add the new datapoint to the fit
+            fit_times.append(times[i])
+            fit_probs.append(probs[i])
+
+            # Remove all points that are outside the fitting window
+            while fit_times[-1] - fit_times[0] > self.trained_fit_time:
+                fit_times.pop(0)
+                fit_probs.pop(0)
+
+            # Create a linear fit for the points
+            slope, _ = np.polyfit(fit_times, fit_probs, 1)
+
+            slopes[i] = slope
+            
+        return slopes
+
+    def get_survival(self, data_times, probs, t_horizon):
+        """
+        Calculate the probability of not disrupting until t + t_horizon for each feature vector in shot_data
+        """
+
+        # Looking t_horizon into the future, at a sample rate of 1 ms
+        sample_times = np.arange(0, t_horizon, 0.001)
+
+        # Calculate the slope for each time slice
+        slopes = self.calc_slopes(probs, data_times)
+
+        survival_probs = np.zeros(len(probs))
+
+        # Calculate the survival probability for each time slice
+        for i, slope in enumerate(slopes):
+            if np.isnan(slope):
+                survival_probs[i] = np.nan
+                continue
+            
+            # Calculate the probability of not disrupting until t + t_horizon
+            products = np.zeros(len(sample_times))
+            for i, t in enumerate(sample_times):
+                P_D = probs[i] + slope * t
+                product = 1 - (P_D * 0.001 / self.trained_class_time)
+                products[i] = product
+            
+            survival_probs[i] = np.prod(products)
+                
+        return survival_probs
+
+    def get_risks(self, shot_data, t_horizon=None):
         """
         Calculate the risk of disruption for each feature vector in shot_data
 
@@ -184,111 +258,31 @@ class DisruptionPredictorKM(DisruptionPredictor):
             The risk of disruption for each feature vector in shot_data
         """
 
-        if horizon is None:
-            horizon = self.trained_horizon
+        if t_horizon is None:
+            t_horizon = self.trained_horizon
 
-        # This disruption predictor takes present predicted disruption risk and a
-        # linear least-square's fit over some previous time window to predict the
-        # disruption risk at some future time
-        # P_disrupt(t + horizon) = P_disrupt(t) + slope * (horizon)
+        data_times = shot_data['time'].values
+        probs = self.model.predict_proba(self.get_feature_data(shot_data))[:,1]
         
-        times = shot_data['time'].values
-        feature_data = self.get_feature_data(shot_data)
+        # Calculate the probability of not disrupting until t + t_horizon
+        survival_probs = self.get_survival(data_times, probs, t_horizon)
 
-        initial_risks = self.model.predict_proba(feature_data)[:,1]
+        # If any values in survival_probs are NaN, set them to 1
+        # This means that anywhere the model predicts NaN for survival (outside fit range), it will predict 0% risk
+        survival_probs = np.nan_to_num(survival_probs, nan=1)
 
-        # This is a bit of a slow implementation, can speed up later if needed
-
-        # Count how many points to use for the initial fit
-        num_points = 0
-        while times[num_points] < self.trained_fit_time:
-            num_points += 1
-    
-        fit_times = times[0:num_points].tolist()
-        fit_points = initial_risks[0:num_points].tolist()
-
-        risks = initial_risks.copy() # Start the risks as the initial risks
-
-        # Iterate through the data and calculate the slope for each time slice
-        # Slope is calculated using a linear fit over the previous t_fit seconds
-        for i in range(num_points+1, len(initial_risks)):
-
-            # Get the time for the new time slice
-            new_time = times[i]
-
-            # Add the new datapoint to the fit
-            fit_times.append(new_time)
-            fit_points.append(initial_risks[i])
-
-            # Remove all points that are outside the fitting window
-            while fit_times[-1] - fit_times[0] > self.trained_fit_time:
-                fit_times.pop(0)
-                fit_points.pop(0)
-            
-            # Create a linear fit for the points
-            slope, _ = np.polyfit(fit_times, fit_points, 1)
-
-            # Extrapolate the risk into the future using this line
-            risks[i] = initial_risks[i] + (slope * horizon)
-        
-        # Replace all NaNs with the initial risk
-        risks = np.nan_to_num(risks, nan=initial_risks)
-
-        # Ensure all risks are between 0 and 1
-        risks = np.clip(risks, 0, 1)
-
-        return risks
+        return 1 - survival_probs
     
     def get_ettd(self, shot_data):
         """Get the expected time to disruption for each feature vector in shot_data"""
 
-        self.start_fit_points = 5
-
         ettd = np.zeros(len(shot_data))
-        max_ettd = 20*self.trained_class_time
 
         times = shot_data['time'].values
         feature_data = self.get_feature_data(shot_data)
 
-        initial_risks = self.model.predict_proba(feature_data)[:,1]
 
-        # This is a bit of a slow implementation, can speed up later if needed
 
-        fit_times = times[0:self.start_fit_points].tolist()
-        fit_points = initial_risks[0:self.start_fit_points].tolist()
-
-        risks = np.zeros(len(initial_risks))
-        ettd = np.ones(len(initial_risks)) * max_ettd
-
-        # Iterate through the data and calculate the slope for each time slice
-        # Slope is calculated using a linear fit over the previous t_fit seconds
-        for i in range(self.start_fit_points+1, len(initial_risks)):
-
-            # Get the time for the new time slice
-            new_time = times[i]
-
-            # Add the new datapoint to the fit
-            fit_times.append(new_time)
-            fit_points.append(initial_risks[i])
-
-            # Remove all points that are outside the fitting window
-            while fit_times[-1] - fit_times[0] > self.trained_fit_time:
-                fit_times.pop(0)
-                fit_points.pop(0)
-            
-            # Create a linear fit for the points
-            slope, intercept = np.polyfit(fit_times, fit_points, 1)
-
-            # Extrapolate the risk into the future using this line
-            ttd = 0
-            risks[i] = intercept + (slope * (times[i]))
-            while (risks[i] > 0) and (risks[i] < 1) and ttd < max_ettd:
-                ttd += 0.001
-                risks[i] = intercept + (slope * (times[i] + ttd))
-            if (risks[i] > 0):
-                ettd[i] = ttd
-            else:
-                ettd[i] = max_ettd
 
         return ettd
     
