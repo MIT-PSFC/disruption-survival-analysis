@@ -3,6 +3,8 @@ import numpy as np
 from auton_survival.estimators import SurvivalModel
 from sklearn.ensemble import RandomForestClassifier
 
+MAX_FUTURE_LIFETIME = 2 # Maximum time to predict into the future (in seconds)
+
 class DisruptionPredictor:
     """Analog to how a machine learning model would be seen by the plasma control system
     Data goes in, risk or expected time to disruption comes out
@@ -85,7 +87,7 @@ class DisruptionPredictorSM(DisruptionPredictor):
 
         feature_data = self.get_feature_data(shot_data)
         
-        risk_times = np.linspace(0.001, 2, 2000)
+        risk_times = np.arange(0.001, MAX_FUTURE_LIFETIME, 0.001)
         # Create chunks of risk times
         risk_times_chunks = np.array_split(risk_times, 10)
 
@@ -273,30 +275,21 @@ class DisruptionPredictorKM(DisruptionPredictor):
 
         return 1 - survival_probs
     
-    def get_ettd(self, shot_data):
-        """Get the expected time to disruption for each feature vector in shot_data"""
+    def get_rmst(self, shot_data):
+        """Get the restricted mean survival time for each feature vector in shot_data"""
 
-        ettd = np.zeros(len(shot_data))
-
-        times = shot_data['time'].values
+        data_times = shot_data['time'].values
         feature_data = self.get_feature_data(shot_data)
 
+        probs = self.model.predict_proba(feature_data)[:,1]
 
+        integration_times = np.arange(0, MAX_FUTURE_LIFETIME, 0.001)
 
+        survival_at_horizons = np.zeros((len(shot_data), len(integration_times)))
 
-        return ettd
-    
+        for i, t_horizon in enumerate(integration_times):
+            survival_at_horizons[:,i] = self.get_survival(data_times, probs, t_horizon)
 
+        rmst = np.trapz(survival_at_horizons, integration_times, axis=1)
 
-
-
-            
-
-
-
-
-
-
-        
-
-
+        return rmst
