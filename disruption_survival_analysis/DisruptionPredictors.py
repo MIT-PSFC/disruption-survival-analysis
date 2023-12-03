@@ -166,8 +166,6 @@ class DisruptionPredictorKM(DisruptionPredictor):
         self.trained_class_time = trained_class_time    # Time before disruption time slices labeled as 'disruptive'
         self.trained_fit_time = trained_fit_time        # Time in seconds to do linear fit over. In paper, used 0.05, 0.1, 0.2
         self.trained_horizon = trained_horizon          # Time in seconds to extrapolate risk into the future
-        self.start_fit_points = 5
-
 
     def get_risks(self, shot_data, horizon=None):
         """
@@ -186,10 +184,13 @@ class DisruptionPredictorKM(DisruptionPredictor):
             The risk of disruption for each feature vector in shot_data
         """
 
+        if horizon is None:
+            horizon = self.trained_horizon
+
         # This disruption predictor takes present predicted disruption risk and a
         # linear least-square's fit over some previous time window to predict the
         # disruption risk at some future time
-        # P_disrupt(t + horizon) = intercept + slope * (t + horizon)
+        # P_disrupt(t + horizon) = P_disrupt(t) + slope * (horizon)
         
         times = shot_data['time'].values
         feature_data = self.get_feature_data(shot_data)
@@ -198,14 +199,19 @@ class DisruptionPredictorKM(DisruptionPredictor):
 
         # This is a bit of a slow implementation, can speed up later if needed
 
-        fit_times = times[0:self.start_fit_points].tolist()
-        fit_points = initial_risks[0:self.start_fit_points].tolist()
+        # Count how many points to use for the initial fit
+        num_points = 0
+        while times[num_points] < self.trained_fit_time:
+            num_points += 1
+    
+        fit_times = times[0:num_points].tolist()
+        fit_points = initial_risks[0:num_points].tolist()
 
-        risks = np.zeros(len(initial_risks))
+        risks = initial_risks.copy() # Start the risks as the initial risks
 
         # Iterate through the data and calculate the slope for each time slice
         # Slope is calculated using a linear fit over the previous t_fit seconds
-        for i in range(self.start_fit_points+1, len(initial_risks)):
+        for i in range(num_points+1, len(initial_risks)):
 
             # Get the time for the new time slice
             new_time = times[i]
@@ -220,10 +226,10 @@ class DisruptionPredictorKM(DisruptionPredictor):
                 fit_points.pop(0)
             
             # Create a linear fit for the points
-            slope, intercept = np.polyfit(fit_times, fit_points, 1)
+            slope, _ = np.polyfit(fit_times, fit_points, 1)
 
             # Extrapolate the risk into the future using this line
-            risks[i] = intercept + (slope * (times[i] + horizon))
+            risks[i] = initial_risks[i] + (slope * horizon)
         
         # Replace all NaNs with the initial risk
         risks = np.nan_to_num(risks, nan=initial_risks)
