@@ -115,6 +115,30 @@ class DisruptionPredictorSM(DisruptionPredictor):
         ettd = np.clip(ettd, 0, None)
 
         return ettd
+    
+    def get_rmst(self, shot_data):
+        """Get the restricted mean survival time for each feature vector in shot_data"""
+
+        feature_data = self.get_feature_data(shot_data)
+
+        integration_times = np.arange(0.001, MAX_FUTURE_LIFETIME, 0.001)
+        # Create chunks of integration times
+        integration_times_chunks = np.array_split(integration_times, 10)
+
+        # Split up integration times into intervals and calculate the survival in each interval
+        survival_at_horizons = np.zeros((len(shot_data), len(integration_times)))
+        for i, chunk in enumerate(integration_times_chunks):
+            indices = np.arange(len(chunk)) + i*len(chunk)
+            try:
+                survival_at_horizons[:, indices] = self.model.predict_survival(feature_data, chunk)
+            except:
+                # If anything goes wrong, just start appending zeros
+                survival_at_horizons[:, indices] = np.zeros((len(chunk), len(shot_data)))
+
+
+        rmst = np.trapz(survival_at_horizons, integration_times, axis=1)
+
+        return rmst
 
 class DisruptionPredictorRF(DisruptionPredictor):
     """Disruption Predictors using RandomForestClassifier from sklearn"""
@@ -159,6 +183,22 @@ class DisruptionPredictorRF(DisruptionPredictor):
         ettd = np.clip(ettd, 0, self.trained_class_time * 20)
 
         return ettd
+    
+    def get_rmst(self, shot_data):
+        """Get the restricted mean survival time for each feature vector in shot_data"""
+
+        # Looking t_horizon into the future, at a sample rate of 1 ms
+        risks = self.get_risks(shot_data)
+
+        integration_times = np.arange(0.001, MAX_FUTURE_LIFETIME, 0.001)
+
+        survival_at_horizons = np.zeros((len(shot_data), len(integration_times)))
+        for i, t_horizon in enumerate(integration_times):
+            survival_at_horizons[:,i] = (1 - (risks * t_horizon / self.trained_class_time)) ** i
+        
+        rmst = np.trapz(survival_at_horizons, integration_times, axis=1)
+        
+        return rmst
     
 class DisruptionPredictorKM(DisruptionPredictor):
     """Kaplan-Meier Disruption predictor like Tinguely et al. 2019"""
