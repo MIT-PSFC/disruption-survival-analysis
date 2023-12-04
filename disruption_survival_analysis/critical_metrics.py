@@ -2,9 +2,6 @@
 
 import numpy as np
 
-# Not being used, set to very high number
-WARNING_TIME_CUTOFF = 500 # If enabled, ignore warnings that are more than this time before disruption
-
 def compute_metrics_vs_risk_thresholds(predictions, outcomes, required_warning_time, thresholds):
     """ Compute the true alarm rate, false alarm rate, and average/standard deviation of warning time
     at each risk threshold for a given set of predictions and outcomes.
@@ -63,20 +60,12 @@ def compute_metrics_vs_risk_thresholds(predictions, outcomes, required_warning_t
 
             warning_time = np.maximum(0, disruption_time - first_alarm_times)
 
-            true_positives += ((warning_time > required_warning_time) * (warning_time <= WARNING_TIME_CUTOFF))
+            true_positives += (warning_time > required_warning_time).astype(int)
             
-            false_positives += (warning_time > WARNING_TIME_CUTOFF).astype(int)
+            false_positives += (warning_time > 0).astype(int)
             
             total_warning_time += warning_time
             warning_times[i] = warning_time
-
-            # For a shot where a disruption occurs, we are basically splitting it into
-            # a non-disruptive shot and a disruptive shot (if it is long enough)
-            # This allows us to count early warnings as a false positive
-            # without letting the false positive rate go above 1
-            shot_duration = time_values[-1] - time_values[0]
-            if shot_duration > WARNING_TIME_CUTOFF:
-                non_disruptive_shots += 1
             
             disruptive_shots += 1
         else:
@@ -222,4 +211,164 @@ def compute_metrics_vs_false_alarm_rates(predictions, outcomes, required_warning
     
     # 4. Return the false alarm rates and average warning times
     return unique_false_alarm_rates, true_alarm_rates, avg_warning_times, std_warning_times
+
+def compute_warns_vs_risk_thresholds(predictions, outcomes, required_warning_time, thresholds):
+    """ Compute the true alarm rate, false alarm rate, and average/standard deviation of warning time
+    at each risk threshold for a given set of predictions and outcomes.
+    A true alarm is defined as an alarm that is triggered with warning time greater than the required warning
+    time on a disruptive shots.
+    For disruptive shots where an alarm is never triggered, the warning time is 0.
+        
+    Parameters
+    ----------
+    predictions : list of dictionaries
+        Each dictionary corresponds to a single shot and contains the following keys:
+            'risk': a numpy array of risk values
+            'time': a numpy array of time values
+    outcomes : list of dictionaries
+        Each dictionary corresponds to a single shot and contains the following keys:
+            'disruption_time': float. the time of disruption. If the shot did not disrupt, this value is np.NaN
+            'disrupted': bool. whether or not the shot actually disrupted
+    required_warning_time : float
+        The minimum warning time required for an alarm to be considered a true alarm
+    thresholds : numpy array
+        The thresholds to compute the metrics at. Array of floats between 0 and 1, sorted from lowest to highest.
+    
+    Returns
+    -------
+    true_alarm_rates : numpy array
+        The true alarm rates corresponding to each threshold
+    false_alarm_rates : numpy array
+        The false alarm rates corresponding to each threshold
+    avg_warning_times : numpy array
+        The average warning times for the given predictions and true outcomes
+    std_warning_times : numpy array
+        The standard deviation of the warning times for the given predictions and true outcomes
+    
+    """
+    true_positives = np.zeros(len(thresholds))
+    false_positives = np.zeros(len(thresholds))
+    warning_times = np.zeros((len(predictions), len(thresholds)))
+    disruptive_shots = 0
+    non_disruptive_shots = 0
+
+    for i in range(len(predictions)):
+        risk_values = predictions[i]['risk']
+        time_values = predictions[i]['time']
+        disruption_time = outcomes[i]['disruption_time']
+        disrupted = outcomes[i]['disrupted']
+        
+        # Each row of alarms_triggered corresponds to a threshold
+        # Each column of alarms_triggered corresponds to a time
+        # For a risk-based alarm, an alarm is triggered when the risk exceeds the threshold value for the first time
+        alarms_triggered = (risk_values[:, np.newaxis] > thresholds).T.astype(int)
+
+        if disrupted:
+            alarm_times = np.where(alarms_triggered==1, time_values[:, np.newaxis].T, np.inf)
+            first_alarm_times = alarm_times.min(axis=1)
+
+            warning_time = np.maximum(0, disruption_time - first_alarm_times)
+
+            true_positives += (warning_time > required_warning_time).astype(int)
+            
+            false_positives += (warning_time > 0).astype(int)
+            
+            warning_times[i] = warning_time
+
+            disruptive_shots += 1
+        else:
+            false_positives += alarms_triggered.any(axis=1).astype(int)
+            non_disruptive_shots += 1
+
+    true_alarm_rates = true_positives / disruptive_shots
+    false_alarm_rates = false_positives / non_disruptive_shots
+    
+    return true_alarm_rates, false_alarm_rates, warning_times
+
+def compute_metrics_vs_false_alarm_rates_distribution(predictions, outcomes, required_warning_time, thresholds, threshold_type):
+    """ Compute the true alarm rate and average/standard deviation of warning time
+    for each unique false alarm rate for a given set of predictions and true outcomes.
+    A true alarm is defined as an alarm that is triggered with warning time greater than the required warning
+    time on a disruptive shots.
+    For disruptive shots where an alarm is never triggered, the warning time is 0.
+        
+    Parameters
+    ----------
+    predictions : list of dictionaries
+        Each dictionary corresponds to a single shot and contains the following keys:
+            'risk': a numpy array of risk values
+            'time': a numpy array of time values
+    outcomes : list of dictionaries
+        Each dictionary corresponds to a single shot and contains the following keys:
+            'disruption_time': float. the time of disruption. If the shot did not disrupt, this value is np.NaN
+            'disrupted': bool. whether or not the shot actually disrupted
+    required_warning_time : float
+        The minimum warning time required for an alarm to be considered a true alarm
+    thresholds : numpy array
+        The thresholds used to trigger alarms. Array of floats between 0 and 1, sorted from lowest to highest.
+    
+    Returns
+    -------
+    unique_false_alarm_rates : numpy array
+        The unique false alarm rates
+    tar_metrics : dict of numpy arrays
+        The true alarm rates corresponding to each unique false alarm rate
+    warn_metrics : dict of numpy arrays
+        The average warning times corresponding to each unique false alarm rate
+    """
+
+    threshold_true_alarm_rates, threshold_false_alarm_rates, threshold_warning_times = compute_warns_vs_risk_thresholds(predictions, outcomes, required_warning_time, thresholds)
+
+    # 1. Get the unique false alarm rates from the threshold false alarm rates
+    unique_false_alarm_rates = np.unique(threshold_false_alarm_rates)
+
+    # 2. For each unique false alarm rate, compute the average true alarm rate and average warning time
+    avg_true_alarm_rates = np.zeros(len(unique_false_alarm_rates))
+    std_true_alarm_rates = np.zeros(len(unique_false_alarm_rates))
+    med_true_alarm_rates = np.zeros(len(unique_false_alarm_rates))
+    iq1_true_alarm_rates = np.zeros(len(unique_false_alarm_rates))
+    iq3_true_alarm_rates = np.zeros(len(unique_false_alarm_rates))
+
+    avg_warning_times = np.zeros(len(unique_false_alarm_rates))
+    std_warning_times = np.zeros(len(unique_false_alarm_rates))
+    med_warning_times = np.zeros(len(unique_false_alarm_rates))
+    iq1_warning_times = np.zeros(len(unique_false_alarm_rates))
+    iq3_warning_times = np.zeros(len(unique_false_alarm_rates))
+
+    # 3. For each unique false alarm rate, compute the average true alarm rate and average warning time
+    for i in range(len(unique_false_alarm_rates)):
+        false_alarm_rate = unique_false_alarm_rates[i]
+        
+        chosen_trues = threshold_true_alarm_rates[threshold_false_alarm_rates == false_alarm_rate]
+        avg_true_alarm_rates[i] = np.mean(chosen_trues)
+        std_true_alarm_rates[i] = np.std(chosen_trues)
+        med_true_alarm_rates[i] = np.median(chosen_trues)
+        iq1_true_alarm_rates[i] = np.quantile(chosen_trues, 0.25)
+        iq3_true_alarm_rates[i] = np.quantile(chosen_trues, 0.75)
+
+        chosen_warns = threshold_warning_times[threshold_false_alarm_rates == false_alarm_rate]
+        avg_warning_times[i] = np.mean(chosen_warns)
+        std_warning_times[i] = np.std(chosen_warns)
+        med_warning_times[i] = np.median(chosen_warns)
+        iq1_warning_times[i] = np.quantile(chosen_warns, 0.25)
+        iq3_warning_times[i] = np.quantile(chosen_warns, 0.75)
+    
+    tar_metrics = {
+        'avg': avg_true_alarm_rates,
+        'std': std_true_alarm_rates,
+        'med': med_true_alarm_rates,
+        'iq1': iq1_true_alarm_rates,
+        'iq3': iq3_true_alarm_rates
+    }
+
+    warn_metrics = {
+        'avg': avg_warning_times,
+        'std': std_warning_times,
+        'med': med_warning_times,
+        'iq1': iq1_warning_times,
+        'iq3': iq3_warning_times
+    }
+
+    # 4. Return the false alarm rates and average warning times
+    return unique_false_alarm_rates, tar_metrics, warn_metrics
 
