@@ -244,6 +244,7 @@ def plot_avg_warning_times_vs_false_alarm_rates(experiment_list:list[Experiment]
         false_alarm_rates, warning_time_metrics = experiment.warning_times_vs_false_alarm_rates()
         p = plt.plot(false_alarm_rates, warning_time_metrics['avg']*1000, label=experiment.name, linewidth=2)
         plt.plot(false_alarm_rates, warning_time_metrics['med']*1000, label=None, linewidth=1, linestyle='--', color = p[0].get_color())
+        plt.plot(false_alarm_rates, warning_time_metrics['iqm']*1000, label=None, linewidth=1, linestyle=':', color = p[0].get_color())
         plt.fill_between(false_alarm_rates, warning_time_metrics['iq1']*1000, warning_time_metrics['iq3']*1000, alpha=0.2, color = p[0].get_color())
 
     plt.xlim([0, 0.05])

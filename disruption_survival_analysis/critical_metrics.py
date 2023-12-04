@@ -341,9 +341,12 @@ def compute_metrics_vs_false_alarm_rates_distribution(predictions, outcomes, req
         med_warning_times[i] = np.median(chosen_warns)
         iq1_warning_times[i] = np.quantile(chosen_warns, 0.25)
         iq3_warning_times[i] = np.quantile(chosen_warns, 0.75)
-        sorted_times = np.sort(chosen_warns)
-        size = len(sorted_times)/4
-        iqm_warning_times[i] = np.mean(sorted_times[int(size):int(size*3)])
+        sorted_times = np.sort(chosen_warns.flatten())
+        if len(sorted_times) < 3:
+            iqm_warning_times[i] = np.mean(sorted_times)
+        else:
+            size = len(sorted_times)/4
+            iqm_warning_times[i] = np.mean(sorted_times[int(size):int(size*3)])
     
     tar_metrics = {
         'avg': avg_true_alarm_rates,

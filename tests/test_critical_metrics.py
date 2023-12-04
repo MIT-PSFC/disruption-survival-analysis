@@ -419,6 +419,13 @@ class TestComputeMetricsDistributionAgreement(unittest.TestCase):
             iq1_warning_times[i] = np.quantile(warn_groups[i], 0.25)
             iq3_warning_times[i] = np.quantile(warn_groups[i], 0.75)
 
+        # Doing iqm by hand
+        iqm_warning_times = np.array([
+            np.mean([0, 0]),
+            np.mean([60, 50, 50, 50, 50, 50, 40, 30]),
+            np.mean([80, 70])
+        ])
+
         # For each false alarm rate, check that the average warning time is correct
         if not np.isclose(warning_time_metrics['avg'], avg_warning_times).all():
             self.fail("Average Warning Time is incorrect")
@@ -430,3 +437,5 @@ class TestComputeMetricsDistributionAgreement(unittest.TestCase):
             self.fail("First Quartile of Warning Time is incorrect")
         if not np.isclose(warning_time_metrics['iq3'], iq3_warning_times).all():
             self.fail("Third Quartile of Warning Time is incorrect")
+        if not np.isclose(warning_time_metrics['iqm'], iqm_warning_times).all():
+            self.fail("Interquartile Mean of Warning Time is incorrect")
