@@ -190,7 +190,6 @@ def compute_metrics_vs_false_alarm_rates(predictions, outcomes, required_warning
     # 2. For each unique false alarm rate, compute the average true alarm rate and average warning time
     true_alarm_rates = np.zeros(len(unique_false_alarm_rates))
     avg_warning_times = np.zeros(len(unique_false_alarm_rates))
-    std_warning_times = np.zeros(len(unique_false_alarm_rates))
 
     # 3. For each unique false alarm rate, compute the average true alarm rate and average warning time
     for i in range(len(unique_false_alarm_rates)):
