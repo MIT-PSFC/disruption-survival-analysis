@@ -14,7 +14,7 @@ hyperparameter_ranges = {
     },
     "class_time": { # Time in seconds before a disruption labeled as 'disruptive
         "min": 0.001,
-        "max": 0.3,
+        "max": 0.4,
         "distribution": "float",
         "log": False
     },
@@ -88,7 +88,7 @@ hyperparameter_ranges = {
     },
     "horizon": { # How many seconds into the future to predict
         "min": 0.001,
-        "max": 0.3,
+        "max": 0.4,
         "distribution": "float",
         "log": False
     },

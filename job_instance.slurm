@@ -5,7 +5,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH -p sched_mit_psfc_r8
 #SBATCH --time=08:00:00
-#SBATCH --mem-per-cpu=24576MB
+#SBATCH --mem-per-cpu=8000MB
 #SBATCH -o ./slurm/slurm-%j.out
 
 source /etc/profile
@@ -15,11 +15,11 @@ source /etc/profile
 # Activate Python environment
 source ~/projects/disruption-survival-analysis/.venv/bin/activate
 
-# Run 8 training jobs in parallel
-srun --exclusive --ntasks=1 --mem-per-cpu 24576MB python optuna_job.py "$1" &
-srun --exclusive --ntasks=1 --mem-per-cpu 24576MB python optuna_job.py "$1" &
-srun --exclusive --ntasks=1 --mem-per-cpu 24576MB python optuna_job.py "$1" &
-srun --exclusive --ntasks=1 --mem-per-cpu 24576MB python optuna_job.py "$1" &
+# Run 4 training jobs in parallel
+srun --exclusive --ntasks=1 --mem-per-cpu 8000MB python optuna_job.py "$1" &
+srun --exclusive --ntasks=1 --mem-per-cpu 8000MB python optuna_job.py "$1" &
+srun --exclusive --ntasks=1 --mem-per-cpu 8000MB python optuna_job.py "$1" &
+srun --exclusive --ntasks=1 --mem-per-cpu 8000MB python optuna_job.py "$1" &
 wait
 
 # Deactivate Python environment

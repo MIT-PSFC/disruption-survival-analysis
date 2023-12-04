@@ -66,7 +66,7 @@ if __name__ == "__main__":
     sys.stdout.write("Experiment Trained Successfully!")
 
     # Cache the basic metrics
-    experiment.get_critical_metrics_vs_thresholds()
+    #experiment.get_critical_metrics_vs_thresholds()
     experiment.get_critical_metrics_vs_false_alarm_rates()
     sys.stdout.write("Experiment Metrics calculated")
 

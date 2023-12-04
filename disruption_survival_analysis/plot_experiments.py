@@ -270,10 +270,10 @@ def plot_avg_warning_times_vs_false_alarm_rates(experiment_list:list[Experiment]
 
     plt.rcParams.update(mpl.rcParamsDefault)
 
-# Expected Time To Disruption
+# Restricted mean survival time
 
-def plot_expected_time_to_disruption_shot(experiment_list:list[Experiment], shot_number, test=False):
-    """Plot the expected time to disruption for a given shot for each experiment in the list."""
+def plot_restricted_mean_survival_time_shot(experiment_list:list[Experiment], shot_number, test=False):
+    """Plot the restricted mean survival time for a given shot for each experiment in the list."""
 
     plt.figure()
 
@@ -287,7 +287,7 @@ def plot_expected_time_to_disruption_shot(experiment_list:list[Experiment], shot
     disruptive = shot_number in experiment_list[0].get_disruptive_shot_list()
 
     for experiment in experiment_list:
-        ettd = experiment.get_expected_time_to_disruption_shot(shot_number)
+        ettd = experiment.get_restricted_mean_survival_time_shot(shot_number)
         plt.plot(times, ettd, label=pretty_name(experiment.name))
 
     plt.xlim([min(times), max(times)])
@@ -299,18 +299,19 @@ def plot_expected_time_to_disruption_shot(experiment_list:list[Experiment], shot
 
     #plt.legend(fontsize=LEGEND_FONT_SIZE)
     plt.xlabel("Time [s]", fontsize=LABEL_FONT_SIZE)
-    plt.ylabel("Expected Time To Disruption [s]", fontsize=LABEL_FONT_SIZE)
+    plt.ylabel("Restricted Mean Survival Time [s]", fontsize=LABEL_FONT_SIZE)
 
     if disruptive:
         plt.title(f"Shot {int(shot_number)}, Disrupted", fontsize=TITLE_FONT_SIZE)
     else:
         plt.title(f"Shot {int(shot_number)}, Not Disrupted", fontsize=TITLE_FONT_SIZE)
-
+    plt.legend()
     if not test:
         plt.show()
 
-    plt.rcParams.update(mpl.rcParamsDefault)
+    
 
+    plt.rcParams.update(mpl.rcParamsDefault)
 
 
 def pretty_name(experiment_name:str, alarm_types=False, metrics=False, required_warning_times=False):
