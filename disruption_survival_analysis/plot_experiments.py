@@ -359,7 +359,7 @@ def plot_restricted_mean_survival_time_shot(experiment_list:list[Experiment], sh
         plt.plot(times, ettd, label=pretty_name(experiment.name))
 
     plt.xlim([min(times), max(times)])
-    plt.ylim([0, 6.1])
+    plt.ylim([0, 2.5])
 
     # Set tick font sizes
     plt.xticks(fontsize=TICK_FONT_SIZE)

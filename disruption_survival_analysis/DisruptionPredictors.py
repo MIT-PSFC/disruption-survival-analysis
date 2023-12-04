@@ -276,8 +276,11 @@ class DisruptionPredictorKM(DisruptionPredictor):
             
             # Calculate the probability of not disrupting until t + t_horizon
             P_D = probs[i] + slope * sample_times
+            # Restrict P_D to be between 0 and 1
+            P_D = np.clip(P_D, 0, 1)
+            # Even if the binary classifier predicts 100% we are in the disruptive class
+            # the distribution is uniform over the class time so it could survive for a while
             products = 1 - (P_D * SAMPLE_TIME / self.trained_class_time)
-            
             survival_probs[i] = np.prod(products)
                 
         return survival_probs
