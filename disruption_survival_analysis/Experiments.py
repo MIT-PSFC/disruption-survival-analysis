@@ -4,7 +4,7 @@ import numpy as np
 
 from sklearn.metrics import roc_auc_score
 from disruption_survival_analysis.manage_datasets import load_dataset
-from disruption_survival_analysis.experiment_utils import label_shot_data, timeslice_micro_avg, area_under_curve, calculate_f1_scores
+from disruption_survival_analysis.experiment_utils import label_shot_data, timeslice_micro_avg, area_under_curve
 from disruption_survival_analysis.model_utils import get_model_for_experiment, name_model
 
 from auton_survival.estimators import SurvivalModel # CPH, DCPH, DCM, DSM, RSF
@@ -12,7 +12,7 @@ from sklearn.ensemble import RandomForestClassifier # RF, KM
 
 from disruption_survival_analysis.DisruptionPredictors import DisruptionPredictorSM, DisruptionPredictorRF, DisruptionPredictorKM
 
-from disruption_survival_analysis.critical_metrics import compute_metrics_vs_risk_thresholds, compute_metrics_vs_time_thresholds, compute_metrics_vs_false_alarm_rates
+from disruption_survival_analysis.critical_metrics import compute_metrics_vs_false_alarm_rates_distribution
 
 class Experiment:
     """ Class that holds onto data shared between multiple experiments """
@@ -80,15 +80,9 @@ class Experiment:
         self.thresholds = None
 
         # These are caches for the main non-bootstrapped metrics
-        self.true_alarm_rates_thresholds = None
-        self.false_alarm_rates_thresholds = None
-        self.avg_warning_times_thresholds = None
-        self.std_warning_times_thresholds = None
-
         self.unique_false_alarm_rates = None
-        self.true_alarm_rates = None
-        self.avg_warning_times = None
-        self.std_warning_times = None
+        self.true_alarm_metrics= None
+        self.warning_time_metrics = None
 
     # Simple helper methods
 
@@ -335,11 +329,11 @@ class Experiment:
         --------
         unique_false_alarm_rates : np.array
             Every unique false alarm rate for the entire dataset
-        true_alarm_rates : np.array
-            Average true alarm rates corresponding to each false alarm rate
+        true_alarm_metrics: dict of np.arrays
+            Dictionary of true alarm rate metrics
         """
-        unique_false_alarm_rates, true_alarm_rates, _, _ = self.get_critical_metrics_vs_false_alarm_rates(horizon, required_warning_time)
-        return unique_false_alarm_rates, true_alarm_rates
+        unique_false_alarm_rates, true_alarm_metrics, _ = self.get_critical_metrics_vs_false_alarm_rates(horizon, required_warning_time)
+        return unique_false_alarm_rates, true_alarm_metrics
     
     def missed_alarm_rates_vs_false_alarm_rates(self, horizon=None, required_warning_time=None):
         """
@@ -360,13 +354,11 @@ class Experiment:
         --------
         unique_false_alarm_rates : np.array
             Every unique false alarm rate for the entire dataset
-        avg_warning_times : np.array
-            Average warning times corresponding to each false alarm rate
-        std_warning_times : np.array
-            Standard deviations of warning times corresponding to each false alarm rate
+        warning_time_metrics : dict of np.arrays
+            Dictionary of warning time metrics
         """
-        unique_false_alarm_rates, _, avg_warning_times, std_warning_times = self.get_critical_metrics_vs_false_alarm_rates(horizon, required_warning_time)
-        return unique_false_alarm_rates, avg_warning_times, std_warning_times
+        unique_false_alarm_rates, _, warning_time_metrics = self.get_critical_metrics_vs_false_alarm_rates(horizon, required_warning_time)
+        return unique_false_alarm_rates, warning_time_metrics
     
     # Metrics methods
 
@@ -397,8 +389,8 @@ class Experiment:
             metric_val = timeslice_micro_avg(self.device, self.dataset_path, self.predictor.model, self.experiment_type)
         elif metric_type == 'auroc':
             # Area under ROC curve
-            false_alarm_rates, true_alarm_rates = self.true_alarm_rates_vs_false_alarm_rates(horizon, required_warning_time)
-            metric_val = area_under_curve(false_alarm_rates, true_alarm_rates)
+            false_alarm_rates, true_alarm_metrics = self.true_alarm_rates_vs_false_alarm_rates(horizon, required_warning_time)
+            metric_val = area_under_curve(false_alarm_rates, true_alarm_metrics['avg'])
         elif metric_type == 'aumal':
             # Area under log(missed alarm rate) vs false alarm rate curve
             # This is done to make the metric more sensitive to missed alarm rates
@@ -409,13 +401,8 @@ class Experiment:
             metric_val = area_under_curve(false_alarm_rates, log_missed_alarm_rates)
         elif metric_type == 'auwtc':
             # Area under warning time curve
-            false_alarm_rates, warning_times, _ = self.warning_times_vs_false_alarm_rates(horizon, required_warning_time)
-            metric_val = area_under_curve(false_alarm_rates, warning_times, x_cutoff=0.05)
-        elif metric_type == 'maxf1':
-            # Highest f1 score over all the thresholds
-            _, true_alarm_rates, false_alarm_rates, _, _ = self.get_critical_metrics_vs_thresholds(horizon, required_warning_time)
-
-            metric_val = None
+            false_alarm_rates, warning_time_metrics = self.warning_times_vs_false_alarm_rates(horizon, required_warning_time)
+            metric_val = area_under_curve(false_alarm_rates, warning_time_metrics['avg'], x_cutoff=0.05)
         else:
             metric_val = None
 
@@ -507,75 +494,6 @@ class Experiment:
 
         return unique_thresholds, predictions, outcomes
 
-    def get_critical_metrics_vs_thresholds(self, horizon=None, required_warning_time=None, bootstrap_seed=None):
-        """ Get critical metrics for the experiment, where each metric is compared at alarm thresholds
-        
-        Parameters
-        ----------
-        horizon : float. optional
-            The horizon for the survival models to predict at. If None, use the horizon the model was hyperparameter tuned for
-        required_warning_time : float, optional
-            The required warning time to evaluate the metric at. If None, use the required warning time the model was trained on
-        bootstrap_seed : int, optional
-            If None, do not bootstrap. If an integer, use that as the seed for the bootstrap sampling
-        
-        Returns
-        -------
-        thresholds : np.array
-            Every unique float returned as a risk by the model for the entire dataset, to be used as alarm thresholds
-        true_alarm_rates : np.array
-            True alarm rates corresponding to each threshold
-        false_alarm_rates : np.array
-            False alarm rates corresponding to each threshold
-        avg_warning_times : np.array
-            Average warning times corresponding to each threshold
-        std_warning_times : np.array
-            Standard deviations of warning times corresponding to each threshold
-        """
-
-        if horizon is None:
-            try:
-                horizon = self.predictor.trained_horizon
-            except:
-                # If horizon is not defined, in the case of a binary classifier, just pass
-                pass
-        if required_warning_time is None:
-            required_warning_time = self.predictor.trained_required_warning_time
-
-        if self.predictions is None:
-            self.thresholds, self.predictions, self.outcomes = self.critical_metric_setup(horizon)
-
-        # Original, non-bootstrapped way
-        if bootstrap_seed is None:
-            if self.true_alarm_rates_thresholds is None:
-                if self.alarm_type == 'sthr':
-                    self.true_alarm_rates_thresholds, self.false_alarm_rates_thresholds, self.avg_warning_times_thresholds, self.std_warning_times_thresholds = compute_metrics_vs_risk_thresholds(self.predictions, self.outcomes, required_warning_time, self.thresholds)
-                elif self.alarm_type == 'ettd':
-                    self.true_alarm_rates_thresholds, self.false_alarm_rates_thresholds, self.avg_warning_times_thresholds, self.std_warning_times_thresholds = compute_metrics_vs_time_thresholds(self.predictions, self.outcomes, required_warning_time, self.thresholds)
-
-            thresholds = self.thresholds
-            true_alarm_rates = self.true_alarm_rates_thresholds
-            false_alarm_rates = self.false_alarm_rates_thresholds
-            avg_warning_times = self.avg_warning_times_thresholds
-            std_warning_times = self.std_warning_times_thresholds
-        else:
-            # Bootstrapping, using multiple samples of data
-            # Set the random seed
-            np.random.seed(bootstrap_seed)
-            # Randomly sample with replacement from self.predictions and self.outcomes
-            num_shots = len(self.predictions)
-            sample_indices = np.random.choice(num_shots, num_shots, replace=True)
-            sample_predictions = [self.predictions[i] for i in sample_indices]
-            sample_outcomes = [self.outcomes[i] for i in sample_indices]
-
-            # Compute metrics on the sample
-            if self.alarm_type == 'sthr':
-                thresholds, true_alarm_rates, false_alarm_rates, avg_warning_times, std_warning_times = compute_metrics_vs_risk_thresholds(sample_predictions, sample_outcomes, required_warning_time, self.thresholds)
-            elif self.alarm_type == 'ettd':
-                thresholds, true_alarm_rates, false_alarm_rates, avg_warning_times, std_warning_times = compute_metrics_vs_time_thresholds(sample_predictions, sample_outcomes, required_warning_time, self.thresholds)
-
-        return thresholds, true_alarm_rates, false_alarm_rates, avg_warning_times, std_warning_times
-
     def get_critical_metrics_vs_false_alarm_rates(self, horizon=None, required_warning_time=None, bootstrap_seed=None):
         """ Get critical metrics for the experiment, where each metric is compared with false alarm rates
 
@@ -592,12 +510,10 @@ class Experiment:
         -------
         unique_false_alarm_rates : np.array
             Every unique false alarm rate for the entire dataset
-        true_alarm_rates : np.array
-            Average true alarm rates corresponding to each false alarm rate
-        avg_warning_times : np.array
-            Average warning times corresponding to each false alarm rate
-        std_warning_times : np.array
-            Standard deviations of warning times corresponding to each false alarm rate
+        true_alarm_metrics : dict of np.arrays
+            Dictionary of true alarm rate metrics
+        warning_time_metrics : dict of np.arrays
+            Dictionary of warning time metrics
         """
 
         if horizon is None:
@@ -616,12 +532,11 @@ class Experiment:
         if bootstrap_seed is None:
             # Original, non-bootstrapped way
             if self.unique_false_alarm_rates is None:
-                self.unique_false_alarm_rates, self.true_alarm_rates, self.avg_warning_times, self.std_warning_times = compute_metrics_vs_false_alarm_rates(self.predictions, self.outcomes, required_warning_time, self.thresholds, self.alarm_type)
+                self.unique_false_alarm_rates, self.true_alarm_metrics, self.false_alarm_metrics = compute_metrics_vs_false_alarm_rates_distribution(self.predictions, self.outcomes, required_warning_time, self.thresholds, self.alarm_type)
             
             unique_false_alarm_rates = self.unique_false_alarm_rates
-            true_alarm_rates = self.true_alarm_rates
-            avg_warning_times = self.avg_warning_times
-            std_warning_times = self.std_warning_times
+            true_alarm_metrics = self.true_alarm_metrics
+            warning_time_metrics = self.warning_time_metrics
         else:
             # Bootstrapping, using multiple samples of data
             # Set the random seed
@@ -633,11 +548,11 @@ class Experiment:
             sample_outcomes = [self.outcomes[i] for i in sample_indices]
 
             # Compute metrics on the sample
-            unique_false_alarm_rates, true_alarm_rates, avg_warning_times, std_warning_times = compute_metrics_vs_false_alarm_rates(sample_predictions, sample_outcomes, required_warning_time, self.thresholds, self.alarm_type)
+            unique_false_alarm_rates, true_alarm_metrics, warning_time_metrics = compute_metrics_vs_false_alarm_rates_distribution(sample_predictions, sample_outcomes, required_warning_time, self.thresholds, self.alarm_type)
 
-        return unique_false_alarm_rates, true_alarm_rates, avg_warning_times, std_warning_times
+        return unique_false_alarm_rates, true_alarm_metrics, warning_time_metrics
 
-    # Expected time to disruption
-    def get_expected_time_to_disruption_shot(self, shot):
-        """ Returns the expected time to disruption for each timeslice in a given shot"""
-        return self.predictor.get_ettd(self.get_shot_data(shot))
+    # Restricted Mean Survival Time
+    def get_restricted_mean_survival_time_shot(self, shot):
+        """ Returns the restricted mean survival time for a single shot"""
+        return self.predictor.get_rmst(self.get_shot_data(shot))
