@@ -532,7 +532,7 @@ class Experiment:
         if bootstrap_seed is None:
             # Original, non-bootstrapped way
             if self.unique_false_alarm_rates is None:
-                self.unique_false_alarm_rates, self.true_alarm_metrics, self.false_alarm_metrics = compute_metrics_vs_false_alarm_rates_distribution(self.predictions, self.outcomes, required_warning_time, self.thresholds, self.alarm_type)
+                self.unique_false_alarm_rates, self.true_alarm_metrics, self.warning_time_metrics = compute_metrics_vs_false_alarm_rates_distribution(self.predictions, self.outcomes, required_warning_time, self.thresholds, self.alarm_type)
             
             unique_false_alarm_rates = self.unique_false_alarm_rates
             true_alarm_metrics = self.true_alarm_metrics
