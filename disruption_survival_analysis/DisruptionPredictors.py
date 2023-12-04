@@ -4,6 +4,7 @@ from auton_survival.estimators import SurvivalModel
 from sklearn.ensemble import RandomForestClassifier
 
 MAX_FUTURE_LIFETIME = 2 # Maximum time to predict into the future (in seconds)
+SAMPLE_TIME = 0.001 # Time between samples for integrating survival (in seconds)
 
 class DisruptionPredictor:
     """Analog to how a machine learning model would be seen by the plasma control system
@@ -121,7 +122,7 @@ class DisruptionPredictorSM(DisruptionPredictor):
 
         feature_data = self.get_feature_data(shot_data)
 
-        integration_times = np.arange(0.001, MAX_FUTURE_LIFETIME, 0.001)
+        integration_times = np.arange(0, MAX_FUTURE_LIFETIME, SAMPLE_TIME)
         # Create chunks of integration times
         integration_times_chunks = np.array_split(integration_times, 10)
 
@@ -190,14 +191,15 @@ class DisruptionPredictorRF(DisruptionPredictor):
         # Looking t_horizon into the future, at a sample rate of 1 ms
         risks = self.get_risks(shot_data)
 
-        integration_times = np.arange(0.001, MAX_FUTURE_LIFETIME, 0.001)
+        integration_times = np.arange(0, MAX_FUTURE_LIFETIME, SAMPLE_TIME)
 
         survival_at_horizons = np.zeros((len(shot_data), len(integration_times)))
-        for i, t_horizon in enumerate(integration_times):
-            survival_at_horizons[:,i] = (1 - (risks * t_horizon / self.trained_class_time)) ** i
+        for i, _ in enumerate(integration_times):
+            # Probability of surviving into the future at each step is (1 - (risk * t_sample / t_class))
+            # So total probability of surviving into the future is the product of all of these
+            survival_at_horizons[:,i] = (1 - (risks * SAMPLE_TIME / self.trained_class_time)) ** i
         
         rmst = np.trapz(survival_at_horizons, integration_times, axis=1)
-        
         return rmst
     
 class DisruptionPredictorKM(DisruptionPredictor):
@@ -259,7 +261,7 @@ class DisruptionPredictorKM(DisruptionPredictor):
         """
 
         # Looking t_horizon into the future, at a sample rate of 1 ms
-        sample_times = np.arange(0, t_horizon, 0.001)
+        sample_times = np.arange(0, t_horizon, SAMPLE_TIME)
 
         # Calculate the slope for each time slice
         slopes = self.calc_slopes(probs, data_times)
@@ -274,7 +276,7 @@ class DisruptionPredictorKM(DisruptionPredictor):
             
             # Calculate the probability of not disrupting until t + t_horizon
             P_D = probs[i] + slope * sample_times
-            products = 1 - (P_D * 0.001 / self.trained_class_time)
+            products = 1 - (P_D * SAMPLE_TIME / self.trained_class_time)
             
             survival_probs[i] = np.prod(products)
                 
@@ -320,7 +322,7 @@ class DisruptionPredictorKM(DisruptionPredictor):
 
         probs = self.model.predict_proba(feature_data)[:,1]
 
-        integration_times = np.arange(0.001, MAX_FUTURE_LIFETIME, 0.001)
+        integration_times = np.arange(0, MAX_FUTURE_LIFETIME, SAMPLE_TIME)
 
         survival_at_horizons = np.zeros((len(shot_data), len(integration_times)))
 

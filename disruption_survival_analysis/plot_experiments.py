@@ -277,6 +277,67 @@ def plot_avg_warning_times_vs_false_alarm_rates(experiment_list:list[Experiment]
 
     plt.rcParams.update(mpl.rcParamsDefault)
 
+def plot_warning_time_distribution(experiment:Experiment, false_alarm_rate, test=False):
+    """ Plot the warning time distribution for each experiment in the list.
+
+    Parameters
+    ----------
+    experiment_list : list of Experiment
+        The list of experiments to plot
+    false_alarm_rate : float
+        The false alarm rate to plot the distribution at
+    test : bool, optional
+        If True, will run all the calculations but won't display the plot.
+        Allows all tests to run uninterrupted.
+    """
+
+    plt.figure()
+
+    plt.style.use(PLOT_STYLE)
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
+
+
+    unique_false_alarm_rates, warning_time_metrics = experiment.warning_times_vs_false_alarm_rates()
+
+    # Find the index of the false alarm rate closest to 5%
+    index = np.argmin(np.abs(unique_false_alarm_rates - false_alarm_rate))
+
+    # Get the warning times for the first experiment at the 5% false alarm rate
+    all_warning_times = warning_time_metrics['all'][index]
+    avg_warning_time = warning_time_metrics['avg'][index]
+    med_warning_time = warning_time_metrics['med'][index]
+    iq1_warning_time = warning_time_metrics['iq1'][index]
+    iq3_warning_time = warning_time_metrics['iq3'][index]
+    iqm_warning_time = warning_time_metrics['iqm'][index]
+
+    plt.figure(figsize=(10, 10))
+    plt.hist(all_warning_times, bins=200)
+    plt.axvline(avg_warning_time, color='r', label='Average')
+    plt.axvline(med_warning_time, color='orange', label='Median')
+    plt.axvline(iq1_warning_time, color='b', linestyle='--', label='Lower Quartile')
+    plt.axvline(iq3_warning_time, color='b', linestyle='--', label='Upper Quartile')
+    plt.axvline(iqm_warning_time, color='k', linestyle=':', label='Inter Quartile Mean')
+    plt.legend()
+    plt.xlabel('Warning Time [s]')
+    plt.ylabel('Count')
+
+    plt.yscale('symlog', linthresh=100)
+
+    plt.xlim([-0.01, max(all_warning_times)])
+
+    plt.legend(fontsize=LEGEND_FONT_SIZE)
+    plt.xlabel("Warning Time [s]", fontsize=LABEL_FONT_SIZE)
+    plt.ylabel("Count", fontsize=LABEL_FONT_SIZE)
+
+    plt.title(f"Warning Time Distribution at {unique_false_alarm_rates[index]*100:.2f}\% False Alarm Rate", fontsize=TITLE_FONT_SIZE)
+
+    if not test:
+        plt.show()
+
+    plt.rcParams.update(mpl.rcParamsDefault)
+
+
 # Restricted mean survival time
 
 def plot_restricted_mean_survival_time_shot(experiment_list:list[Experiment], shot_number, test=False):

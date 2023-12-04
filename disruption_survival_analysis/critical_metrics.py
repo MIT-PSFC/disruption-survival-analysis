@@ -323,6 +323,7 @@ def compute_metrics_vs_false_alarm_rates_distribution(predictions, outcomes, req
     iq1_warning_times = np.zeros(len(unique_false_alarm_rates))
     iq3_warning_times = np.zeros(len(unique_false_alarm_rates))
     iqm_warning_times = np.zeros(len(unique_false_alarm_rates))
+    all_warning_times = []
 
     # 3. For each unique false alarm rate, compute the average true alarm rate and average warning time
     for i in range(len(unique_false_alarm_rates)):
@@ -347,6 +348,7 @@ def compute_metrics_vs_false_alarm_rates_distribution(predictions, outcomes, req
         else:
             size = len(sorted_times)/4
             iqm_warning_times[i] = np.mean(sorted_times[int(size):int(size*3)])
+        all_warning_times.append(sorted_times)
     
     tar_metrics = {
         'avg': avg_true_alarm_rates,
@@ -362,7 +364,8 @@ def compute_metrics_vs_false_alarm_rates_distribution(predictions, outcomes, req
         'med': med_warning_times,
         'iq1': iq1_warning_times,
         'iq3': iq3_warning_times,
-        'iqm': iqm_warning_times
+        'iqm': iqm_warning_times,
+        'all': all_warning_times
     }
 
     # 4. Return the false alarm rates and average warning times
