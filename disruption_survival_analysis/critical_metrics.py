@@ -32,16 +32,13 @@ def compute_metrics_vs_risk_thresholds(predictions, outcomes, required_warning_t
         The false alarm rates corresponding to each threshold
     avg_warning_times : numpy array
         The average warning times for the given predictions and true outcomes
-    std_warning_times : numpy array
-        The standard deviation of the warning times for the given predictions and true outcomes
     
     """
     true_positives = np.zeros(len(thresholds))
     false_positives = np.zeros(len(thresholds))
     total_warning_time = np.zeros(len(thresholds))
     warning_times = np.zeros((len(predictions), len(thresholds)))
-    disruptive_shots = 0
-    non_disruptive_shots = 0
+    disruptive_shot_mask = np.zeros(len(predictions))
 
     for i in range(len(predictions)):
         risk_values = predictions[i]['risk']
@@ -62,22 +59,20 @@ def compute_metrics_vs_risk_thresholds(predictions, outcomes, required_warning_t
 
             true_positives += (warning_time > required_warning_time).astype(int)
             
-            false_positives += (warning_time > 0).astype(int)
-            
             total_warning_time += warning_time
             warning_times[i] = warning_time
             
-            disruptive_shots += 1
+            disruptive_shot_mask[i] = 1
         else:
             false_positives += alarms_triggered.any(axis=1).astype(int)
-            non_disruptive_shots += 1
 
+    disruptive_shots = np.sum(disruptive_shot_mask)
+    non_disruptive_shots = len(predictions) - disruptive_shots
     true_alarm_rates = true_positives / disruptive_shots
     false_alarm_rates = false_positives / non_disruptive_shots
     avg_warning_times = total_warning_time / disruptive_shots
-    std_warning_times = np.std(warning_times[:disruptive_shots], axis=0)
     
-    return true_alarm_rates, false_alarm_rates, avg_warning_times, std_warning_times
+    return true_alarm_rates, false_alarm_rates, avg_warning_times
 
 def compute_metrics_vs_time_thresholds(predictions, outcomes, required_warning_time, thresholds):
     """ Compute the true alarm rate, false alarm rate, and average/standard deviation of warning time
@@ -182,12 +177,10 @@ def compute_metrics_vs_false_alarm_rates(predictions, outcomes, required_warning
         The true alarm rates corresponding to each unique false alarm rate
     avg_warning_times : numpy array
         The average warning times corresponding to each unique false alarm rate
-    std_warning_times : numpy array
-        The standard deviation of the warning times corresponding to each unique false alarm rate
     """
 
     if threshold_type == 'sthr':
-        threshold_true_alarm_rates, threshold_false_alarm_rates, threshold_avg_warning_times, threshold_std_warning_times = compute_metrics_vs_risk_thresholds(predictions, outcomes, required_warning_time, thresholds)
+        threshold_true_alarm_rates, threshold_false_alarm_rates, threshold_avg_warning_times = compute_metrics_vs_risk_thresholds(predictions, outcomes, required_warning_time, thresholds)
     elif threshold_type == 'ettd':
         threshold_true_alarm_rates, threshold_false_alarm_rates, threshold_avg_warning_times, threshold_std_warning_times = compute_metrics_vs_time_thresholds(predictions, outcomes, required_warning_time, thresholds)
 
@@ -199,18 +192,16 @@ def compute_metrics_vs_false_alarm_rates(predictions, outcomes, required_warning
     avg_warning_times = np.zeros(len(unique_false_alarm_rates))
     std_warning_times = np.zeros(len(unique_false_alarm_rates))
 
-    # Compute variance of warning time for each false alarm rate
-    threshold_var_warning_times = threshold_std_warning_times ** 2
-
     # 3. For each unique false alarm rate, compute the average true alarm rate and average warning time
     for i in range(len(unique_false_alarm_rates)):
         false_alarm_rate = unique_false_alarm_rates[i]
-        true_alarm_rates[i] = np.mean(threshold_true_alarm_rates[threshold_false_alarm_rates == false_alarm_rate])
-        avg_warning_times[i] = np.mean(threshold_avg_warning_times[threshold_false_alarm_rates == false_alarm_rate])
-        std_warning_times[i] = np.mean(threshold_var_warning_times[threshold_false_alarm_rates == false_alarm_rate]) ** 0.5
+        chosen_tars = threshold_true_alarm_rates[threshold_false_alarm_rates == false_alarm_rate]
+        true_alarm_rates[i] = np.mean(chosen_tars)
+        chosen_avg_warns = threshold_avg_warning_times[threshold_false_alarm_rates == false_alarm_rate]
+        avg_warning_times[i] = np.mean(chosen_avg_warns)
     
     # 4. Return the false alarm rates and average warning times
-    return unique_false_alarm_rates, true_alarm_rates, avg_warning_times, std_warning_times
+    return unique_false_alarm_rates, true_alarm_rates, avg_warning_times
 
 def compute_warns_vs_risk_thresholds(predictions, outcomes, required_warning_time, thresholds):
     """ Compute the true alarm rate, false alarm rate, and average/standard deviation of warning time
@@ -240,17 +231,14 @@ def compute_warns_vs_risk_thresholds(predictions, outcomes, required_warning_tim
         The true alarm rates corresponding to each threshold
     false_alarm_rates : numpy array
         The false alarm rates corresponding to each threshold
-    avg_warning_times : numpy array
-        The average warning times for the given predictions and true outcomes
-    std_warning_times : numpy array
-        The standard deviation of the warning times for the given predictions and true outcomes
+    only_disruptive_warning_times : numpy array
+        The warning times for the given predictions and true outcomes on disruptive shots only
     
     """
     true_positives = np.zeros(len(thresholds))
     false_positives = np.zeros(len(thresholds))
     warning_times = np.zeros((len(predictions), len(thresholds)))
-    disruptive_shots = 0
-    non_disruptive_shots = 0
+    disruptive_shot_mask = np.zeros(len(predictions))
 
     for i in range(len(predictions)):
         risk_values = predictions[i]['risk']
@@ -271,19 +259,20 @@ def compute_warns_vs_risk_thresholds(predictions, outcomes, required_warning_tim
 
             true_positives += (warning_time > required_warning_time).astype(int)
             
-            false_positives += (warning_time > 0).astype(int)
-            
             warning_times[i] = warning_time
 
-            disruptive_shots += 1
+            disruptive_shot_mask[i] = 1
         else:
             false_positives += alarms_triggered.any(axis=1).astype(int)
-            non_disruptive_shots += 1
 
+    disruptive_shots = np.sum(disruptive_shot_mask)
+    non_disruptive_shots = len(predictions) - disruptive_shots
     true_alarm_rates = true_positives / disruptive_shots
     false_alarm_rates = false_positives / non_disruptive_shots
+
+    only_disruptive_warning_times = warning_times[disruptive_shot_mask == 1]
     
-    return true_alarm_rates, false_alarm_rates, warning_times
+    return true_alarm_rates, false_alarm_rates, only_disruptive_warning_times
 
 def compute_metrics_vs_false_alarm_rates_distribution(predictions, outcomes, required_warning_time, thresholds, threshold_type):
     """ Compute the true alarm rate and average/standard deviation of warning time
@@ -338,7 +327,7 @@ def compute_metrics_vs_false_alarm_rates_distribution(predictions, outcomes, req
     # 3. For each unique false alarm rate, compute the average true alarm rate and average warning time
     for i in range(len(unique_false_alarm_rates)):
         false_alarm_rate = unique_false_alarm_rates[i]
-        
+
         chosen_trues = threshold_true_alarm_rates[threshold_false_alarm_rates == false_alarm_rate]
         avg_true_alarm_rates[i] = np.mean(chosen_trues)
         std_true_alarm_rates[i] = np.std(chosen_trues)
@@ -346,7 +335,7 @@ def compute_metrics_vs_false_alarm_rates_distribution(predictions, outcomes, req
         iq1_true_alarm_rates[i] = np.quantile(chosen_trues, 0.25)
         iq3_true_alarm_rates[i] = np.quantile(chosen_trues, 0.75)
 
-        chosen_warns = threshold_warning_times[threshold_false_alarm_rates == false_alarm_rate]
+        chosen_warns = threshold_warning_times[:,threshold_false_alarm_rates == false_alarm_rate]
         avg_warning_times[i] = np.mean(chosen_warns)
         std_warning_times[i] = np.std(chosen_warns)
         med_warning_times[i] = np.median(chosen_warns)
