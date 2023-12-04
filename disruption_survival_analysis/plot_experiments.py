@@ -131,8 +131,10 @@ def plot_true_alarm_rates_vs_false_alarm_rates(experiment_list:list[Experiment],
     plt.gca().patch.set_facecolor('0.92')
 
     for experiment in experiment_list:
-        false_alarm_rates, true_alarm_rates = experiment.true_alarm_rates_vs_false_alarm_rates()
-        plt.plot(false_alarm_rates, true_alarm_rates, label=pretty_name(experiment.name), linewidth=2)
+        false_alarm_rates, true_alarm_metrics = experiment.true_alarm_rates_vs_false_alarm_rates()
+        p = plt.plot(false_alarm_rates, true_alarm_metrics['avg'], label=pretty_name(experiment.name), linewidth=2)
+        plt.plot(false_alarm_rates, true_alarm_metrics['med'], label=None, linewidth=1, linestyle='--', color = p[0].get_color())
+        plt.fill_between(false_alarm_rates, true_alarm_metrics['iq1'], true_alarm_metrics['iq3'], alpha=0.2, color = p[0].get_color())
 
     plt.xlim([0, 1])
     plt.ylim([0, 1])
@@ -151,7 +153,7 @@ def plot_true_alarm_rates_vs_false_alarm_rates(experiment_list:list[Experiment],
     plt.xticks([0, 0.2, 0.4, 0.6, 0.8, 1],
                 ["0\%", "20\%", "40\%", "60\%", "80\%", "100\%"])
 
-    plt.title("C-Mod, 100ms Required Warning Time", fontsize=TITLE_FONT_SIZE)
+    plt.title("C-Mod, 10ms Required Warning Time", fontsize=TITLE_FONT_SIZE)
 
     if not test:
         plt.show()
@@ -239,11 +241,13 @@ def plot_avg_warning_times_vs_false_alarm_rates(experiment_list:list[Experiment]
     plt.gca().patch.set_facecolor('0.92')
 
     for experiment in experiment_list:
-        false_alarm_rates, avg_warning_times, std_warning_times = experiment.warning_times_vs_false_alarm_rates()
-        plt.plot(false_alarm_rates, avg_warning_times*1000, label=experiment.name, linewidth=2)
+        false_alarm_rates, warning_time_metrics = experiment.warning_times_vs_false_alarm_rates()
+        p = plt.plot(false_alarm_rates, warning_time_metrics['avg']*1000, label=experiment.name, linewidth=2)
+        plt.plot(false_alarm_rates, warning_time_metrics['med']*1000, label=None, linewidth=1, linestyle='--', color = p[0].get_color())
+        plt.fill_between(false_alarm_rates, warning_time_metrics['iq1']*1000, warning_time_metrics['iq3']*1000, alpha=0.2, color = p[0].get_color())
 
     plt.xlim([0, 0.05])
-    plt.ylim([0, 120])
+    plt.ylim([0, 200])
 
     plt.xscale('symlog')
 
@@ -264,6 +268,8 @@ def plot_avg_warning_times_vs_false_alarm_rates(experiment_list:list[Experiment]
 
     # Put a horizontal line at the required warning time
     #plt.axhline(y=required_warning_time*1000, color='k', linestyle='--')
+
+    plt.legend()
 
     if not test:
         plt.show()
@@ -309,9 +315,51 @@ def plot_restricted_mean_survival_time_shot(experiment_list:list[Experiment], sh
     if not test:
         plt.show()
 
-    
+    plt.rcParams.update(mpl.rcParamsDefault)
+
+def plot_restricted_mean_survival_time_difference_shot(experiment_list:list[Experiment], shot_number, test=False):
+
+    plt.figure()
+
+    plt.style.use(PLOT_STYLE)
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
+
+    times = experiment_list[0].get_shot_data(shot_number)['time'].values
+
+        # Set boolean disruptive if shot number is in the disruptive shot list
+    disruptive = shot_number in experiment_list[0].get_disruptive_shot_list()
+
+    if disruptive:
+        plt.title(f"Shot {int(shot_number)}, Disrupted", fontsize=TITLE_FONT_SIZE)
+        # Flip the times to get a decreasing time axis
+        good_times = np.flip(times)
+    else:
+        plt.title(f"Shot {int(shot_number)}, Not Disrupted", fontsize=TITLE_FONT_SIZE)
+        good_times = np.ones(len(times)) * 2 # Say a shot that doesn't disrupt has a RMST of 2 or something TODO fix
+
+    for experiment in experiment_list:
+        rmst = experiment.get_restricted_mean_survival_time_shot(shot_number)
+        plt.plot(times, rmst - good_times, label=pretty_name(experiment.name))
+
+    plt.xlim([min(times), max(times)])
+    plt.ylim([-3, 3])
+
+    # Set tick font sizes
+    plt.xticks(fontsize=TICK_FONT_SIZE)
+    plt.yticks(fontsize=TICK_FONT_SIZE)
+
+    #plt.legend(fontsize=LEGEND_FONT_SIZE)
+    plt.xlabel("Time [s]", fontsize=LABEL_FONT_SIZE)
+    plt.ylabel("RMST Difference [s]", fontsize=LABEL_FONT_SIZE)
+
+
+    plt.legend()
+    if not test:
+        plt.show()
 
     plt.rcParams.update(mpl.rcParamsDefault)
+
 
 
 def pretty_name(experiment_name:str, alarm_types=False, metrics=False, required_warning_times=False):
