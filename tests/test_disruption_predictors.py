@@ -248,49 +248,68 @@ class TestDisruptionPredictor(unittest.TestCase):
 
 #         self.fail()
 
-# class TestDisruptionPredictorKM(unittest.TestCase):
-#     """Tests for Kaplan-Meier DisruptionPredictor"""
+class TestDisruptionPredictorKM(unittest.TestCase):
+    """Tests for Kaplan-Meier DisruptionPredictor"""
 
-#     def test_get_correct_instance(self):
-#         """Ensure that the correct class instance is returned"""
+    def setUp(self):
+        """Set up a DisruptionPredictor instance for testing"""
+        
+        # Load a config file for a simple RF model
+        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'km', 'sthr', 'auroc', 0.01)
 
-#         self.fail()
+        # Get some important information about the model
+        trained_required_warning_time = experiment_config["required_warning_time"]
+        trained_class_time = experiment_config["hyperparameters"]["class_time"]
+        trained_fit_time = experiment_config["hyperparameters"]["fit_time"]
+        trained_horizon = experiment_config["hyperparameters"]["horizon"]
+        
+        # Create model
+        self.model = get_model_for_experiment(experiment_config, "test")
 
-#     def test_calculate_risk_at_time_shape(self):
-#         """Ensure that the function calculate_risk_at_time() returns a Pandas
-#         DataFrame with two columns and the same number of rows as the input"""
+        # Create predictor instance
+        self.predictor = DisruptionPredictorKM("Test Predictor", 
+                                               self.model, 
+                                               trained_required_warning_time,
+                                               trained_class_time,
+                                               trained_fit_time,
+                                               trained_horizon)
 
-#         self.fail()
+    def test_get_risks(self):
+        """Ensure the get_risks() returns a numpy array with the correct columns"""
 
-#     def test_calculate_risk_at_time_columns(self):
-#         """Ensure that the function calculate_risk_at_time() returns a Pandas
-#         DataFrame with the correct columns"""
+        # Load some test data
+        test_data = load_dataset(TEST_DEVICE, TEST_DATASET_PATH, "test")
+        # Get a shot number from the data
+        shot = test_data.iloc[0]["shot"]
+        # Get the data for that shot
+        shot_data = test_data[test_data["shot"] == shot]
 
-#         self.fail()
+        try:
+            # Get the risk for that shot
+            risks = self.predictor.get_risks(shot_data)
+        except Exception as e:
+            self.fail("get_risks() raised an exception: " + str(e))
+        
+        # Check the shape of risks
+        if risks.shape[0] != shot_data.shape[0]:
+            self.fail("Number of rows in risks does not match input")
 
-#     def test_calculate_risk_at_time_no_modify(self):
-#         """Ensure that the function calculate_risk_at_time() does not modify the input"""
+    def test_get_rmst(self):
+        """ Ensure that get_rmst() returns a numpy array with the correct shape"""
 
-#         self.fail()
+        # Load some test data
+        test_data = load_dataset(TEST_DEVICE, TEST_DATASET_PATH, "test")
+        # Get a shot number from the data
+        shot = test_data.iloc[0]["shot"]
+        # Get the data for that shot
+        shot_data = test_data[test_data["shot"] == shot]
 
-#     def test_calculate_ettd_at_time(self):
-#         """Ensure that the function calculate_ettd_at_time() returns a Pandas
-#         DataFrame with two columns and the same number of rows as the input"""
-
-#         self.fail()
-
-#     def test_calculate_ettd_at_time_columns(self):
-#         """Ensure that the function calculate_ettd_at_time() returns a Pandas
-#         DataFrame with the correct columns"""
-
-#         self.fail()
-
-#     def test_calculate_ettd_at_time_no_modify(self):
-#         """Ensure that the function calculate_ettd_at_time() does not modify the input"""
-
-#         self.fail()
-
-#     def test_linear_slope(self):
-#         """Ensure that the function linear_slope() returns something resembling the correct slope"""
-
-#         self.fail()
+        try:
+            # Get the risk for that shot
+            rmst = self.predictor.get_rmst(shot_data)
+        except Exception as e:
+            self.fail("get_rmst() raised an exception: " + str(e))
+        
+        # Check the shape of rmst
+        if rmst.shape[0] != shot_data.shape[0]:
+            self.fail("Number of columns in rmst does not match input")

@@ -233,11 +233,8 @@ class DisruptionPredictorKM(DisruptionPredictor):
                 continue
             
             # Calculate the probability of not disrupting until t + t_horizon
-            products = np.zeros(len(sample_times))
-            for i, t in enumerate(sample_times):
-                P_D = probs[i] + slope * t
-                product = 1 - (P_D * 0.001 / self.trained_class_time)
-                products[i] = product
+            P_D = probs[i] + slope * sample_times
+            products = 1 - (P_D * 0.001 / self.trained_class_time)
             
             survival_probs[i] = np.prod(products)
                 
@@ -283,7 +280,7 @@ class DisruptionPredictorKM(DisruptionPredictor):
 
         probs = self.model.predict_proba(feature_data)[:,1]
 
-        integration_times = np.arange(0, MAX_FUTURE_LIFETIME, 0.001)
+        integration_times = np.arange(0.001, MAX_FUTURE_LIFETIME, 0.001)
 
         survival_at_horizons = np.zeros((len(shot_data), len(integration_times)))
 
