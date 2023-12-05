@@ -5,6 +5,7 @@ import dill
 import numpy as np
 import datetime
 import time
+import optuna
 
 from multiprocessing import Pool
 
@@ -18,6 +19,25 @@ def main(device, dataset_path, model_type, alarm_type, metric, required_warning_
     # If an optional seventh argument is provided, change the working directory to that
     if working_directory is not None:
         os.chdir(sys.argv[7])
+
+    study_name = f"{model_type}_{alarm_type}_{metric}_{required_warning_time_ms}ms_study"
+
+    # Load the study
+    study_path = f"results/{device}/{dataset_path}/studies/{study_name}.db"
+
+    # Check if the database file exists
+    with open(study_path, "r") as f:
+        pass
+
+    lock_obj = optuna.storages.JournalFileOpenLock(study_path)
+    storage = optuna.storages.JournalStorage(
+        optuna.storages.JournalFileStorage(study_path, lock_obj=lock_obj)
+    )
+
+    # Get the best trial from the study (expects there to be only one study in the database)
+    study = optuna.load_study(study_name=None, storage=storage)
+
+    hyperparameters = study.best_trial.params
     
     # Make the experiment config dictionary
     config = {}
@@ -29,6 +49,7 @@ def main(device, dataset_path, model_type, alarm_type, metric, required_warning_
     config['alarm_type'] = alarm_type
     config['metric'] = metric
     config['required_warning_time'] = int(required_warning_time_ms)/1000
+    config['hyperparameters'] = hyperparameters
 
     print_memory_usage("Bootstrap Before Creating Experiment")
 
