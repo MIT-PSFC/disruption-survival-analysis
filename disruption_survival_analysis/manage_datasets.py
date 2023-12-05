@@ -3,6 +3,7 @@ import psutil
 
 import numpy as np
 import pandas as pd
+import polars as pl
 
 from auton_survival.preprocessing import Preprocessor
 
@@ -248,6 +249,18 @@ def load_dataset(device, dataset_path, dataset_category):
     data = data.sort_values(['shot','time'])
     return data
 
+def load_dataset_lazy(device, dataset_path, dataset_category):
+    """Lazily load a dataset using polars"""
+
+    filename = f"data/{device}/{dataset_path}/{dataset_category}.csv"
+
+    # Read into csv, with all feature values as floats
+    data = pl.scan_csv(filename, cache=False)
+
+    # Sort by shot number and time
+    data = data.sort(['shot','time'])
+    return data
+
 # def load_dataset_grouped(device, dataset_path, dataset_category):
 #     """
 #     Load dataset grouped by shot number
@@ -298,8 +311,8 @@ def load_features_outcomes(device, dataset_path, dataset_category, epsilon=1e-4)
     
     data = load_dataset(device, dataset_path, dataset_category)
 
-    # Create a parallel outcomes dataframe
-    outcomes = data.copy()
+    # Create a dataframe that only has the time_until_disrupt, time, and shot columns
+    outcomes = data[['time_until_disrupt', 'time', 'shot']].copy()
 
     # Create a 'time to last' column for each shot
     outcomes['time_to_last'] = outcomes.groupby('shot')['time'].transform(max) - data['time']
@@ -469,3 +482,4 @@ def print_memory_usage():
     process = psutil.Process(os.getpid())
     memory_usage = process.memory_info().rss / 1024 ** 2
     print(f"Memory usage: {memory_usage} MB")
+    return memory_usage

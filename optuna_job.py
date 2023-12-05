@@ -4,6 +4,7 @@ import yaml
 import optuna
 
 from disruption_survival_analysis.Experiments import Experiment
+from disruption_survival_analysis.manage_datasets import print_memory_usage
 
 def objective(trial, sweep_config):
 
@@ -54,7 +55,7 @@ def objective(trial, sweep_config):
         metric_val = experiment.evaluate_metric(sweep_config["metric"])
         print(f"Metric value calculated: {metric_val}")
     except MemoryError as e:
-        print("Ran out of memory")
+        print(f"Ran out of memory {print_memory_usage()}")
         print(e)
         metric_val = float("nan")
     except Exception as e:
