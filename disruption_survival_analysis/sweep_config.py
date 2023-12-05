@@ -169,7 +169,7 @@ def write_sweep_config(sweep_config):
 
     sweep_config_name = f"{model_type}_{alarm_type}_{metric}_{int(required_warning_time*1000)}ms_sweep"
 
-    directory_name = f"models/{device}/{dataset_path}/sweeps"
+    directory_name = f"results/{device}/{dataset_path}/sweeps"
 
     # Make directory if it doesn't already exist
     if not os.path.exists(directory_name):
@@ -192,7 +192,7 @@ def create_experiment_groups(devices, dataset_paths, models, alarms, metrics, mi
                         for min_warning_time in min_warning_times:
                             try:
                                 # Load experiment if it exists
-                                file_name = f"models/{device}/{dataset_path}/experiments/{model}_{alarm}_{metric}_{int(min_warning_time*1000)}ms_experiment.pkl"
+                                file_name = f"results/{device}/{dataset_path}/experiments/{model}_{alarm}_{metric}_{int(min_warning_time*1000)}ms_experiment.pkl"
                                 with open(file_name, 'rb') as f:
                                     experiment = dill.load(f)
                             except:
@@ -286,7 +286,7 @@ def create_bootstrap_list(devices, dataset_paths, models, alarms, metrics, min_w
                         for min_warning_time in min_warning_times:
                             try:
                                 # Load bootstrap if it exists
-                                file_name = f"models/{device}/{dataset_path}/bootstraps/{model}_{alarm}_{metric}_{int(min_warning_time*1000)}ms_bootstrap.pkl"
+                                file_name = f"results/{device}/{dataset_path}/bootstraps/{model}_{alarm}_{metric}_{int(min_warning_time*1000)}ms_bootstrap.pkl"
                                 with open(file_name, 'rb') as f:
                                     bootstrap = dill.load(f)
                             except Exception as e:

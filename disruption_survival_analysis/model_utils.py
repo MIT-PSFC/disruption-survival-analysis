@@ -217,7 +217,7 @@ def name_model(config):
     
 def save_model(model, model_name, device, dataset_path):
     """Save model to file"""
-    model_path = f"models/{device}/{dataset_path}"
+    model_path = f"results/{device}/{dataset_path}/models"
     try:
         os.makedirs(model_path)
     except:
@@ -228,7 +228,7 @@ def save_model(model, model_name, device, dataset_path):
 
 def load_model(model_name, device, dataset_path):
     """Load model from file"""
-    model_file = f"models/{device}/{dataset_path}/{model_name}.pkl"
+    model_file = f"results/{device}/{dataset_path}/models/{model_name}.pkl"
     with open(model_file, 'rb') as f:
         model = dill.load(f)
     print('Loaded model from ' + model_file)

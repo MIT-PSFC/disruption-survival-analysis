@@ -78,7 +78,7 @@ if __name__ == "__main__":
         pass
 
     # Load the sweep config
-    sweep_config = yaml.safe_load(open(f"models/{sweep_config_path}", "r"))
+    sweep_config = yaml.safe_load(open(f"results/{sweep_config_path}", "r"))
 
     # Get the path to put the study database
     # Since SQLite can't accept writes from more than one process at a time,
@@ -89,7 +89,7 @@ if __name__ == "__main__":
     alarm_type = sweep_config["alarm_type"]
     metric = sweep_config["metric"]
     required_warning_time = int(sweep_config["required_warning_time"]*1000)
-    database_path = f"models/{device}/{dataset_path}/studies/{model_type}_{alarm_type}_{metric}_{required_warning_time}ms_study.db"
+    database_path = f"results/{device}/{dataset_path}/studies/{model_type}_{alarm_type}_{metric}_{required_warning_time}ms_study.db"
 
     # Load training data
 

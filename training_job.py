@@ -80,7 +80,7 @@ if __name__ == "__main__":
     experiment_name = f"{model_type}_{alarm_type}_{metric}_{required_warning_time_ms}ms_experiment"
 
     # Make directory if it doesn't already exist
-    directory_name = f"models/{device}/{dataset_path}/experiments"
+    directory_name = f"results/{device}/{dataset_path}/experiments"
     if not os.path.exists(directory_name):
         os.makedirs(directory_name)
 

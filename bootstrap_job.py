@@ -32,7 +32,7 @@ if __name__ == "__main__":
     experiment_name = f"{model_type}_{alarm_type}_{metric}_{min_warning_time_ms}ms_experiment"
 
     # Load the experiment
-    experiment_path = f"models/{device}/{dataset_path}/experiments/{experiment_name}.pkl"
+    experiment_path = f"results/{device}/{dataset_path}/experiments/{experiment_name}.pkl"
 
     try:
         with open(experiment_path, 'rb') as f:
@@ -110,7 +110,7 @@ if __name__ == "__main__":
     bootstrapped_metrics['min_warns'] = min_warns
 
     # Make directory if it doesn't already exist
-    directory_name = f"models/{device}/{dataset_path}/bootstraps"
+    directory_name = f"results/{device}/{dataset_path}/bootstraps"
     if not os.path.exists(directory_name):
         os.makedirs(directory_name)
 

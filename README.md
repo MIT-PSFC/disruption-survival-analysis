@@ -57,7 +57,7 @@ Follow instructions in `Write Sweep Configs.ipynb` or use `write_sweep_configs.p
 
 After sweep configs are generated, run the following command to start a hyperparameter tuning session:
 ```bash
-python optuna_job.py models/[device]/[dataset_path]/sweeps/[sweep].yaml
+python optuna_job.py results/[device]/[dataset_path]/sweeps/[sweep].yaml
 ```
 
 Open multiple terminals and execute the command to have several jobs performing sweeps at once. 
@@ -71,7 +71,7 @@ chmod +x job_launch_all.sh
 
 To view results of hyperparameter tuning trials, execute the following command:
 ```bash
-optuna-dashboard sqlite:///models/[device]/[dataset]/studies/[study].db
+optuna-dashboard sqlite:///results/[device]/[dataset]/studies/[study].db
 ```
 
 ### 3. Running Experiments

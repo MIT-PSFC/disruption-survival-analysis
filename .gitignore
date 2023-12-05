@@ -207,7 +207,7 @@ wandb
 !data/synthetic/test/test.csv
 !data/synthetic/test/small.csv
 
-!models/synthetic/test/*ms.yaml
+!results/synthetic/test/*ms.yaml
 
 # Ignore all others
 *.yaml

@@ -186,7 +186,7 @@ def load_experiment_config(device, dataset, model_type, alarm_type, metric, requ
     """
     Load an experiment config dictionary.
     Either from a yaml file (first attempt) or from a study database (second attempt)
-    Expects file to be one directory up from the current directory, in the 'models' folder
+    Expects file to be one in the location results/{device}/{dataset}/configs/{yaml_file_name}
 
     Parameters
     ----------
@@ -214,7 +214,7 @@ def load_experiment_config(device, dataset, model_type, alarm_type, metric, requ
     print("Attempting to load hyperparameters from yaml file...")
     yaml_file_name = f"{model_type}_{alarm_type}_{metric}_{int(required_warning_time*1000)}ms.yaml"
     try:
-        with open(f"models/{device}/{dataset}/configs/{yaml_file_name}", "r") as f:
+        with open(f"results/{device}/{dataset}/configs/{yaml_file_name}", "r") as f:
             hyperparameters = yaml.load(f, Loader=yaml.FullLoader)['hyperparameters']
         print(f"Loaded hyperparameters for {device}/{dataset}/configs/{yaml_file_name}")
         print("---")
@@ -223,7 +223,7 @@ def load_experiment_config(device, dataset, model_type, alarm_type, metric, requ
         db_file_name = f"{model_type}_{alarm_type}_{metric}_{int(required_warning_time*1000)}ms_study.db"
         try:
             # Get the path to the database file
-            full_path = f"models/{device}/{dataset}/studies/{db_file_name}"
+            full_path = f"results/{device}/{dataset}/studies/{db_file_name}"
             
             # Check if the database file exists
             with open(full_path, "r") as f:
@@ -241,14 +241,14 @@ def load_experiment_config(device, dataset, model_type, alarm_type, metric, requ
 
             # Save the hyperparameters to a yaml file
             # Create the configs folder if it doesn't exist yet
-            configs_folder = os.path.dirname(f"models/{device}/{dataset}/configs/{yaml_file_name}")
+            configs_folder = os.path.dirname(f"results/{device}/{dataset}/configs/{yaml_file_name}")
             if not os.path.exists(configs_folder):
                 try:
                     os.makedirs(configs_folder)
                 except:
                     pass
 
-            with open(f"models/{device}/{dataset}/configs/{yaml_file_name}", "w") as f:
+            with open(f"results/{device}/{dataset}/configs/{yaml_file_name}", "w") as f:
                 yaml.dump({'hyperparameters': hyperparameters}, f)
 
             print(f"Loaded hyperparameters for {device}/{dataset}/studies/{db_file_name}")
