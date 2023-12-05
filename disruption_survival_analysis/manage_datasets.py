@@ -3,7 +3,6 @@ import psutil
 
 import numpy as np
 import pandas as pd
-import polars as pl
 
 from auton_survival.preprocessing import Preprocessor
 
@@ -249,17 +248,17 @@ def load_dataset(device, dataset_path, dataset_category):
     data = data.sort_values(['shot','time'])
     return data
 
-def load_dataset_lazy(device, dataset_path, dataset_category):
-    """Lazily load a dataset using polars"""
+# def load_dataset_lazy(device, dataset_path, dataset_category):
+#     """Lazily load a dataset using polars"""
 
-    filename = f"data/{device}/{dataset_path}/{dataset_category}.csv"
+#     filename = f"data/{device}/{dataset_path}/{dataset_category}.csv"
 
-    # Read into csv, with all feature values as floats
-    data = pl.scan_csv(filename, cache=False)
+#     # Read into csv, with all feature values as floats
+#     data = pl.scan_csv(filename, cache=False)
 
-    # Sort by shot number and time
-    data = data.sort(['shot','time'])
-    return data
+#     # Sort by shot number and time
+#     data = data.sort(['shot','time'])
+#     return data
 
 # def load_dataset_grouped(device, dataset_path, dataset_category):
 #     """
