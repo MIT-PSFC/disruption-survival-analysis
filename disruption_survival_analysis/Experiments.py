@@ -335,7 +335,7 @@ class Experiment:
             Dictionary of true alarm rate metrics
         """
         requested_metrics = ['avg']
-        unique_false_alarm_rates, true_alarm_metrics, _ = self.get_critical_metrics_vs_false_alarm_rates(horizon, required_warning_time, requested_metrics)
+        unique_false_alarm_rates, true_alarm_metrics, _ = self.get_critical_metrics_vs_false_alarm_rates(horizon, required_warning_time, requested_metrics=requested_metrics)
         return unique_false_alarm_rates, true_alarm_metrics
     
     def missed_alarm_rates_vs_false_alarm_rates(self, horizon=None, required_warning_time=None):
@@ -347,7 +347,7 @@ class Experiment:
         missed_alarm_rates : np.array
             Average missed alarm rates corresponding to each false alarm rate
         """
-        unique_false_alarm_rates, true_alarm_rates, _, _ = self.get_critical_metrics_vs_false_alarm_rates(horizon, required_warning_time)
+        unique_false_alarm_rates, true_alarm_rates, _, _ = self.get_critical_metrics_vs_false_alarm_rates(horizon=horizon, required_warning_time=required_warning_time)
         missed_alarm_rates = 1 - true_alarm_rates
         return unique_false_alarm_rates, missed_alarm_rates
 
@@ -360,7 +360,8 @@ class Experiment:
         warning_time_metrics : dict of np.arrays
             Dictionary of warning time metrics
         """
-        unique_false_alarm_rates, _, warning_time_metrics = self.get_critical_metrics_vs_false_alarm_rates(horizon, required_warning_time)
+        requested_metrics=['iqm']
+        unique_false_alarm_rates, _, warning_time_metrics = self.get_critical_metrics_vs_false_alarm_rates(horizon=horizon, required_warning_time=required_warning_time, requested_metrics=requested_metrics)
         return unique_false_alarm_rates, warning_time_metrics
     
     # Metrics methods
@@ -387,7 +388,7 @@ class Experiment:
             The value of the metric
         """
 
-        print_memory_usage()
+        print_memory_usage("Metric Evaluation Start")
 
         if metric_type == 'tslic':
             # Timeslice metric. Micro avgerage over entire dataset
@@ -559,7 +560,7 @@ class Experiment:
             sample_outcomes = [self.outcomes[i] for i in sample_indices]
 
             # Compute metrics on the sample
-            unique_false_alarm_rates, true_alarm_metrics, warning_time_metrics = compute_metrics_vs_false_alarm_rates_distribution(sample_predictions, sample_outcomes, required_warning_time, self.thresholds, self.alarm_type)
+            unique_false_alarm_rates, true_alarm_metrics, warning_time_metrics = compute_metrics_vs_false_alarm_rates_distribution(sample_predictions, sample_outcomes, required_warning_time, self.thresholds, self.alarm_type, requested_metrics)
 
         return unique_false_alarm_rates, true_alarm_metrics, warning_time_metrics
 

@@ -164,7 +164,7 @@ class TestAllCombos(unittest.TestCase):
     
     model_list = ['cph', 'dsm', 'rf', 'km']
     alarm_type_list = ['sthr']
-    metric_list = ['auroc']
+    metric_list = ['auwtc']
     min_required_warning_times = [0.01]
 
     def test_evaluate_all_metrics(self):

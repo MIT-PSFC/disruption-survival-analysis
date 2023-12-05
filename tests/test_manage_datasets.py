@@ -9,7 +9,7 @@ from disruption_survival_analysis.manage_datasets import make_training_sets, mak
 TEST_DEVICE = 'synthetic'
 TEST_DATASET_PATH = 'test'
 
-DATASET_CATEGORIES = ['train_full', 'test', 'val']
+DATASET_CATEGORIES = ['train', 'test', 'val']
 
 class TestCreatedTrainingSets(unittest.TestCase):
     """Tests for the function make_training_sets()"""
@@ -143,10 +143,10 @@ class TestCreatedStackedSets(unittest.TestCase):
             ratio[category] = num_disrupt / total_size
         
         # Ensure that the ratios are roughly equal
-        if abs(ratio['train_full'] - ratio['test']) > ratio_epsilon:
-            self.fail(f"Class Imbalance! train: {ratio['train_full']}, test: {ratio['test']}")
-        if abs(ratio['train_full'] - ratio['val']) > ratio_epsilon:
-            self.fail(f"Class Imbalance! train: {ratio['train_full']}, val: {ratio['val']}")
+        if abs(ratio['train'] - ratio['test']) > ratio_epsilon:
+            self.fail(f"Class Imbalance! train: {ratio['train']}, test: {ratio['test']}")
+        if abs(ratio['train'] - ratio['val']) > ratio_epsilon:
+            self.fail(f"Class Imbalance! train: {ratio['train']}, val: {ratio['val']}")
         if abs(ratio['test'] - ratio['val']) > ratio_epsilon:
             self.fail(f"Class Imbalance! test: {ratio['test']}, val: {ratio['val']}")
         
