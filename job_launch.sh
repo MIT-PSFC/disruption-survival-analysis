@@ -1,3 +1,35 @@
 #!/bin/bash
-#Input arguments are <number of times for script to run> <url of sweep database>
-sbatch job_instance.slurm "$2"
+# 1. number of job instances to launch
+# 2. sweep config path
+# 3. working directory
+# 4. memory per cpu
+
+#!/bin/bash
+cat <<EoF
+########## Begin Slurm header ##########
+#SBATCH --job-name=tuning-job-$2
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=$1
+#SBATCH --cpus-per-task=1
+#SBATCH -p sched_mit_psfc_r8
+#SBATCH --time=08:00:00
+#SBATCH --mem-per-cpu=$4MB
+#SBATCH -o ./slurm/slurm-%j.out
+########### End Slurm header ##########
+
+source /etc/profile
+
+# Load modules (if necessary)
+
+# Activate Python environment
+source ~/projects/disruption-survival-analysis/.venv/bin/activate
+EoF
+
+for i in $(seq 1 $1)
+do
+    echo srun --exclusive --ntasks=1 --mem-per-cpu $4MB python optuna_job.py "$2" "$3" "&"
+done
+
+echo wait
+
+echo deactivate

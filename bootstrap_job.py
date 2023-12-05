@@ -7,7 +7,8 @@ import datetime
 import time
 
 from multiprocessing import Pool
-import multiprocessing
+
+from disruption_survival_analysis.manage_datasets import print_memory_usage
 
 BOOTSTRAP_ITERATIONS = 50
 ALLOCATED_CPUS = 20
@@ -21,6 +22,12 @@ if __name__ == "__main__":
     alarm_type = sys.argv[4]
     metric = sys.argv[5]
     min_warning_time_ms = sys.argv[6]
+
+    # If an optional seventh argument is provided, change the working directory to that
+    try:
+        os.chdir(sys.argv[7])
+    except:
+        pass
     
     experiment_name = f"{model_type}_{alarm_type}_{metric}_{min_warning_time_ms}ms_experiment"
 
@@ -52,12 +59,14 @@ if __name__ == "__main__":
 
     for i in range(BOOTSTRAP_ITERATIONS):
         results.append(pool.apply_async(experiment.get_critical_metrics_vs_false_alarm_rates, [None, None, i]))
+        print_memory_usage()
 
     for result in results:
         false_alarm_rates, true_alarm_rates, avg_warning_times, _ = result.get(timeout=100000)
         tars_list.append(true_alarm_rates)
         fars_list.append(false_alarm_rates)
         warns_list.append(avg_warning_times)
+        print_memory_usage()
 
     # Find all the unique false alarm rates and sort them
     unique_fars = np.unique(np.concatenate(fars_list))

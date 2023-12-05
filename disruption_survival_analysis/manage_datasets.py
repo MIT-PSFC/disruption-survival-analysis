@@ -471,7 +471,7 @@ def load_non_disruptive_shot_list(device, dataset_path, dataset_category):
 
 # Profiling
 
-def print_memory_usage():
+def print_memory_usage(description=""):
     """
     Print the current memory usage of the program
     Returns
@@ -481,5 +481,5 @@ def print_memory_usage():
     """
     process = psutil.Process(os.getpid())
     memory_usage = process.memory_info().rss / 1024 ** 2
-    print(f"Memory usage: {memory_usage} MB")
+    print(f"Memory usage at {description}: {memory_usage} MB")
     return memory_usage

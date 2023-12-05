@@ -21,11 +21,17 @@ if __name__ == "__main__":
     alarm_type = sys.argv[4]
     metric = sys.argv[5]
     required_warning_time_ms = sys.argv[6]
+
+    # If an optional seventh argument is provided, change the working directory to that
+    try:
+        os.chdir(sys.argv[7])
+    except:
+        pass
     
     study_name = f"{model_type}_{alarm_type}_{metric}_{required_warning_time_ms}ms_study"
 
     # Load the study
-    study_path = f"models/{device}/{dataset_path}/studies/{study_name}.db"
+    study_path = f"results/{device}/{dataset_path}/studies/{study_name}.db"
 
     # Check if the database file exists
     with open(study_path, "r") as f:
@@ -55,7 +61,7 @@ if __name__ == "__main__":
     config['hyperparameters'] = hyperparameters
 
     # Remove the previous experiment if it exists
-    model_file = f"models/{device}/{dataset_path}/{study_name}.pkl"
+    model_file = f"results/{device}/{dataset_path}/models/{study_name}.pkl"
     try:
         os.remove(model_file)
     except FileNotFoundError:

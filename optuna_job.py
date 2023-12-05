@@ -70,6 +70,12 @@ def objective(trial, sweep_config):
 if __name__ == "__main__":
     # Get the sweep config file path from the command line
     sweep_config_path = sys.argv[1]
+    
+    # If an optional second argument is provided, change the working directory to that
+    try:
+        os.chdir(sys.argv[2])
+    except:
+        pass
 
     # Load the sweep config
     sweep_config = yaml.safe_load(open(f"models/{sweep_config_path}", "r"))
