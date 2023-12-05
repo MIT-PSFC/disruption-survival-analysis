@@ -8,32 +8,35 @@ import time
 
 from multiprocessing import Pool
 
+from disruption_survival_analysis.Experiments import Experiment
 from disruption_survival_analysis.manage_datasets import print_memory_usage
 
 BOOTSTRAP_ITERATIONS = 50
 ALLOCATED_CPUS = 20
 
-def main(device, dataset_path, model_type, alarm_type, metric, min_warning_time_ms, working_directory=None):
+def main(device, dataset_path, model_type, alarm_type, metric, required_warning_time_ms, working_directory=None):
     # If an optional seventh argument is provided, change the working directory to that
     if working_directory is not None:
         os.chdir(sys.argv[7])
     
-    experiment_name = f"{model_type}_{alarm_type}_{metric}_{min_warning_time_ms}ms_experiment"
+    # Make the experiment config dictionary
+    config = {}
 
-    # Load the experiment
-    experiment_path = f"results/{device}/{dataset_path}/experiments/{experiment_name}.pkl"
+    config['device'] = device
+    config['dataset_path'] = dataset_path
 
-    try:
-        with open(experiment_path, 'rb') as f:
-            experiment = dill.load(f)
-    except:
-        sys.stdout.write("Unable to load experiment due to pickle file not being read. Waiting 5 min")
-        time.sleep(5*60)
+    config['model_type'] = model_type
+    config['alarm_type'] = alarm_type
+    config['metric'] = metric
+    config['required_warning_time'] = int(required_warning_time_ms)/1000
 
-        with open(experiment_path, 'rb') as f:
-            experiment = dill.load(f)
+    print_memory_usage("Bootstrap Before Creating Experiment")
 
-    sys.stdout.write(f"Loaded experiment {experiment_name}")
+    # Create the experiment
+    experiment = Experiment(config, 'test')
+    sys.stdout.write("Created experiment\n")
+
+    print_memory_usage("Bootstrap After Creating Experiment")
 
     # Where the answers are stored
     tars_list = []
