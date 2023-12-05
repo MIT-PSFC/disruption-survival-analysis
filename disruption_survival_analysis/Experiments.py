@@ -3,7 +3,7 @@
 import numpy as np
 
 from sklearn.metrics import roc_auc_score
-from disruption_survival_analysis.manage_datasets import load_dataset
+from disruption_survival_analysis.manage_datasets import load_dataset, print_memory_usage
 from disruption_survival_analysis.experiment_utils import label_shot_data, timeslice_micro_avg, area_under_curve
 from disruption_survival_analysis.model_utils import get_model_for_experiment, name_model
 
@@ -43,13 +43,15 @@ class Experiment:
 
         # Set the type of experiment
         self.experiment_type = experiment_type
-
+        
         # Create the model and predictor for the experiment
         model = get_model_for_experiment(config, experiment_type)
 
         # Load data for experiment: either validation or test set
         # all data, including shot, time, time_until_disrupt, and features fed to predictor
+        # Lazily loaded, 
         self.all_data = load_dataset(self.device, self.dataset_path, experiment_type)
+
         required_warning_time = config['required_warning_time']
         self.name = name_model(config)
 
@@ -384,6 +386,8 @@ class Experiment:
             The value of the metric
         """
 
+        print_memory_usage()
+
         if metric_type == 'tslic':
             # Timeslice metric. Micro avgerage over entire dataset
             metric_val = timeslice_micro_avg(self.device, self.dataset_path, self.predictor.model, self.experiment_type)
@@ -405,6 +409,8 @@ class Experiment:
             metric_val = area_under_curve(false_alarm_rates, warning_time_metrics['avg'], x_cutoff=0.05)
         else:
             metric_val = None
+
+        print_memory_usage()
 
         return metric_val
     

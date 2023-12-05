@@ -1,6 +1,5 @@
-import io
 import os
-import pkgutil
+import psutil
 
 import numpy as np
 import pandas as pd
@@ -456,3 +455,17 @@ def load_non_disruptive_shot_list(device, dataset_path, dataset_category):
 
     # Return the list of non-disruptive shots
     return non_disruptive_shots
+
+# Profiling
+
+def print_memory_usage():
+    """
+    Print the current memory usage of the program
+    Returns
+    -------
+    memory_usage : float
+        The memory usage of the program in MB
+    """
+    process = psutil.Process(os.getpid())
+    memory_usage = process.memory_info().rss / 1024 ** 2
+    print(f"Memory usage: {memory_usage} MB")
