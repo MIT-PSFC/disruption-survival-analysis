@@ -3,8 +3,6 @@ import sys
 
 import dill
 import numpy as np
-import datetime
-import time
 import optuna
 
 from multiprocessing import Pool
@@ -103,15 +101,11 @@ def main(device, dataset_path, model_type, alarm_type, metric, required_warning_
     mean_tars = np.mean(interp_tars_list, axis=0)
     upper_tars = np.percentile(interp_tars_list, 75, axis=0)
     lower_tars = np.percentile(interp_tars_list, 25, axis=0)
-    #max_tars = np.max(interp_tars_list, axis=0)
-    #min_tars = np.min(interp_tars_list, axis=0)
 
-    # Compute the mean, upper quartile, lower quartile, max, and min warning times at each unique false alarm rate
-    mean_warns = np.mean(interp_warns_list, axis=0)
+    # Compute the median, upper quartile, lower quartile, max, and min warning times at each unique false alarm rate
+    median_warns = np.median(interp_warns_list, axis=0)
     upper_warns = np.percentile(interp_warns_list, 75, axis=0)
     lower_warns = np.percentile(interp_warns_list, 25, axis=0)
-    #max_warns = np.max(interp_warns_list, axis=0)
-    #min_warns = np.min(interp_warns_list, axis=0)
 
     # Save the bootstrapped metrics
     bootstrapped_metrics = {}
@@ -123,7 +117,7 @@ def main(device, dataset_path, model_type, alarm_type, metric, required_warning_
     #bootstrapped_metrics['max_tars'] = max_tars
     #bootstrapped_metrics['min_tars'] = min_tars
 
-    bootstrapped_metrics['mean_warns'] = mean_warns
+    bootstrapped_metrics['median_warns'] = median_warns
     bootstrapped_metrics['upper_warns'] = upper_warns
     bootstrapped_metrics['lower_warns'] = lower_warns
     #bootstrapped_metrics['max_warns'] = max_warns

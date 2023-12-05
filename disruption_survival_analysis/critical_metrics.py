@@ -345,15 +345,22 @@ def compute_metrics_vs_false_alarm_rates_distribution(predictions, outcomes, req
             tar_metrics['iq3'][i] = np.quantile(chosen_trues, 0.75)
             warn_metrics['iq3'][i] = np.quantile(chosen_warns, 0.75)
         if 'iqm' in requested_metrics:
-            sorted_times = np.sort(chosen_warns.flatten())
-            if len(sorted_times) < 3:
-                warn_metrics['iqm'][i] = np.mean(sorted_times)
-            else:
-                size = len(sorted_times)/4
-                warn_metrics['iqm'][i] = np.mean(sorted_times[int(size):int(size*3)])
+            warn_metrics['iqm'][i] = interquartile_mean(chosen_warns.flatten())
+            
         if 'all' in requested_metrics:
             warn_metrics['all'].append(chosen_warns)
 
     # 4. Return the false alarm rates and average warning times
     return unique_false_alarm_rates, tar_metrics, warn_metrics
 
+def interquartile_mean(values):
+    """Calculate the interquartile mean of a list of values."""
+    sorted_values = np.sort(values)
+
+    if len(sorted_values) < 3:
+        iqm = np.mean(sorted_values)
+    else:
+        size = len(sorted_values)/4
+        iqm = np.mean(sorted_values[int(size):int(size*3)])
+
+    return iqm
