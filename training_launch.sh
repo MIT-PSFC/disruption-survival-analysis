@@ -8,9 +8,9 @@
 # 7. working directory
 # 8. memory per CPU
 
-#!/bin/bash
+
 cat <<EoF
-########## Begin Slurm header ##########
+#!/bin/bash
 #SBATCH --job-name=training_job
 #SBATCH --ntasks 1
 #SBATCH --cpus-per-task=1
@@ -18,8 +18,6 @@ cat <<EoF
 #SBATCH -p sched_mit_psfc_r8
 #SBATCH --time=08:00:00
 #SBATCH -o ./slurm/slurm-%j.out
-########### End Slurm header ##########
-
 
 source /etc/profile
 

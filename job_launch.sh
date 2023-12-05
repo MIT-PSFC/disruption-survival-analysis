@@ -4,9 +4,8 @@
 # 3. working directory
 # 4. memory per cpu
 
-#!/bin/bash
 cat <<EoF
-########## Begin Slurm header ##########
+#!/bin/bash
 #SBATCH --job-name=tuning-job-$2
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=$1
@@ -15,7 +14,6 @@ cat <<EoF
 #SBATCH --time=08:00:00
 #SBATCH --mem-per-cpu=$4MB
 #SBATCH -o ./slurm/slurm-%j.out
-########### End Slurm header ##########
 
 source /etc/profile
 

@@ -8,9 +8,8 @@
 # 7. working directory
 # 8. memory per CPU
 
-#!/bin/bash
 cat <<EoF
-########## Begin Slurm header ##########
+#!/bin/bash
 #SBATCH --job-name=bootstrap-job-$3-$4-$5-$6-$7
 #SBATCH --nodes 1
 #SBATCH --ntasks 1
@@ -19,7 +18,6 @@ cat <<EoF
 #SBATCH -p sched_mit_psfc_r8
 #SBATCH --time=08:00:00
 #SBATCH -o ./slurm/slurm-%j.out
-########### End Slurm header ##########
 
 source /etc/profile
 
