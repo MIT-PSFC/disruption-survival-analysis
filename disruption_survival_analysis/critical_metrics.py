@@ -273,7 +273,7 @@ def compute_warns_vs_risk_thresholds(predictions, outcomes, required_warning_tim
     
     return true_alarm_rates, false_alarm_rates, only_disruptive_warning_times
 
-def compute_metrics_vs_false_alarm_rates_distribution(predictions, outcomes, required_warning_time, thresholds, threshold_type):
+def compute_metrics_vs_false_alarm_rates_distribution(predictions, outcomes, required_warning_time, thresholds, threshold_type, requested_metrics):
     """ Compute the true alarm rate and average/standard deviation of warning time
     for each unique false alarm rate for a given set of predictions and true outcomes.
     A true alarm is defined as an alarm that is triggered with warning time greater than the required warning
@@ -310,63 +310,49 @@ def compute_metrics_vs_false_alarm_rates_distribution(predictions, outcomes, req
     # 1. Get the unique false alarm rates from the threshold false alarm rates
     unique_false_alarm_rates = np.unique(threshold_false_alarm_rates)
 
-    # 2. For each unique false alarm rate, compute the average true alarm rate and average warning time
-    avg_true_alarm_rates = np.zeros(len(unique_false_alarm_rates))
-    std_true_alarm_rates = np.zeros(len(unique_false_alarm_rates))
-    med_true_alarm_rates = np.zeros(len(unique_false_alarm_rates))
-    iq1_true_alarm_rates = np.zeros(len(unique_false_alarm_rates))
-    iq3_true_alarm_rates = np.zeros(len(unique_false_alarm_rates))
+    # 2. Set up arrays for the requested metrics to be calculated
+    tar_metrics = {}
+    warn_metrics = {}
+    for metric in requested_metrics:
+        if metric not in ['avg', 'std', 'med', 'iq1', 'iq3', 'iqm', 'all']:
+            raise ValueError(f"Metric {metric} not recognized")
+        if metric == 'all':
+            tar_metrics[metric] = []
+            warn_metrics[metric] = []
+        else:
+            tar_metrics[metric] = np.zeros(len(unique_false_alarm_rates))
+            warn_metrics[metric] = np.zeros(len(unique_false_alarm_rates))
 
-    avg_warning_times = np.zeros(len(unique_false_alarm_rates))
-    std_warning_times = np.zeros(len(unique_false_alarm_rates))
-    med_warning_times = np.zeros(len(unique_false_alarm_rates))
-    iq1_warning_times = np.zeros(len(unique_false_alarm_rates))
-    iq3_warning_times = np.zeros(len(unique_false_alarm_rates))
-    iqm_warning_times = np.zeros(len(unique_false_alarm_rates))
-    all_warning_times = []
-
-    # 3. For each unique false alarm rate, compute the average true alarm rate and average warning time
     for i in range(len(unique_false_alarm_rates)):
         false_alarm_rate = unique_false_alarm_rates[i]
 
         chosen_trues = threshold_true_alarm_rates[threshold_false_alarm_rates == false_alarm_rate]
-        avg_true_alarm_rates[i] = np.mean(chosen_trues)
-        std_true_alarm_rates[i] = np.std(chosen_trues)
-        med_true_alarm_rates[i] = np.median(chosen_trues)
-        iq1_true_alarm_rates[i] = np.quantile(chosen_trues, 0.25)
-        iq3_true_alarm_rates[i] = np.quantile(chosen_trues, 0.75)
-
         chosen_warns = threshold_warning_times[:,threshold_false_alarm_rates == false_alarm_rate]
-        avg_warning_times[i] = np.mean(chosen_warns)
-        std_warning_times[i] = np.std(chosen_warns)
-        med_warning_times[i] = np.median(chosen_warns)
-        iq1_warning_times[i] = np.quantile(chosen_warns, 0.25)
-        iq3_warning_times[i] = np.quantile(chosen_warns, 0.75)
-        sorted_times = np.sort(chosen_warns.flatten())
-        if len(sorted_times) < 3:
-            iqm_warning_times[i] = np.mean(sorted_times)
-        else:
-            size = len(sorted_times)/4
-            iqm_warning_times[i] = np.mean(sorted_times[int(size):int(size*3)])
-        all_warning_times.append(sorted_times)
-    
-    tar_metrics = {
-        'avg': avg_true_alarm_rates,
-        'std': std_true_alarm_rates,
-        'med': med_true_alarm_rates,
-        'iq1': iq1_true_alarm_rates,
-        'iq3': iq3_true_alarm_rates
-    }
 
-    warn_metrics = {
-        'avg': avg_warning_times,
-        'std': std_warning_times,
-        'med': med_warning_times,
-        'iq1': iq1_warning_times,
-        'iq3': iq3_warning_times,
-        'iqm': iqm_warning_times,
-        'all': all_warning_times
-    }
+        if 'avg' in requested_metrics:
+            tar_metrics['avg'][i] = np.mean(chosen_trues)
+            warn_metrics['avg'][i] = np.mean(chosen_warns)
+        if 'std' in requested_metrics:
+            tar_metrics['std'][i] = np.std(chosen_trues)
+            warn_metrics['std'][i] = np.std(chosen_warns)
+        if 'med' in requested_metrics:
+            tar_metrics['med'][i] = np.median(chosen_trues)
+            warn_metrics['med'][i] = np.median(chosen_warns)
+        if 'iq1' in requested_metrics:
+            tar_metrics['iq1'][i] = np.quantile(chosen_trues, 0.25)
+            warn_metrics['iq1'][i] = np.quantile(chosen_warns, 0.25)
+        if 'iq3' in requested_metrics:
+            tar_metrics['iq3'][i] = np.quantile(chosen_trues, 0.75)
+            warn_metrics['iq3'][i] = np.quantile(chosen_warns, 0.75)
+        if 'iqm' in requested_metrics:
+            sorted_times = np.sort(chosen_warns.flatten())
+            if len(sorted_times) < 3:
+                warn_metrics['iqm'][i] = np.mean(sorted_times)
+            else:
+                size = len(sorted_times)/4
+                warn_metrics['iqm'][i] = np.mean(sorted_times[int(size):int(size*3)])
+        if 'all' in requested_metrics:
+            warn_metrics['all'].append(chosen_warns)
 
     # 4. Return the false alarm rates and average warning times
     return unique_false_alarm_rates, tar_metrics, warn_metrics

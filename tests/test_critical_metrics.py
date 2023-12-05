@@ -266,7 +266,9 @@ class TestComputeMetricsDistributionAgreement(unittest.TestCase):
 
         unique_false_alarm_rates, avg_true_alarm_rates, avg_warning_times = compute_metrics_vs_false_alarm_rates(predictions, outcomes, required_warning_time, unique_thresholds, 'sthr')
 
-        unique_false_alarm_rates_distribution, tar_metrics, warn_metrics = compute_metrics_vs_false_alarm_rates_distribution(predictions, outcomes, required_warning_time, unique_thresholds, 'sthr')
+        requested_metrics = ['avg']
+
+        unique_false_alarm_rates_distribution, tar_metrics, warn_metrics = compute_metrics_vs_false_alarm_rates_distribution(predictions, outcomes, required_warning_time, unique_thresholds, 'sthr', requested_metrics)
 
         # Ensure that all calculations are close
         if not np.allclose(unique_false_alarm_rates, unique_false_alarm_rates_distribution):
@@ -314,7 +316,9 @@ class TestComputeMetricsDistributionAgreement(unittest.TestCase):
 
         unique_false_alarm_rates, avg_true_alarm_rates, avg_warning_times = compute_metrics_vs_false_alarm_rates(predictions, outcomes, required_warning_time, unique_thresholds, 'sthr')
 
-        unique_false_alarm_rates_distribution, tar_metrics, warn_metrics = compute_metrics_vs_false_alarm_rates_distribution(predictions, outcomes, required_warning_time, unique_thresholds, 'sthr')
+        requested_metrics = ['avg']
+
+        unique_false_alarm_rates_distribution, tar_metrics, warn_metrics = compute_metrics_vs_false_alarm_rates_distribution(predictions, outcomes, required_warning_time, unique_thresholds, 'sthr', requested_metrics)
 
         # Ensure that all calculations are close
         if not np.allclose(unique_false_alarm_rates, unique_false_alarm_rates_distribution):
@@ -361,7 +365,9 @@ class TestComputeMetricsDistributionAgreement(unittest.TestCase):
 
         unique_thresholds = np.unique(np.concatenate((shot_0_risk, shot_1_risk, shot_2_risk, shot_3_risk, np.array([0, 1]))))
 
-        false_alarm_rates, true_alarm_metrics, warning_time_metrics = compute_metrics_vs_false_alarm_rates_distribution(predictions, outcomes, required_warning_time, unique_thresholds, 'sthr')
+        requested_metrics = ['avg', 'std', 'med', 'iq1', 'iq3', 'iqm']
+
+        false_alarm_rates, true_alarm_metrics, warning_time_metrics = compute_metrics_vs_false_alarm_rates_distribution(predictions, outcomes, required_warning_time, unique_thresholds, 'sthr', requested_metrics)
 
         # Check that the false alarm rates are correct
         correct_false_alarm_rates = np.unique([1, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0, 0])

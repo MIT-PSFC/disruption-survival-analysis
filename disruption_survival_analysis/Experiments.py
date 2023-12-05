@@ -334,7 +334,8 @@ class Experiment:
         true_alarm_metrics: dict of np.arrays
             Dictionary of true alarm rate metrics
         """
-        unique_false_alarm_rates, true_alarm_metrics, _ = self.get_critical_metrics_vs_false_alarm_rates(horizon, required_warning_time)
+        requested_metrics = ['avg']
+        unique_false_alarm_rates, true_alarm_metrics, _ = self.get_critical_metrics_vs_false_alarm_rates(horizon, required_warning_time, requested_metrics)
         return unique_false_alarm_rates, true_alarm_metrics
     
     def missed_alarm_rates_vs_false_alarm_rates(self, horizon=None, required_warning_time=None):
@@ -406,7 +407,7 @@ class Experiment:
         elif metric_type == 'auwtc':
             # Area under warning time curve
             false_alarm_rates, warning_time_metrics = self.warning_times_vs_false_alarm_rates(horizon, required_warning_time)
-            metric_val = area_under_curve(false_alarm_rates, warning_time_metrics['avg'], x_cutoff=0.05)
+            metric_val = area_under_curve(false_alarm_rates, warning_time_metrics['iqm'], x_cutoff=0.05)
         else:
             metric_val = None
 
@@ -500,7 +501,7 @@ class Experiment:
 
         return unique_thresholds, predictions, outcomes
 
-    def get_critical_metrics_vs_false_alarm_rates(self, horizon=None, required_warning_time=None, bootstrap_seed=None):
+    def get_critical_metrics_vs_false_alarm_rates(self, horizon=None, required_warning_time=None, bootstrap_seed=None, requested_metrics=None):
         """ Get critical metrics for the experiment, where each metric is compared with false alarm rates
 
         Parameters
@@ -534,11 +535,15 @@ class Experiment:
 
         if self.predictions is None:
             self.thresholds, self.predictions, self.outcomes = self.critical_metric_setup(horizon)
+
+        if requested_metrics is None:
+            # Default to all metrics
+            requested_metrics = ['avg', 'std', 'med', 'iq1', 'iq3', 'iqm', 'all']
         
         if bootstrap_seed is None:
             # Original, non-bootstrapped way
             if self.unique_false_alarm_rates is None:
-                self.unique_false_alarm_rates, self.true_alarm_metrics, self.warning_time_metrics = compute_metrics_vs_false_alarm_rates_distribution(self.predictions, self.outcomes, required_warning_time, self.thresholds, self.alarm_type)
+                self.unique_false_alarm_rates, self.true_alarm_metrics, self.warning_time_metrics = compute_metrics_vs_false_alarm_rates_distribution(self.predictions, self.outcomes, required_warning_time, self.thresholds, self.alarm_type, requested_metrics)
             
             unique_false_alarm_rates = self.unique_false_alarm_rates
             true_alarm_metrics = self.true_alarm_metrics
