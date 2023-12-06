@@ -229,7 +229,7 @@ class DisruptionPredictorKM(DisruptionPredictor):
         """
 
         # Count how many points are required for the initial fit
-        num_fit_points = int(self.trained_fit_time / times[1] - times[0])
+        num_fit_points = int(self.trained_fit_time / (times[1] - times[0]))
 
         slopes = np.zeros(len(probs))
         slopes[0:num_fit_points] = np.nan

@@ -9,7 +9,7 @@ from disruption_survival_analysis.manage_datasets import load_dataset
 
 # Stuff being tested
 
-from disruption_survival_analysis.DisruptionPredictors import DisruptionPredictor, DisruptionPredictorSM, DisruptionPredictorRF, DisruptionPredictorKM
+from disruption_survival_analysis.DisruptionPredictors import DisruptionPredictor, DisruptionPredictorSM, DisruptionPredictorRF, DisruptionPredictorKM, MAX_FUTURE_LIFETIME
 
 class TestDisruptionPredictor(unittest.TestCase):
     """Tests for the base class DisruptionPredictor"""
@@ -313,3 +313,47 @@ class TestDisruptionPredictorKM(unittest.TestCase):
         # Check the shape of rmst
         if rmst.shape[0] != shot_data.shape[0]:
             self.fail("Number of columns in rmst does not match input")
+
+    def test_risk_outside_range(self):
+        """In the shot before there are enough data points to fill the fitting window, ensure that the risk is 0"""
+
+        # Load some test data
+        test_data = load_dataset(TEST_DEVICE, TEST_DATASET_PATH, "test")
+        # Get a shot number from the data
+        shot = test_data.iloc[0]["shot"]
+        # Get the data for that shot
+        shot_data = test_data[test_data["shot"] == shot]
+        # Get the times in this shot data
+        times = shot_data["time"].to_numpy()
+
+        risks = self.predictor.get_risks(shot_data)
+
+        # Check that the risk is 0 for all times before the fitting window
+        for i in range(len(times)):
+            if times[i] < self.predictor.trained_fit_time:
+                if risks[i] != 0:
+                    self.fail("Risk not 0 before fitting window")
+            # Check that the risk is not 0 for all times after the fitting window
+            else:
+                if risks[i] == 0:
+                    self.fail("Risk 0 after fitting window")
+
+    def test_rmst_outside_range(self):
+        """In the shot before there are enough data points to fill the fitting window, ensure that the rmst is np.nan"""
+
+        # Load some test data
+        test_data = load_dataset(TEST_DEVICE, TEST_DATASET_PATH, "test")
+        # Get a shot number from the data
+        shot = test_data.iloc[0]["shot"]
+        # Get the data for that shot
+        shot_data = test_data[test_data["shot"] == shot]
+        # Get the times in this shot data
+        times = shot_data["time"].to_numpy()
+
+        rmst = self.predictor.get_rmst(shot_data)
+
+        # Check that the rmst is maxxed for all times before the fitting window
+        for i in range(len(times)):
+            if times[i] < self.predictor.trained_fit_time:
+                if rmst[i] != MAX_FUTURE_LIFETIME:
+                    self.fail("RMST not maxxed before fitting window")
