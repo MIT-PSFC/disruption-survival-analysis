@@ -409,10 +409,10 @@ class Experiment:
             # Area under warning time curve
             false_alarm_rates, warning_time_metrics = self.warning_times_vs_false_alarm_rates(horizon, required_warning_time)
             metric_val = area_under_curve(false_alarm_rates, warning_time_metrics['iqm'], x_cutoff=0.05)
-            # If metric is 0, take the average warning time and multiply by very small number instead
+            # If metric is very low, take the average warning time and multiply by very small number instead
             # Will not affect bootstrap metrics, but will allow hyperparameter tuning to find a better model faster
-            if metric_val == 0:
-                metric_val = area_under_curve(false_alarm_rates, warning_time_metrics['avg'], x_cutoff=0.05) * 1e-6
+            if metric_val < 1e-10:
+                metric_val = area_under_curve(false_alarm_rates, warning_time_metrics['avg'], x_cutoff=0.05) * 1e-8
         else:
             metric_val = None
 
