@@ -414,7 +414,7 @@ class Experiment:
             if metric_val < 1e-10:
                 print_memory_usage("Backup Metric Start")
                 false_alarm_rates, true_alarm_metrics = self.true_alarm_rates_vs_false_alarm_rates(horizon, required_warning_time)
-                metric_val = area_under_curve(false_alarm_rates, true_alarm_metrics['avg'], x_cutoff=0.05) * 1e-10
+                metric_val = area_under_curve(false_alarm_rates, true_alarm_metrics['avg']) * 1e-10
         else:
             metric_val = None
 
