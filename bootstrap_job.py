@@ -16,7 +16,7 @@ BOOTSTRAP_ITERATIONS = 50
 def main(device, dataset_path, model_type, alarm_type, metric, required_warning_time_ms, allocated_cpus, working_directory=None):
     # If an optional seventh argument is provided, change the working directory to that
     if working_directory is not None:
-        os.chdir(sys.argv[7])
+        os.chdir(working_directory)
 
     required_warning_time = int(required_warning_time_ms)/1000
     config = load_experiment_config(device, dataset_path, model_type, alarm_type, metric, required_warning_time)
