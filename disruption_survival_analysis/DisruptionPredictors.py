@@ -332,6 +332,8 @@ class DisruptionPredictorKM(DisruptionPredictor):
         for i, t_horizon in enumerate(integration_times):
             survival_at_horizons[:,i] = self.get_survival(data_times, probs, t_horizon)
 
+        # Replace NaNs with 1
+        survival_at_horizons = np.nan_to_num(survival_at_horizons, nan=1)
         rmst = np.trapz(survival_at_horizons, integration_times, axis=1)
 
         return rmst

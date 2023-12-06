@@ -12,6 +12,7 @@ import dill
 import optuna
 
 from disruption_survival_analysis.Experiments import Experiment
+from disruption_survival_analysis.experiment_utils import load_experiment_config
 
 if __name__ == "__main__":
     # Get the device, dataset path, model, alarm, metric, and min_warning_time from the command line
@@ -27,45 +28,21 @@ if __name__ == "__main__":
         os.chdir(sys.argv[7])
     except:
         pass
-    
-    study_name = f"{model_type}_{alarm_type}_{metric}_{required_warning_time_ms}ms_study"
 
-    # Load the study
-    study_path = f"results/{device}/{dataset_path}/studies/{study_name}.db"
-
-    # Check if the database file exists
-    with open(study_path, "r") as f:
-        pass
-
-    lock_obj = optuna.storages.JournalFileOpenLock(study_path)
-    storage = optuna.storages.JournalStorage(
-        optuna.storages.JournalFileStorage(study_path, lock_obj=lock_obj)
-    )
-
-    # Get the best trial from the study (expects there to be only one study in the database)
-    study = optuna.load_study(study_name=None, storage=storage)
-
-    hyperparameters = study.best_trial.params
-
-    # Make the experiment config dictionary
-    config = {}
-
-    config['device'] = device
-    config['dataset_path'] = dataset_path
-
-    config['model_type'] = model_type
-    config['alarm_type'] = alarm_type
-    config['metric'] = metric
-    config['required_warning_time'] = int(required_warning_time_ms)/1000
-
-    config['hyperparameters'] = hyperparameters
-
-    # Remove the previous experiment if it exists
-    model_file = f"results/{device}/{dataset_path}/models/{study_name}.pkl"
+    # Remove the previous config and model files if they exist
+    model_name = f"{model_type}_{alarm_type}_{metric}_{required_warning_time_ms}ms"
+    model_file = f"results/{device}/{dataset_path}/models/{model_name}.pkl"
+    config_file = f"results/{device}/{dataset_path}/configs/{model_name}.yaml"
     try:
         os.remove(model_file)
     except FileNotFoundError:
         pass
+    try:
+        os.remove(config_file)
+    except FileNotFoundError:
+        pass
+
+    config = load_experiment_config(device, dataset_path, model_type, alarm_type, metric, required_warning_time_ms)
 
     # Create the experiment
     experiment = Experiment(config, 'test')
@@ -76,14 +53,12 @@ if __name__ == "__main__":
     experiment.get_critical_metrics_vs_false_alarm_rates()
     sys.stdout.write("Experiment Metrics calculated")
 
-    # Save experiment results to file
-    experiment_name = f"{model_type}_{alarm_type}_{metric}_{required_warning_time_ms}ms_experiment"
-
     # Make directory if it doesn't already exist
     directory_name = f"results/{device}/{dataset_path}/experiments"
     if not os.path.exists(directory_name):
         os.makedirs(directory_name)
 
+    experiment_name = f"{model_type}_{alarm_type}_{metric}_{required_warning_time_ms}ms_experiment"
     with open(f"{directory_name}/{experiment_name}.pkl", 'wb') as f:
         dill.dump(experiment, f)
 
