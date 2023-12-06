@@ -100,7 +100,7 @@ def main(device, dataset_path, model_type, alarm_type, metric, required_warning_
     if not os.path.exists(directory_name):
         os.makedirs(directory_name)
 
-    bootstrap_name = f"{model_type}_{alarm_type}_{metric}_{min_warning_time_ms}ms_bootstrap"
+    bootstrap_name = f"{model_type}_{alarm_type}_{metric}_{required_warning_time_ms}ms_bootstrap"
 
     with open(f"{directory_name}/{bootstrap_name}.pkl", 'wb') as f:
         dill.dump(bootstrapped_metrics, f)
@@ -115,11 +115,11 @@ if __name__ == "__main__":
     model_type = sys.argv[3]
     alarm_type = sys.argv[4]
     metric = sys.argv[5]
-    min_warning_time_ms = sys.argv[6]
+    required_warning_time_ms = sys.argv[6]
     allocated_cpus = int(sys.argv[7])
     try:
         working_directory = sys.argv[8]
     except:
         working_directory = None
 
-    main(device, dataset_path, model_type, alarm_type, metric, min_warning_time_ms, allocated_cpus, working_directory)
+    main(device, dataset_path, model_type, alarm_type, metric, required_warning_time_ms, allocated_cpus, working_directory)
