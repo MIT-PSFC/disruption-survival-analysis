@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from tests.test_manage_datasets import TEST_DEVICE, TEST_DATASET_PATH
+from tests.test_manage_datasets import TEST_DEVICE, TEST_DATASET_PATH, TEST_WARNING_TIME
 
 from disruption_survival_analysis.experiment_utils import load_experiment_config
 from disruption_survival_analysis.model_utils import get_model_for_experiment
@@ -43,7 +43,7 @@ class TestDisruptionPredictorDCPH(unittest.TestCase):
     def setUp(self):
 
         # Load a config file for a DCPH model
-        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'dcph', 'sthr', 'auroc', 0.01)
+        experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'dcph', 'sthr', 'auroc', TEST_WARNING_TIME)
 
         # Get some important information about the model
         trained_required_warning_time = experiment_config["required_warning_time"]
