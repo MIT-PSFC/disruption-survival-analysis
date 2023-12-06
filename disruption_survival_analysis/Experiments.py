@@ -360,7 +360,7 @@ class Experiment:
         warning_time_metrics : dict of np.arrays
             Dictionary of warning time metrics
         """
-        requested_metrics=['iqm']
+        requested_metrics=['iqm', 'avg']
         unique_false_alarm_rates, _, warning_time_metrics = self.get_critical_metrics_vs_false_alarm_rates(horizon=horizon, required_warning_time=required_warning_time, requested_metrics=requested_metrics)
         return unique_false_alarm_rates, warning_time_metrics
     
@@ -409,6 +409,10 @@ class Experiment:
             # Area under warning time curve
             false_alarm_rates, warning_time_metrics = self.warning_times_vs_false_alarm_rates(horizon, required_warning_time)
             metric_val = area_under_curve(false_alarm_rates, warning_time_metrics['iqm'], x_cutoff=0.05)
+            # If metric is 0, take the average warning time and multiply by very small number instead
+            # Will not affect bootstrap metrics, but will allow hyperparameter tuning to find a better model faster
+            if metric_val == 0:
+                metric_val = area_under_curve(false_alarm_rates, warning_time_metrics['avg'], x_cutoff=0.05) * 1e-6
         else:
             metric_val = None
 
