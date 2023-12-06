@@ -67,13 +67,10 @@ def objective(trial, sweep_config):
 
     return metric_val
 
-if __name__ == "__main__":
-    # Get the sweep config file path from the command line
-    sweep_config_path = sys.argv[1]
-    
+def main(sweep_config_path, working_directory=None):
     # If an optional second argument is provided, change the working directory to that
     try:
-        os.chdir(sys.argv[2])
+        os.chdir(working_directory)
     except:
         pass
 
@@ -120,3 +117,6 @@ if __name__ == "__main__":
     )
 
     study.optimize(lambda trial: objective(trial, sweep_config), n_trials=1)
+
+if __name__ == "__main__":
+    main(sys.argv[1], sys.argv[2])

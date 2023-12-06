@@ -55,7 +55,7 @@ class Experiment:
         required_warning_time = config['required_warning_time']
         self.name = name_model(config)
 
-        model_type = config['model_type']
+        self.model_type = config['model_type']
 
         # Get the alarm type from the config
         self.alarm_type = config['alarm_type']
@@ -64,11 +64,11 @@ class Experiment:
         if self.alarm_type in ['ettd']:
             hyperparameters['horizon'] = None
 
-        if model_type in ['cph', 'dcph', 'dcm', 'dsm'] and isinstance(model, SurvivalModel):
+        if self.model_type in ['cph', 'dcph', 'dcm', 'dsm'] and isinstance(model, SurvivalModel):
             self.predictor = DisruptionPredictorSM(self.name, model, required_warning_time, hyperparameters['horizon'])
-        elif model_type in ['rf'] and isinstance(model, RandomForestClassifier):
+        elif self.model_type in ['rf'] and isinstance(model, RandomForestClassifier):
             self.predictor = DisruptionPredictorRF(self.name, model, required_warning_time, hyperparameters['class_time'])
-        elif model_type in ['km'] and isinstance(model, RandomForestClassifier):
+        elif self.model_type in ['km'] and isinstance(model, RandomForestClassifier):
             self.predictor = DisruptionPredictorKM(self.name, model, required_warning_time, hyperparameters['class_time'], hyperparameters['fit_time'], hyperparameters['horizon'])
         else:
             raise ValueError('Model type not recognized')

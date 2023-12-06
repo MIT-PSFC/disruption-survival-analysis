@@ -156,7 +156,7 @@ def make_stacked_sets(device, dataset_path, dataset_category, stack_size):
 
     stacked_features.to_csv(new_dataset_path + f'/{dataset_category}.csv', index=False)
 
-# Not being used. "This is 2010 machine learning. We don't do that here."
+# Only used for the testbench data to make models train faster. "This is 2010 machine learning. We don't do that here."
 def focus_training_set(device, dataset_path, random_seed=0):
     """ Take the training set and remove some data from the non-disruptive shots (and 'stable' region in non-disruptive shots)
     to improve the class balance in the training set.
@@ -172,10 +172,10 @@ def focus_training_set(device, dataset_path, random_seed=0):
     """
 
     # Load the training set
-    data = load_dataset(device, dataset_path, 'train_full')
+    data = load_dataset(device, dataset_path, 'train')
 
     # Find the list of non-disruptive shots
-    non_disrupt_shots = load_non_disruptive_shot_list(device, dataset_path, 'train_full')
+    non_disrupt_shots = load_non_disruptive_shot_list(device, dataset_path, 'train')
 
     # Make a new training set with the same columns
     new_data = pd.DataFrame(columns=data.columns)
@@ -190,7 +190,7 @@ def focus_training_set(device, dataset_path, random_seed=0):
         num_timeslices = len(shot_data)
 
         # Find the number of timeslices to remove
-        num_remove = int(num_timeslices * 0.5)
+        num_remove = int(num_timeslices * 0.9)
 
         # Choose the timeslices to remove
         remove_indices = np.random.choice(num_timeslices, size=num_remove, replace=False)
@@ -205,7 +205,10 @@ def focus_training_set(device, dataset_path, random_seed=0):
         data = data[data['shot'] != shot]
 
     # Find the list of disruptive shots
-    disrupt_shots = load_disruptive_shot_list(device, dataset_path, 'train_full')
+    disrupt_shots = load_disruptive_shot_list(device, dataset_path, 'train')
+
+    # Filter data to only include disruptive shots
+    data = data[data['shot'].isin(disrupt_shots)]
 
     # Add the disruptive shots to the new training set
     new_data = pd.concat([new_data, data], ignore_index=True)

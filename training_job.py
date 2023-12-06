@@ -9,25 +9,14 @@ import os
 import sys
 
 import dill
-import optuna
 
 from disruption_survival_analysis.Experiments import Experiment
 from disruption_survival_analysis.experiment_utils import load_experiment_config
 
-if __name__ == "__main__":
-    # Get the device, dataset path, model, alarm, metric, and min_warning_time from the command line
-    device = sys.argv[1]
-    dataset_path = sys.argv[2]
-    model_type = sys.argv[3]
-    alarm_type = sys.argv[4]
-    metric = sys.argv[5]
-    required_warning_time_ms = sys.argv[6]
+def main(device, dataset_path, model_type, alarm_type, metric, required_warning_time_ms, working_directory=None):
 
-    # If an optional seventh argument is provided, change the working directory to that
-    try:
-        os.chdir(sys.argv[7])
-    except:
-        pass
+    if working_directory is not None:
+        os.chdir(working_directory)
 
     # Remove the previous config and model files if they exist
     model_name = f"{model_type}_{alarm_type}_{metric}_{required_warning_time_ms}ms"
@@ -41,8 +30,9 @@ if __name__ == "__main__":
         os.remove(config_file)
     except FileNotFoundError:
         pass
-
-    config = load_experiment_config(device, dataset_path, model_type, alarm_type, metric, required_warning_time_ms)
+    
+    required_warning_time = float(required_warning_time_ms) / 1000
+    config = load_experiment_config(device, dataset_path, model_type, alarm_type, metric, required_warning_time)
 
     # Create the experiment
     experiment = Experiment(config, 'test')
@@ -63,3 +53,14 @@ if __name__ == "__main__":
         dill.dump(experiment, f)
 
     sys.stdout.write("Experiment saved to file")
+
+
+if __name__ == "__main__":
+    # Get the device, dataset path, model, alarm, metric, and min_warning_time from the command line
+    device = sys.argv[1]
+    dataset_path = sys.argv[2]
+    model_type = sys.argv[3]
+    alarm_type = sys.argv[4]
+    metric = sys.argv[5]
+    required_warning_time_ms = sys.argv[6]
+    main(device, dataset_path, model_type, alarm_type, metric, required_warning_time_ms, sys.argv[7])

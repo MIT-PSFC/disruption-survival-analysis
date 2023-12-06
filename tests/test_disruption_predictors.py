@@ -37,12 +37,10 @@ class TestDisruptionPredictor(unittest.TestCase):
         if not isinstance(self.predictor, DisruptionPredictor):
             self.fail("DisruptionPredictor instance not returned")
 
+class TestDisruptionPredictorDCPH(unittest.TestCase):
+    """Tests for Survival Model DCPH DisruptionPredictor"""
 
-
-class TestDisruptionPredictorSM(unittest.TestCase):
-    """Tests for Survival Model DisruptionPredictor"""
-
-    def setUpDCPH(self):
+    def setUp(self):
 
         # Load a config file for a DCPH model
         experiment_config = load_experiment_config(TEST_DEVICE, TEST_DATASET_PATH, 'dcph', 'sthr', 'auroc', 0.01)
@@ -59,6 +57,21 @@ class TestDisruptionPredictorSM(unittest.TestCase):
 
         # Load some test data
         self.test_data = load_dataset(TEST_DEVICE, TEST_DATASET_PATH, "val")
+
+    def test_rmst_not_zero(self):
+        """Ensure that the RMST is not always very low for a given shot"""
+
+        # Get a shot number from the data
+        shot = self.test_data.iloc[0]["shot"]
+        # Get the data for that shot
+        shot_data = self.test_data[self.test_data["shot"] == shot]
+
+        # Get the RMST for that shot
+        rmst = self.predictor.get_rmst(shot_data)
+
+        # Check that the RMST is not always very low for a given shot
+        if np.allclose(rmst, 0, atol=0.001):
+            self.fail("RMST always very low for a given shot")
 
 
 # class TestDisruptionPredictorRF(unittest.TestCase):
