@@ -12,14 +12,14 @@ from disruption_survival_analysis.manage_datasets import print_memory_usage
 from disruption_survival_analysis.experiment_utils import load_experiment_config
 
 BOOTSTRAP_ITERATIONS = 50
-ALLOCATED_CPUS = 20
 
-def main(device, dataset_path, model_type, alarm_type, metric, required_warning_time_ms, working_directory=None):
+def main(device, dataset_path, model_type, alarm_type, metric, required_warning_time_ms, allocated_cpus, working_directory=None):
     # If an optional seventh argument is provided, change the working directory to that
     if working_directory is not None:
         os.chdir(sys.argv[7])
 
-    config = load_experiment_config(device, dataset_path, model_type, alarm_type, metric, required_warning_time_ms)
+    required_warning_time = int(required_warning_time_ms)/1000
+    config = load_experiment_config(device, dataset_path, model_type, alarm_type, metric, required_warning_time)
 
     print_memory_usage("Bootstrap Before Creating Experiment")
 
@@ -34,8 +34,8 @@ def main(device, dataset_path, model_type, alarm_type, metric, required_warning_
     fars_list = []
     warns_list = []
 
-    pool = Pool(ALLOCATED_CPUS)
-    sys.stdout.write(f"Created POOL with {ALLOCATED_CPUS} processes\n")
+    pool = Pool(allocated_cpus)
+    sys.stdout.write(f"Created POOL with {allocated_cpus} processes\n")
 
     # Array where all threads put their results asynchronously
     results = []
@@ -116,9 +116,10 @@ if __name__ == "__main__":
     alarm_type = sys.argv[4]
     metric = sys.argv[5]
     min_warning_time_ms = sys.argv[6]
+    allocated_cpus = int(sys.argv[7])
     try:
-        working_directory = sys.argv[7]
+        working_directory = sys.argv[8]
     except:
         working_directory = None
 
-    main(device, dataset_path, model_type, alarm_type, metric, min_warning_time_ms, working_directory)
+    main(device, dataset_path, model_type, alarm_type, metric, min_warning_time_ms, allocated_cpus, working_directory)

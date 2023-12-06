@@ -5,16 +5,17 @@
 # 4. alarm type
 # 5. metric
 # 6. min warning time [ms] string
-# 7. working directory
-# 8. memory per CPU
+# 7. allocated CPUs
+# 8. working directory
+# 9. memory per CPU
 
 cat <<EoF
 #!/bin/bash
-#SBATCH --job-name=bootstrap-job-$3-$4-$5-$6-$7
+#SBATCH --job-name=bootstrap-job-$1-$2-$3-$4-$5-$6
 #SBATCH --nodes 1
 #SBATCH --ntasks 1
-#SBATCH --cpus-per-task=20
-#SBATCH --mem-per-cpu=$8MB
+#SBATCH --cpus-per-task=$7
+#SBATCH --mem-per-cpu=$9MB
 #SBATCH -p sched_mit_psfc_r8
 #SBATCH --time=08:00:00
 #SBATCH -o ./slurm/slurm-%j.out
@@ -27,7 +28,7 @@ source /etc/profile
 source ~/projects/disruption-survival-analysis/.venv/bin/activate
 
 # Run Python script
-python bootstrap_job.py "$1" "$2" "$3" "$4" "$5" "$6" "$7"
+python bootstrap_job.py "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8"
 
 # Deactivate Python environment
 deactivate

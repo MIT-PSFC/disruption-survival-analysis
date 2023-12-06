@@ -11,7 +11,7 @@
 
 cat <<EoF
 #!/bin/bash
-#SBATCH --job-name=training_job
+#SBATCH --job-name=training_job-$1-$2-$3-$4-$5-$6
 #SBATCH --ntasks 1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=$8MB
