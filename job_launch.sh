@@ -25,7 +25,7 @@ EoF
 
 for i in $(seq 1 $1)
 do
-    echo srun --exclusive --ntasks=1 --mem-per-cpu $4MB python optuna_job.py "$2" "$3" "&"
+    echo srun --exclusive --ntasks=1 --cpus-per-task=1 --mem-per-cpu $4MB python optuna_job.py "$2" "$3" "&"
 done
 
 echo wait
