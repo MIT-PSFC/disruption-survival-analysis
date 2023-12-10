@@ -116,10 +116,11 @@ def make_model(config:dict):
     return model
 
 def train_survival_model(model:SurvivalModel, device, dataset_path):
-
+    print_memory_usage("Before Loading Training Data")
     x_train, y_train = load_features_outcomes(device, dataset_path, 'train')
-
+    print_memory_usage("After Loading Training Data, Before Training Survival Model")
     model.fit(x_train, y_train)
+    print_memory_usage("After Training Survival Model")
 
 def train_recurrent_model(model_string, x_tr, t_tr, e_tr, x_val, t_val, e_val):
     """
@@ -140,9 +141,11 @@ def train_recurrent_model(model_string, x_tr, t_tr, e_tr, x_val, t_val, e_val):
     pass
 
 def train_random_forest_model(model:RandomForestClassifier, device, dataset_path, class_time):
-
+    print_memory_usage("Before Loading Training Data")
     x_train, labels_train = load_features_labels(device, dataset_path, 'train', class_time)
+    print_memory_usage("After Loading Training Data, Before Training Random Forest Model")
     model.fit(x_train, labels_train)
+    print_memory_usage("After Training Random Forest Model")
 
 # Methods to be used by experiment utils
 def get_model_for_experiment(config, experiment_type, training_data=None):
