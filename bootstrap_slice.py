@@ -27,12 +27,14 @@ def main(device, dataset_path, model_type, alarm_type, metric, required_warning_
 
     print_memory_usage("Slice After Getting Results")
 
+    slice_dir = f"{model_type}_{alarm_type}_{metric}_{required_warning_time_ms}ms"
+
     # Make directory if it doesn't already exist
-    directory_name = f"results/{device}/{dataset_path}/bootstraps"
+    directory_name = f"results/{device}/{dataset_path}/bootstraps/{slice_dir}"
     if not os.path.exists(directory_name):
         os.makedirs(directory_name)
 
-    slice_name = f"{model_type}_{alarm_type}_{metric}_{required_warning_time_ms}ms_slice_{bootstrap_number}"
+    slice_name = f"slice_{bootstrap_number}"
 
     with open(f"{directory_name}/{slice_name}.pkl", 'wb') as f:
         dill.dump(false_alarm_rates, true_alarm_metrics, warning_time_metrics, f)

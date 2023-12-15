@@ -11,22 +11,23 @@ def main(device, dataset_path, model_type, alarm_type, metric, required_warning_
     if working_directory is not None:
         os.chdir(working_directory)
 
-    print_memory_usage("Coalesce Before Loading Results")
+    print_memory_usage("Coalesce Before Loading Slices")
 
-    result_name_base = f"{model_type}_{alarm_type}_{metric}_{required_warning_time_ms}ms_slice_"
-
-    result_names = [result_name_base + str(i) + ".pkl" for i in range(bootstrap_iterations)]
+    slice_dir = f"results/{device}/{dataset_path}/bootstraps/{model_type}_{alarm_type}_{metric}_{required_warning_time_ms}ms"
+    slice_name_base = f"slice_"
+    slice_names = [slice_name_base + str(i) + ".pkl" for i in range(bootstrap_iterations)]
 
     # Where the answers are stored
     tars_list = []
     fars_list = []
     warns_list = []
-    
-    for result_name in result_names:
+
+    for slice_name in slice_names:
+        path = f"{slice_dir}/{slice_name}"
         try:
-            false_alarm_rates, true_alarm_metrics, warning_time_metrics = dill.load(open(result_name, 'rb'))
+            false_alarm_rates, true_alarm_metrics, warning_time_metrics = dill.load(open(path, 'rb'))
         except FileNotFoundError:
-            sys.stdout.write(f"Could not find {result_name}!\n")
+            sys.stdout.write(f"Could not find {path}!\n")
             return
         tars_list.append(true_alarm_metrics['avg'])
         fars_list.append(false_alarm_rates)
