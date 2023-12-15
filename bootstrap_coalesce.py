@@ -25,7 +25,11 @@ def main(device, dataset_path, model_type, alarm_type, metric, required_warning_
     for slice_name in slice_names:
         path = f"{slice_dir}/{slice_name}"
         try:
-            false_alarm_rates, true_alarm_metrics, warning_time_metrics = dill.load(open(path, 'rb'))
+            slice_data = dill.load(open(path, 'rb'))
+            false_alarm_rates = slice_data['false_alarm_rates']
+            true_alarm_metrics = slice_data['true_alarm_metrics']
+            warning_time_metrics = slice_data['warning_time_metrics']
+
         except FileNotFoundError:
             sys.stdout.write(f"Could not find {path}!\n")
             return

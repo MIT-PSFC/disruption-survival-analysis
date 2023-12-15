@@ -36,8 +36,13 @@ def main(device, dataset_path, model_type, alarm_type, metric, required_warning_
 
     slice_name = f"slice_{bootstrap_number}"
 
+    slice_data = {}
+    slice_data['false_alarm_rates'] = false_alarm_rates
+    slice_data['true_alarm_metrics'] = true_alarm_metrics
+    slice_data['warning_time_metrics'] = warning_time_metrics
+
     with open(f"{directory_name}/{slice_name}.pkl", 'wb') as f:
-        dill.dump(false_alarm_rates, true_alarm_metrics, warning_time_metrics, f)
+        dill.dump(slice_data, f)
 
     sys.stdout.write("Saved bootstrapped metrics")
 
