@@ -17,19 +17,6 @@ def main(device, dataset_path, model_type, alarm_type, metric, required_warning_
 
     if working_directory is not None:
         os.chdir(working_directory)
-
-    # Remove the previous config and model files if they exist
-    model_name = f"{model_type}_{alarm_type}_{metric}_{required_warning_time_ms}ms"
-    model_file = f"results/{device}/{dataset_path}/models/{model_name}.pkl"
-    config_file = f"results/{device}/{dataset_path}/configs/{model_name}.yaml"
-    try:
-        os.remove(model_file)
-    except FileNotFoundError:
-        pass
-    try:
-        os.remove(config_file)
-    except FileNotFoundError:
-        pass
     
     required_warning_time = float(required_warning_time_ms) / 1000
     config = load_experiment_config(device, dataset_path, model_type, alarm_type, metric, required_warning_time)

@@ -20,8 +20,6 @@ alarm_types = ["sthr"]
 # auroc, aumal, auwtc, maxf1
 metrics = ["auroc", "auwtc"]
 
-warning_time_agnostic_metrics = ["auwtc"]
-
 # List of required warning times to train on (in seconds)
 required_warning_times = [0.01, 0.05, 0.1]
 
@@ -30,14 +28,7 @@ for device in devices:
         for model_type in model_types:
             for alarm_type in alarm_types:
                 for metric in metrics:
-                    # For certain metrics only need to do one required warning time,
-                    # since the required warning time does not affect the metric
-                    if metric in warning_time_agnostic_metrics:
-                        required_warning_time = required_warning_times[0]
+                    for required_warning_time in required_warning_times:
                         sweep_config = make_sweep_config(device, dataset_path, model_type, alarm_type, metric, required_warning_time)
                         write_sweep_config(sweep_config)
-                    else:
-                        for required_warning_time in required_warning_times:
-                            sweep_config = make_sweep_config(device, dataset_path, model_type, alarm_type, metric, required_warning_time)
-                            write_sweep_config(sweep_config)
                         
