@@ -136,6 +136,8 @@ class DisruptionPredictorSM(DisruptionPredictor):
                 # If anything goes wrong, just start appending zeros
                 survival_at_horizons[:, indices] = np.zeros((len(chunk), len(shot_data)))
 
+        # Replace NaNs with 0
+        survival_at_horizons = np.nan_to_num(survival_at_horizons)
 
         rmst = np.trapz(survival_at_horizons, integration_times, axis=1)
 
