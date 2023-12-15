@@ -11,7 +11,7 @@
 
 cat <<EoF
 #!/bin/bash
-#SBATCH --job-name=slice-job-$1-$2-$3-$4-$5-$6
+#SBATCH --job-name=slice-job-$1-$2-$3-$4-$5-$6-$7
 #SBATCH --nodes 1
 #SBATCH --ntasks 1
 #SBATCH --cpus-per-task=1
