@@ -17,7 +17,7 @@ cat <<EoF
 #SBATCH --mem-per-cpu=$8MB
 #SBATCH -p sched_mit_psfc_r8
 #SBATCH --time=08:00:00
-#SBATCH -o ./slurm/slurm-%j.out
+#SBATCH -o ./slurm/slurm-%j-training-$3-$4-$5-$6.out
 
 source /etc/profile
 
