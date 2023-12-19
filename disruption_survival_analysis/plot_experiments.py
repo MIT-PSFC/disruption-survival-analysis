@@ -297,6 +297,9 @@ def plot_warning_time_distribution(experiment:Experiment, false_alarm_rate, test
     plt.rc('text', usetex=True)
     plt.rc('font', family='serif')
 
+    plt.grid(True, color='w', linestyle='-', linewidth=1.5)
+    plt.gca().patch.set_facecolor('0.92')
+
 
     unique_false_alarm_rates, warning_time_metrics = experiment.warning_times_vs_false_alarm_rates()
 
@@ -304,33 +307,35 @@ def plot_warning_time_distribution(experiment:Experiment, false_alarm_rate, test
     index = np.argmin(np.abs(unique_false_alarm_rates - false_alarm_rate))
 
     # Get the warning times for the first experiment at the 5% false alarm rate
-    all_warning_times = warning_time_metrics['all'][index]
+    all_warning_times = warning_time_metrics['all'][index].flatten()
     avg_warning_time = warning_time_metrics['avg'][index]
     med_warning_time = warning_time_metrics['med'][index]
     iq1_warning_time = warning_time_metrics['iq1'][index]
     iq3_warning_time = warning_time_metrics['iq3'][index]
     iqm_warning_time = warning_time_metrics['iqm'][index]
 
-    plt.figure(figsize=(10, 10))
     plt.hist(all_warning_times, bins=200)
-    plt.axvline(avg_warning_time, color='r', label='Average')
-    plt.axvline(med_warning_time, color='orange', label='Median')
-    plt.axvline(iq1_warning_time, color='b', linestyle='--', label='Lower Quartile')
-    plt.axvline(iq3_warning_time, color='b', linestyle='--', label='Upper Quartile')
-    plt.axvline(iqm_warning_time, color='k', linestyle=':', label='Inter Quartile Mean')
-    plt.legend()
-    plt.xlabel('Warning Time [s]')
-    plt.ylabel('Count')
+    plt.axvline(avg_warning_time, color='r', label='Mean', linewidth=4)
+    plt.axvline(med_warning_time, color='orange', label='Median', linewidth=4)
+    plt.axvline(iq1_warning_time, color='purple', linestyle=':', label='Quartiles')
+    plt.axvline(iq3_warning_time, color='purple', linestyle=':')
+    plt.axvline(iqm_warning_time, color='k', label='IQM', linewidth=4)
 
     plt.yscale('symlog', linthresh=100)
+    plt.xscale('symlog', linthresh=0.05)
+    plt.xlim([-0.001, .5])
 
-    plt.xlim([-0.01, max(all_warning_times)])
 
-    plt.legend(fontsize=LEGEND_FONT_SIZE)
-    plt.xlabel("Warning Time [s]", fontsize=LABEL_FONT_SIZE)
+    # Set x ticks at 0, 10, 50, 100, 500 ms
+    plt.xticks([0, 0.01, 0.05, 0.1, 0.5],   ["0", "10", "50", "100", "500"], fontsize=TICK_FONT_SIZE)
+
+    plt.yticks([0, 10, 50, 100, 500, 1000], ["0", "10", "50", "100", "500", "1000"], fontsize=TICK_FONT_SIZE)
+
+    plt.legend(fontsize=LEGEND_FONT_SIZE+5)
+    plt.xlabel("Warning Time [ms]", fontsize=LABEL_FONT_SIZE)
     plt.ylabel("Count", fontsize=LABEL_FONT_SIZE)
 
-    plt.title(f"Warning Time Distribution at {unique_false_alarm_rates[index]*100:.2f}\% False Alarm Rate", fontsize=TITLE_FONT_SIZE)
+    plt.title(f"Warning Time Distribution at {unique_false_alarm_rates[index]*100:.2f}\% FPR", fontsize=TITLE_FONT_SIZE)
 
     if not test:
         plt.show()

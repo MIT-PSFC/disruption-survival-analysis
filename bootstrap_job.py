@@ -71,10 +71,12 @@ def main(device, dataset_path, model_type, alarm_type, metric, required_warning_
 
     # Compute the mean, upper quartile, lower quartile, max, and min true alarm rates at each unique false alarm rate
     mean_tars = np.mean(interp_tars_list, axis=0)
+    median_tars = np.median(interp_tars_list, axis=0)
     upper_tars = np.percentile(interp_tars_list, 75, axis=0)
     lower_tars = np.percentile(interp_tars_list, 25, axis=0)
 
     # Compute the median, upper quartile, lower quartile, max, and min warning times at each unique false alarm rate
+    mean_warns = np.mean(interp_warns_list, axis=0)
     median_warns = np.median(interp_warns_list, axis=0)
     upper_warns = np.percentile(interp_warns_list, 75, axis=0)
     lower_warns = np.percentile(interp_warns_list, 25, axis=0)
@@ -84,11 +86,13 @@ def main(device, dataset_path, model_type, alarm_type, metric, required_warning_
     bootstrapped_metrics['fars'] = unique_fars
 
     bootstrapped_metrics['mean_tars'] = mean_tars
+    bootstrapped_metrics['median_tars'] = median_tars
     bootstrapped_metrics['upper_tars'] = upper_tars
     bootstrapped_metrics['lower_tars'] = lower_tars
     #bootstrapped_metrics['max_tars'] = max_tars
     #bootstrapped_metrics['min_tars'] = min_tars
 
+    bootstrapped_metrics['mean_warns'] = mean_warns
     bootstrapped_metrics['median_warns'] = median_warns
     bootstrapped_metrics['upper_warns'] = upper_warns
     bootstrapped_metrics['lower_warns'] = lower_warns
