@@ -3,7 +3,7 @@ import numpy as np
 from auton_survival.estimators import SurvivalModel
 from sklearn.ensemble import RandomForestClassifier
 
-MAX_FUTURE_LIFETIME = 2 # Maximum time to predict into the future (in seconds)
+MAX_FUTURE_LIFETIME = 1 # Maximum time to predict into the future (in seconds)
 SAMPLE_TIME = 0.001 # Time between samples for integrating survival (in seconds)
 
 class DisruptionPredictor:

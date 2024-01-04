@@ -361,10 +361,19 @@ def plot_restricted_mean_survival_time_shot(experiment_list:list[Experiment], sh
 
     for experiment in experiment_list:
         ettd = experiment.get_restricted_mean_survival_time_shot(shot_number)
-        plt.plot(times, ettd, label=pretty_name(experiment.name))
+        plt.plot(times, ettd, label=pretty_name(experiment.name, brief=True))
+
+    
+    if disruptive:
+        # Plot a line with a slope of -1 that goes through the last point
+        y_points = times[-1] - times
+        plt.plot(times, y_points, label="Ideal", linestyle='--', color='k')
+    else:
+        # Plot a horizontal line at 1
+        plt.plot(times, np.ones(len(times)) * 1, label="Ideal", linestyle='--', color='k')
 
     plt.xlim([min(times), max(times)])
-    plt.ylim([0, 2.5])
+    plt.ylim([0, 1.1])
 
     # Set tick font sizes
     plt.xticks(fontsize=TICK_FONT_SIZE)
@@ -378,7 +387,7 @@ def plot_restricted_mean_survival_time_shot(experiment_list:list[Experiment], sh
         plt.title(f"Shot {int(shot_number)}, Disrupted", fontsize=TITLE_FONT_SIZE)
     else:
         plt.title(f"Shot {int(shot_number)}, Not Disrupted", fontsize=TITLE_FONT_SIZE)
-    plt.legend()
+    plt.legend(loc='lower left')
     if not test:
         plt.show()
 
@@ -429,23 +438,37 @@ def plot_restricted_mean_survival_time_difference_shot(experiment_list:list[Expe
 
 
 
-def pretty_name(experiment_name:str, alarm_types=False, metrics=False, required_warning_times=False):
+def pretty_name(experiment_name:str, alarm_types=False, metrics=False, required_warning_times=False, brief=False):
     """ Return a pretty name for the experiment name."""
 
     split_sections = experiment_name.split("_")
 
-    pretty_name = ""
-    # Set the first part based on the model type
-    if split_sections[0] == "rf":
-        pretty_name += "Random Forest"
-    elif split_sections[0] == "km":
-        pretty_name += "Kaplan-Meier"
-    elif split_sections[0] == "cph":
-        pretty_name += "Cox Proportional Hazards"
-    elif split_sections[0] == "dcph":
-        pretty_name += "Deep Cox Proportional Hazards"
-    elif split_sections[0] == "dsm":
-        pretty_name += "Deep Survival Machines"
+    if brief:
+        pretty_name = ""
+        # Set the first part based on the model type
+        if split_sections[0] == "rf":
+            pretty_name += "RF"
+        elif split_sections[0] == "km":
+            pretty_name += "KM"
+        elif split_sections[0] == "cph":
+            pretty_name += "CPH"
+        elif split_sections[0] == "dcph":
+            pretty_name += "DCPH"
+        elif split_sections[0] == "dsm":
+            pretty_name += "DSM"
+    else:
+        pretty_name = ""
+        # Set the first part based on the model type
+        if split_sections[0] == "rf":
+            pretty_name += "Random Forest"
+        elif split_sections[0] == "km":
+            pretty_name += "Kaplan-Meier"
+        elif split_sections[0] == "cph":
+            pretty_name += "Cox Proportional Hazards"
+        elif split_sections[0] == "dcph":
+            pretty_name += "Deep Cox Proportional Hazards"
+        elif split_sections[0] == "dsm":
+            pretty_name += "Deep Survival Machines"
 
     if required_warning_times:
         pretty_name += " " + split_sections[-1]

@@ -67,7 +67,7 @@ def main(device, dataset_path, model_type, alarm_type, metric, required_warning_
     bootstrapped_metrics['fars'] = unique_fars
 
     bootstrapped_metrics['mean_tars'] = mean_tars
-    bootstrapped_metrics['mean_tars'] = mean_tars
+    bootstrapped_metrics['median_tars'] = median_tars
     bootstrapped_metrics['upper_tars'] = upper_tars
     bootstrapped_metrics['lower_tars'] = lower_tars
     #bootstrapped_metrics['max_tars'] = max_tars
