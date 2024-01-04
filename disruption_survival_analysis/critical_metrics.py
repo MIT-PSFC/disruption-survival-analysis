@@ -1,6 +1,7 @@
 # Methods for computing the metrics which are absolutely critical for the project
 
 import numpy as np
+from disruption_survival_analysis.DisruptionPredictors import MAX_FUTURE_LIFETIME
 
 def compute_metrics_vs_risk_thresholds(predictions, outcomes, required_warning_time, thresholds):
     """ Compute the true alarm rate, false alarm rate, and average/standard deviation of warning time
@@ -364,3 +365,34 @@ def interquartile_mean(values):
         iqm = np.mean(sorted_values[int(size):int(size*3)])
 
     return iqm
+
+def compute_simple_rmst_integral(rmst, times, disruptive):
+    """Compute the simple RMST integral for a predicted array of RMST values.
+    The simple RMST integral is defined as the integrated absolute difference between the
+    perfect RMST (line with slope -1 for disruptive shots, flat line at MAX_FUTURE_LIFETIME for non-disruptive shots)
+    
+    Parameters
+    ----------
+    rmst : numpy array
+        The predicted RMST values for each time slice in the shot
+    times : numpy array
+        The times corresponding to each RMST value
+    disruptive : boolean
+        A boolean array indicating whether or not the shot actually disrupted
+    
+    Returns
+    -------
+    simple_rmst_integral : float
+        The simple RMST integral
+    """
+
+    if disruptive:
+        # Perfect rmst is a line with slope -1 that intersects 0 at the disruption time
+        # And flat at MAX_FUTURE_LIFETIME before then
+        perfect_rmst = np.minimum(times[0] - times + times[-1], MAX_FUTURE_LIFETIME)
+    else:
+        perfect_rmst = np.ones(len(times)) * MAX_FUTURE_LIFETIME
+
+    simple_rmst_integral = np.trapz(np.abs(rmst - perfect_rmst), times)
+
+    return simple_rmst_integral

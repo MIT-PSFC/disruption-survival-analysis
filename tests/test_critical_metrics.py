@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 
-from disruption_survival_analysis.critical_metrics import compute_metrics_vs_risk_thresholds, compute_metrics_vs_false_alarm_rates, compute_metrics_vs_false_alarm_rates_distribution
+from disruption_survival_analysis.critical_metrics import compute_metrics_vs_risk_thresholds, compute_metrics_vs_false_alarm_rates, compute_metrics_vs_false_alarm_rates_distribution, compute_simple_rmst_integral
 
 class TestComputeMetricsVsThresholds(unittest.TestCase):
 
@@ -445,3 +445,52 @@ class TestComputeMetricsDistributionAgreement(unittest.TestCase):
             self.fail("Third Quartile of Warning Time is incorrect")
         if not np.isclose(warning_time_metrics['iqm'], iqm_warning_times).all():
             self.fail("Interquartile Mean of Warning Time is incorrect")
+
+class TestComputeSimpleRMSTIntegral(unittest.TestCase):
+
+    def test_short_disruptive_case_exact(self):
+        # Make a disruptive shot
+        
+        times = np.array([0, 0.1, 0.2, 0.3, 0.4, 0.5])
+        
+        rmst = np.array([1.0, 0.9, 0.5, 0.4, 0.1, 0])
+
+        disruptive_rmst_integral = compute_simple_rmst_integral(rmst, times, True)
+
+        # Check that the disruptive RMST integral is correct (assumes max future lifetime is 1)
+        correct_disruptive_rmst_integral = 0.115
+        if not np.isclose(disruptive_rmst_integral, correct_disruptive_rmst_integral):
+            self.fail("Disruptive RMST Integral is incorrect")
+
+    def test_short_non_disruptive_case_exact(self):
+        # Make a non-disruptive shot
+        
+        times = np.array([0, 0.1, 0.2, 0.3, 0.4, 0.5])
+        
+        rmst = np.array([1.0, 1.0, 0.9, 1.0, 0.8, 0.9])
+
+        disruptive_rmst_integral = compute_simple_rmst_integral(rmst, times, False)
+
+        # Check that the non-disruptive RMST integral is correct
+        correct_non_disruptive_rmst_integral = 0.035
+        if not np.isclose(disruptive_rmst_integral, correct_non_disruptive_rmst_integral):
+            self.fail("Non-Disruptive RMST Integral is incorrect")
+
+    def test_long_cases_exact(self):
+
+        times = np.array([0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6])
+
+        rmst = np.array([1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.9, 0.2, 0.1])
+
+        disruptive_rmst_integral = compute_simple_rmst_integral(rmst, times, True)
+        non_disruptive_rmst_integral = compute_simple_rmst_integral(rmst, times, False)
+
+        # Check that the disruptive RMST integral is correct
+        correct_disruptive_rmst_integral = 0.29
+        if not np.isclose(disruptive_rmst_integral, correct_disruptive_rmst_integral):
+            self.fail("Disruptive RMST Integral is incorrect")
+        
+        # Check that the non-disruptive RMST integral is correct
+        correct_non_disruptive_rmst_integral = 0.57
+        if not np.isclose(non_disruptive_rmst_integral, correct_non_disruptive_rmst_integral):
+            self.fail("Non-Disruptive RMST Integral is incorrect")

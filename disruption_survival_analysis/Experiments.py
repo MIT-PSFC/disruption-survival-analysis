@@ -12,7 +12,7 @@ from sklearn.ensemble import RandomForestClassifier # RF, KM
 
 from disruption_survival_analysis.DisruptionPredictors import DisruptionPredictorSM, DisruptionPredictorRF, DisruptionPredictorKM
 
-from disruption_survival_analysis.critical_metrics import compute_metrics_vs_false_alarm_rates_distribution
+from disruption_survival_analysis.critical_metrics import compute_metrics_vs_false_alarm_rates_distribution, compute_simple_rmst_integral
 
 class Experiment:
     """ Class that holds onto data shared between multiple experiments """
@@ -574,3 +574,22 @@ class Experiment:
     def get_restricted_mean_survival_time_shot(self, shot):
         """ Returns the restricted mean survival time for a single shot"""
         return self.predictor.get_rmst(self.get_shot_data(shot))
+    
+    def get_simple_rmst_integrals(self):
+        """ Computes simple RMST integrals for disruptive and non-disruptive shots in the dataset"""
+
+        disruptive_rmst_integrals = np.zeros(self.get_num_disruptive_shots())
+        non_disruptive_rmst_integrals = np.zeros(self.get_num_non_disruptive_shots())
+
+        for i, shot in enumerate(self.get_disruptive_shot_list()):
+            rmst = self.get_restricted_mean_survival_time_shot(shot)
+            times = self.get_shot_data(shot)['time'].values
+            disruptive_rmst_integrals[i] = compute_simple_rmst_integral(rmst, times, True)
+        
+        for i, shot in enumerate(self.get_non_disruptive_shot_list()):
+            rmst = self.get_restricted_mean_survival_time_shot(shot)
+            times = self.get_shot_data(shot)['time'].values
+            non_disruptive_rmst_integrals[i] = compute_simple_rmst_integral(rmst, times, False)
+
+        return disruptive_rmst_integrals, non_disruptive_rmst_integrals
+
