@@ -573,7 +573,14 @@ class Experiment:
     # Restricted Mean Survival Time
     def get_restricted_mean_survival_time_shot(self, shot):
         """ Returns the restricted mean survival time for a single shot"""
-        return self.predictor.get_rmst(self.get_shot_data(shot))
+        rmst = self.predictor.get_rmst(self.get_shot_data(shot))
+
+        # Replace NaNs with 0s
+        rmst[np.isnan(rmst)] = 0
+        # Replace infinities with 0s
+        rmst[np.isinf(rmst)] = 0
+
+        return 
     
     def get_simple_rmst_integrals(self):
         """ Computes simple RMST integrals for disruptive and non-disruptive shots in the dataset"""

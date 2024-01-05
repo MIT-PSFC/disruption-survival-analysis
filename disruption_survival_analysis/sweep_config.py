@@ -314,3 +314,31 @@ def get_bootstraps(bootstrap_groups, keys1, keys2=None, keys3=None, keys4=None):
                 bootstrap_list.append(bootstrap)
     
     return bootstrap_list
+
+def create_rmst_list(devices, dataset_paths, models, alarms, metrics, min_warning_times):
+    # Create list of rmst results
+    # This is used for setting up dictionaries of rmsts to plot
+    # For example, compare all the rmsts using the same minimum warning time against eachother
+    rmst_list = []
+    for device in devices:
+        for dataset_path in dataset_paths:
+            for model in models:
+                for alarm in alarms:
+                    for metric in metrics:
+                        for min_warning_time in min_warning_times:
+                            try:
+                                # Load rmst if it exists
+                                file_name = f"results/{device}/{dataset_path}/simple_rmst/{model}_{alarm}_{metric}_{int(min_warning_time*1000)}ms/all_rmst_results.pkl"
+                                with open(file_name, 'rb') as f:
+                                    rmst = dill.load(f)
+                            except Exception as e:
+                                print(f"ERROR: problem with rmst {file_name}")
+                                print(e)
+                                continue
+                            
+                            rmst['name'] = f"{model}_{alarm}_{metric}_{int(min_warning_time*1000)}ms"
+                            rmst['device'] = device
+                            rmst['dataset_path'] = dataset_path
+                            rmst_list.append(rmst)
+
+    return rmst_list
