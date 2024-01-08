@@ -1,5 +1,5 @@
 # Class that holds onto data shared between multiple experiments
-
+import sys
 import numpy as np
 
 from sklearn.metrics import roc_auc_score
@@ -581,21 +581,58 @@ class Experiment:
 
         return rmst
     
-    def get_simple_rmst_integrals(self):
+    def get_simple_rmst_integrals(self, avail_cpus=None):
         """ Computes simple RMST integrals for disruptive and non-disruptive shots in the dataset"""
 
         disruptive_rmst_integrals = np.zeros(self.get_num_disruptive_shots())
         non_disruptive_rmst_integrals = np.zeros(self.get_num_non_disruptive_shots())
 
-        for i, shot in enumerate(self.get_disruptive_shot_list()):
-            rmst = self.get_restricted_mean_survival_time_shot(shot)
-            times = self.get_shot_data(shot)['time'].values
-            disruptive_rmst_integrals[i] = compute_simple_rmst_integral(rmst, times, True)
-        
-        for i, shot in enumerate(self.get_non_disruptive_shot_list()):
-            rmst = self.get_restricted_mean_survival_time_shot(shot)
-            times = self.get_shot_data(shot)['time'].values
-            non_disruptive_rmst_integrals[i] = compute_simple_rmst_integral(rmst, times, False)
+        if avail_cpus is None:
+            for i, shot in enumerate(self.get_disruptive_shot_list()):
+                rmst = self.get_restricted_mean_survival_time_shot(shot)
+                times = self.get_shot_data(shot)['time'].values
+                disruptive_rmst_integrals[i] = compute_simple_rmst_integral(rmst, times, True)
+            
+            for i, shot in enumerate(self.get_non_disruptive_shot_list()):
+                rmst = self.get_restricted_mean_survival_time_shot(shot)
+                times = self.get_shot_data(shot)['time'].values
+                non_disruptive_rmst_integrals[i] = compute_simple_rmst_integral(rmst, times, False)
+        else:
+            # Run in parallel
+            from multiprocessing import Pool
+            disruptive_rmsts = []
+            non_disruptive_rmsts = []
+
+            pool = Pool(avail_cpus)
+            sys.stdout.write(f"Created pool with {avail_cpus} cpus\n")
+
+            for shot in self.get_disruptive_shot_list():
+                disruptive_rmsts.append(pool.apply_async(self.get_restricted_mean_survival_time_shot, args=(shot,)))
+
+            print_memory_usage("Simple RMST After submitting disruptive pool jobs")
+
+            for i, result in enumerate(disruptive_rmsts):
+                rmst = result.get(timeout=100000)
+                times = self.get_shot_data(self.get_disruptive_shot_list()[i])['time'].values
+                disruptive_rmst_integrals[i] = compute_simple_rmst_integral(rmst, times, True)
+
+            print_memory_usage("Simple RMST After getting disruptive pool results")
+
+            for shot in self.get_non_disruptive_shot_list():
+                non_disruptive_rmsts.append(pool.apply_async(self.get_restricted_mean_survival_time_shot, args=(shot,)))
+
+            print_memory_usage("Simple RMST After submitting non-disruptive pool jobs")
+
+            for i, result in enumerate(non_disruptive_rmsts):
+                rmst = result.get(timeout=100000)
+                times = self.get_shot_data(self.get_non_disruptive_shot_list()[i])['time'].values
+                non_disruptive_rmst_integrals[i] = compute_simple_rmst_integral(rmst, times, False)
+
+            print_memory_usage("Simple RMST After getting non-disruptive pool results")
+
+            pool.close()
+
+            print_memory_usage("Simple RMST After closing pool")
 
         return disruptive_rmst_integrals, non_disruptive_rmst_integrals
 

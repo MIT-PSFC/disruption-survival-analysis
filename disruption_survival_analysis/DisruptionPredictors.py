@@ -138,6 +138,8 @@ class DisruptionPredictorSM(DisruptionPredictor):
 
         # Replace NaNs with 0
         survival_at_horizons = np.nan_to_num(survival_at_horizons)
+        # Force survival to be between 0 and 1
+        survival_at_horizons = np.clip(survival_at_horizons, 0, 1)
 
         rmst = np.trapz(survival_at_horizons, integration_times, axis=1)
 
