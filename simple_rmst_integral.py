@@ -110,5 +110,5 @@ if __name__ == "__main__":
     except:
         working_directory = None
     
-    main(device, dataset_path, model_type, alarm_type, metric, required_warning_time_ms, working_directory)
+    main(device, dataset_path, model_type, alarm_type, metric, required_warning_time_ms, cpus, working_directory)
 
