@@ -31,7 +31,7 @@ class TestSimpleRMST_RF_STHR_AUROC(unittest.TestCase):
             pass
 
         # Run the job
-        main(self.device, self.dataset_path, self.model_type, self.alarm_type, self.metric, self.required_warning_time_ms)
+        main(self.device, self.dataset_path, self.model_type, self.alarm_type, self.metric, self.required_warning_time_ms, 2)
 
         # Check that the bootstrap file exists
         self.assertTrue(os.path.exists(self.saved_file_path))
@@ -78,7 +78,7 @@ class TestSimpleRMST_CMOD_WONK(unittest.TestCase):
             pass
 
         # Run the job
-        main(self.device, self.dataset_path, self.model_type, self.alarm_type, self.metric, self.required_warning_time_ms)
+        main(self.device, self.dataset_path, self.model_type, self.alarm_type, self.metric, self.required_warning_time_ms, 8)
 
         # Check that the bootstrap file exists
         self.assertTrue(os.path.exists(self.saved_file_path))

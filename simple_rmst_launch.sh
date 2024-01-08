@@ -7,13 +7,14 @@
 # 6. min warning time [ms] string
 # 7. working directory
 # 8. memory per CPU
+# 9. number of CPUs
 
 cat <<EoF
 #!/bin/bash
 #SBATCH --job-name=rmst-job-$1-$2-$3-$4-$5-$6
 #SBATCH --nodes 1
 #SBATCH --ntasks 1
-#SBATCH --cpus-per-task=1
+#SBATCH --cpus-per-task=$9
 #SBATCH --mem-per-cpu=$8MB
 #SBATCH -p sched_mit_psfc_r8
 #SBATCH --time=08:00:00
@@ -27,7 +28,7 @@ source /etc/profile
 source ~/projects/disruption-survival-analysis/.venv/bin/activate
 
 # Run Python script
-python simple_rmst_integral.py "$1" "$2" "$3" "$4" "$5" "$6" "$7"
+python simple_rmst_integral.py "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$9"
 
 # Deactivate Python environment
 deactivate
