@@ -5,17 +5,17 @@
 # 4. alarm type
 # 5. metric
 # 6. min warning time [ms] string
-# 7. working directory
-# 8. memory per CPU
-# 9. number of CPUs
+# 7. number of CPUs
+# 8. working directory
+# 9. memory per CPU
 
 cat <<EoF
 #!/bin/bash
 #SBATCH --job-name=rmst-job-$1-$2-$3-$4-$5-$6
 #SBATCH --nodes 1
 #SBATCH --ntasks 1
-#SBATCH --cpus-per-task=$9
-#SBATCH --mem-per-cpu=$8MB
+#SBATCH --cpus-per-task=$7
+#SBATCH --mem-per-cpu=$9MB
 #SBATCH -p sched_mit_psfc_r8
 #SBATCH --time=08:00:00
 #SBATCH -o ./slurm/slurm-%j-rmst-$3-$4-$5-$6.out
@@ -28,7 +28,7 @@ source /etc/profile
 source ~/projects/disruption-survival-analysis/.venv/bin/activate
 
 # Run Python script
-python simple_rmst_integral.py "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$9"
+python simple_rmst_integral.py "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8"
 
 # Deactivate Python environment
 deactivate

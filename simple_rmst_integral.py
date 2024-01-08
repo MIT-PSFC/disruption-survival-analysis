@@ -109,6 +109,6 @@ if __name__ == "__main__":
         working_directory = sys.argv[8]
     except:
         working_directory = None
-
+    
     main(device, dataset_path, model_type, alarm_type, metric, required_warning_time_ms, working_directory)
 
