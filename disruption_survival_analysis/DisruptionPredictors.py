@@ -136,10 +136,10 @@ class DisruptionPredictorSM(DisruptionPredictor):
                 # If anything goes wrong, just start appending zeros
                 survival_at_horizons[:, indices] = np.zeros((len(chunk), len(shot_data)))
 
-        # Replace NaNs with 0
-        survival_at_horizons = np.nan_to_num(survival_at_horizons)
-        # Force survival to be between 0 and 1
-        survival_at_horizons = np.clip(survival_at_horizons, 0, 1)
+        # Replace NaNs with MAX_FUTURE_LIFETIME
+        survival_at_horizons = np.nan_to_num(survival_at_horizons, nan=MAX_FUTURE_LIFETIME)
+        # Force survival to be between 0 and MAX_FUTURE_LIFETIME
+        survival_at_horizons = np.clip(survival_at_horizons, 0, MAX_FUTURE_LIFETIME)
 
         rmst = np.trapz(survival_at_horizons, integration_times, axis=1)
 
@@ -202,6 +202,11 @@ class DisruptionPredictorRF(DisruptionPredictor):
             # Probability of surviving into the future at each step is (1 - (risk * t_sample / t_class))
             # So total probability of surviving into the future is the product of all of these
             survival_at_horizons[:,i] = (1 - (risks * SAMPLE_TIME / self.trained_class_time)) ** i
+
+        # Replace NaNs with MAX_FUTURE_LIFETIME
+        survival_at_horizons = np.nan_to_num(survival_at_horizons, nan=MAX_FUTURE_LIFETIME)
+        # Force survival to be between 0 and MAX_FUTURE_LIFETIME
+        survival_at_horizons = np.clip(survival_at_horizons, 0, MAX_FUTURE_LIFETIME)
         
         rmst = np.trapz(survival_at_horizons, integration_times, axis=1)
         return rmst
@@ -336,8 +341,10 @@ class DisruptionPredictorKM(DisruptionPredictor):
         for i, t_horizon in enumerate(integration_times):
             survival_at_horizons[:,i] = self.get_survival(data_times, probs, t_horizon)
 
-        # Replace NaNs with 1
-        survival_at_horizons = np.nan_to_num(survival_at_horizons, nan=1)
+        # Replace NaNs with MAX_FUTURE_LIFETIME
+        survival_at_horizons = np.nan_to_num(survival_at_horizons, nan=MAX_FUTURE_LIFETIME)
+        # Force survival to be between 0 and MAX_FUTURE_LIFETIME
+        survival_at_horizons = np.clip(survival_at_horizons, 0, MAX_FUTURE_LIFETIME)
         rmst = np.trapz(survival_at_horizons, integration_times, axis=1)
 
         return rmst
