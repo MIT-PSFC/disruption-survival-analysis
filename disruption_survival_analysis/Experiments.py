@@ -374,7 +374,7 @@ class Experiment:
         ----------
         metric_type : str
             The type of metric to evaluate
-            Options are 'tslic', 'auroc', 'auwtc', 'maxf1'
+            Options are 'tslic', 'auroc', 'auwtc', 'maxf1', 'rmsti'
         horizon : int, optional
             The horizon to evaluate the metric at
             If None, use the horizon the model was hyperparameter tuned for
@@ -415,6 +415,11 @@ class Experiment:
                 print_memory_usage("Backup Metric Start")
                 false_alarm_rates, true_alarm_metrics = self.true_alarm_rates_vs_false_alarm_rates(horizon, required_warning_time)
                 metric_val = area_under_curve(false_alarm_rates, true_alarm_metrics['avg']) * 1e-10
+        elif metric_type == 'rmstid':
+            # Simple RMST integral, only disruptive shots
+            disruptive_rmst_integrals = self.get_simple_rmst_integrals(non_disruptive=False)
+            # Get the mean of the integrals
+            metric_val = np.mean(disruptive_rmst_integrals)
         else:
             metric_val = None
 
@@ -581,58 +586,64 @@ class Experiment:
 
         return rmst
     
-    def get_simple_rmst_integrals(self, avail_cpus=None):
+    def get_simple_rmst_integrals(self, disruptive=True, non_disruptive=True, avail_cpus=None):
         """ Computes simple RMST integrals for disruptive and non-disruptive shots in the dataset"""
 
         disruptive_rmst_integrals = np.zeros(self.get_num_disruptive_shots())
         non_disruptive_rmst_integrals = np.zeros(self.get_num_non_disruptive_shots())
 
         if avail_cpus is None:
-            for i, shot in enumerate(self.get_disruptive_shot_list()):
-                rmst = self.get_restricted_mean_survival_time_shot(shot)
-                times = self.get_shot_data(shot)['time'].values
-                disruptive_rmst_integrals[i] = compute_simple_rmst_integral(rmst, times, True)
-            
-            for i, shot in enumerate(self.get_non_disruptive_shot_list()):
-                rmst = self.get_restricted_mean_survival_time_shot(shot)
-                times = self.get_shot_data(shot)['time'].values
-                non_disruptive_rmst_integrals[i] = compute_simple_rmst_integral(rmst, times, False)
+            if disruptive:
+                for i, shot in enumerate(self.get_disruptive_shot_list()):
+                    rmst = self.get_restricted_mean_survival_time_shot(shot)
+                    times = self.get_shot_data(shot)['time'].values
+                    disruptive_rmst_integrals[i] = compute_simple_rmst_integral(rmst, times, True)
+            if non_disruptive:
+                for i, shot in enumerate(self.get_non_disruptive_shot_list()):
+                    rmst = self.get_restricted_mean_survival_time_shot(shot)
+                    times = self.get_shot_data(shot)['time'].values
+                    non_disruptive_rmst_integrals[i] = compute_simple_rmst_integral(rmst, times, False)
         else:
             # Run in parallel
             from multiprocessing import Pool
             disruptive_rmsts = []
             non_disruptive_rmsts = []
-
             pool = Pool(avail_cpus)
             sys.stdout.write(f"Created pool with {avail_cpus} cpus\n")
 
-            for shot in self.get_disruptive_shot_list():
-                disruptive_rmsts.append(pool.apply_async(self.get_restricted_mean_survival_time_shot, args=(shot,)))
+            if disruptive:
+                for shot in self.get_disruptive_shot_list():
+                    disruptive_rmsts.append(pool.apply_async(self.get_restricted_mean_survival_time_shot, args=(shot,)))
 
-            print_memory_usage("Simple RMST After submitting disruptive pool jobs")
+                print_memory_usage("Simple RMST After submitting disruptive pool jobs")
 
-            for i, result in enumerate(disruptive_rmsts):
-                rmst = result.get(timeout=100000)
-                times = self.get_shot_data(self.get_disruptive_shot_list()[i])['time'].values
-                disruptive_rmst_integrals[i] = compute_simple_rmst_integral(rmst, times, True)
+                for i, result in enumerate(disruptive_rmsts):
+                    rmst = result.get(timeout=100000)
+                    times = self.get_shot_data(self.get_disruptive_shot_list()[i])['time'].values
+                    disruptive_rmst_integrals[i] = compute_simple_rmst_integral(rmst, times, True)
 
-            print_memory_usage("Simple RMST After getting disruptive pool results")
+                print_memory_usage("Simple RMST After getting disruptive pool results")
 
-            for shot in self.get_non_disruptive_shot_list():
-                non_disruptive_rmsts.append(pool.apply_async(self.get_restricted_mean_survival_time_shot, args=(shot,)))
+            if non_disruptive:
+                for shot in self.get_non_disruptive_shot_list():
+                    non_disruptive_rmsts.append(pool.apply_async(self.get_restricted_mean_survival_time_shot, args=(shot,)))
 
-            print_memory_usage("Simple RMST After submitting non-disruptive pool jobs")
+                print_memory_usage("Simple RMST After submitting non-disruptive pool jobs")
 
-            for i, result in enumerate(non_disruptive_rmsts):
-                rmst = result.get(timeout=100000)
-                times = self.get_shot_data(self.get_non_disruptive_shot_list()[i])['time'].values
-                non_disruptive_rmst_integrals[i] = compute_simple_rmst_integral(rmst, times, False)
+                for i, result in enumerate(non_disruptive_rmsts):
+                    rmst = result.get(timeout=100000)
+                    times = self.get_shot_data(self.get_non_disruptive_shot_list()[i])['time'].values
+                    non_disruptive_rmst_integrals[i] = compute_simple_rmst_integral(rmst, times, False)
 
-            print_memory_usage("Simple RMST After getting non-disruptive pool results")
+                print_memory_usage("Simple RMST After getting non-disruptive pool results")
 
             pool.close()
 
             print_memory_usage("Simple RMST After closing pool")
 
-        return disruptive_rmst_integrals, non_disruptive_rmst_integrals
-
+        if disruptive and non_disruptive:
+            return disruptive_rmst_integrals, non_disruptive_rmst_integrals
+        elif disruptive:
+            return disruptive_rmst_integrals
+        elif non_disruptive:
+            return non_disruptive_rmst_integrals
