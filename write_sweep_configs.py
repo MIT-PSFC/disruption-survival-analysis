@@ -3,7 +3,7 @@
 from disruption_survival_analysis.sweep_config import make_sweep_config, write_sweep_config
 
 # Datasets to use
-devices = ["d3d"]
+devices = ["cmod"]
 dataset_paths = ["paper_4/stack_10"]
 #devices = ["synthetic"]
 #dataset_paths = ["small/stack_4"]
@@ -18,7 +18,7 @@ alarm_types = ["sthr"]
 
 # List of validation metrics to use
 # auroc, aumal, auwtc, maxf1
-metrics = ["auroc", "auwtc"]
+metrics = ["auroc", "auwtc", "rmstid"]
 
 # List of required warning times to train on (in seconds)
 required_warning_times = [0.01, 0.05, 0.1]
