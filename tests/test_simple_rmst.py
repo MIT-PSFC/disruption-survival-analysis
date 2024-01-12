@@ -17,7 +17,7 @@ class TestSimpleRMST_RF_STHR_AUROC(unittest.TestCase):
         self.metric = 'auroc'
         self.required_warning_time_ms = str(int(TEST_WARNING_TIME*1000))
 
-        self.rmst_path = f"results/{self.device}/{self.dataset_path}/simple_rmst"
+        self.rmst_path = f"results/{self.device}/{self.dataset_path}/squared_last_rmst"
         self.category_path = f"{self.rmst_path}/{self.model_type}_{self.alarm_type}_{self.metric}_{self.required_warning_time_ms}ms"
         self.saved_file_path = f"{self.category_path}/all_rmst_results.pkl"
 

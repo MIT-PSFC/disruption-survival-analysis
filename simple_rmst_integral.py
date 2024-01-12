@@ -19,22 +19,22 @@ def main(device, dataset_path, model_type, alarm_type, metric, required_warning_
     required_warning_time = int(required_warning_time_ms)/1000
     config = load_experiment_config(device, dataset_path, model_type, alarm_type, metric, required_warning_time)
 
-    print_memory_usage("Simple RMST Before Creating Experiment")
+    print_memory_usage("Squared last RMST Before Creating Experiment")
 
     # Create the experiment
     experiment = Experiment(config, 'test')
     sys.stdout.write("Created experiment\n")
 
-    print_memory_usage("Simple RMST After Creating Experiment")
+    print_memory_usage("Squared last RMST After Creating Experiment")
 
-    disruptive_rmst_diffs, non_disruptive_rmst_diffs = experiment.get_simple_rmst_integrals(avail_cpus=cpus)
+    disruptive_rmst_diffs, non_disruptive_rmst_diffs = experiment.get_squared_last_rmst_integrals(avail_cpus=cpus)
     all_diffs = np.concatenate((disruptive_rmst_diffs, non_disruptive_rmst_diffs))
 
     results = {}
     results['disruptive_rmst_diffs'] = disruptive_rmst_diffs
     results['non_disruptive_rmst_diffs'] = non_disruptive_rmst_diffs
 
-    print_memory_usage("Simple RMST After Getting Results")
+    print_memory_usage("Squared last RMST After Getting Results")
 
     # Bootstrap the RMST integrals individually and together
 
@@ -82,12 +82,12 @@ def main(device, dataset_path, model_type, alarm_type, metric, required_warning_
     all_results['iqm'] = interquartile_mean(sampled_all_array)
     results['all_results'] = all_results
 
-    print_memory_usage("Simple RMST after bootstrapping")
+    print_memory_usage("Squared last RMST after bootstrapping")
 
     rmst_dir = f"{model_type}_{alarm_type}_{metric}_{required_warning_time_ms}ms"
 
     # Make directory if it doesn't already exist
-    directory_name = f"results/{device}/{dataset_path}/simple_rmst/{rmst_dir}"
+    directory_name = f"results/{device}/{dataset_path}/squared_last_rmst/{rmst_dir}"
     if not os.path.exists(directory_name):
         os.makedirs(directory_name)
 

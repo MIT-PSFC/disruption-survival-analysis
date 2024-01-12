@@ -12,7 +12,7 @@ from sklearn.ensemble import RandomForestClassifier # RF, KM
 
 from disruption_survival_analysis.DisruptionPredictors import DisruptionPredictorSM, DisruptionPredictorRF, DisruptionPredictorKM
 
-from disruption_survival_analysis.critical_metrics import compute_metrics_vs_false_alarm_rates_distribution, compute_simple_rmst_integral
+from disruption_survival_analysis.critical_metrics import compute_metrics_vs_false_alarm_rates_distribution, compute_simple_rmst_integral, compute_squared_last_rmst_integral
 
 class Experiment:
     """ Class that holds onto data shared between multiple experiments """
@@ -420,6 +420,11 @@ class Experiment:
             disruptive_rmst_integrals = self.get_simple_rmst_integrals(non_disruptive=False)
             # Get the mean of the integrals
             metric_val = np.mean(disruptive_rmst_integrals)
+        elif metric_type == 'rmstsl':
+            # Squared last RMST integral, only disruptive shots
+            disruptive_rmst_integrals = self.get_squared_last_rmst_integrals(non_disruptive=False)
+            # Get the mean of the integrals
+            metric_val = np.mean(disruptive_rmst_integrals)
         else:
             metric_val = None
 
@@ -647,3 +652,65 @@ class Experiment:
             return disruptive_rmst_integrals
         elif non_disruptive:
             return non_disruptive_rmst_integrals
+        
+    def get_squared_last_rmst_integrals(self, disruptive=True, non_disruptive=True, avail_cpus=None):
+            """ Computes squared last RMST integrals for disruptive and non-disruptive shots in the dataset"""
+
+            disruptive_rmst_integrals = np.zeros(self.get_num_disruptive_shots())
+            non_disruptive_rmst_integrals = np.zeros(self.get_num_non_disruptive_shots())
+
+            if avail_cpus is None:
+                if disruptive:
+                    for i, shot in enumerate(self.get_disruptive_shot_list()):
+                        rmst = self.get_restricted_mean_survival_time_shot(shot)
+                        times = self.get_shot_data(shot)['time'].values
+                        disruptive_rmst_integrals[i] = compute_squared_last_rmst_integral(rmst, times, True)
+                if non_disruptive:
+                    for i, shot in enumerate(self.get_non_disruptive_shot_list()):
+                        rmst = self.get_restricted_mean_survival_time_shot(shot)
+                        times = self.get_shot_data(shot)['time'].values
+                        non_disruptive_rmst_integrals[i] = compute_squared_last_rmst_integral(rmst, times, False)
+            else:
+                # Run in parallel
+                from multiprocessing import Pool
+                disruptive_rmsts = []
+                non_disruptive_rmsts = []
+                pool = Pool(avail_cpus)
+                sys.stdout.write(f"Created pool with {avail_cpus} cpus\n")
+
+                if disruptive:
+                    for shot in self.get_disruptive_shot_list():
+                        disruptive_rmsts.append(pool.apply_async(self.get_restricted_mean_survival_time_shot, args=(shot,)))
+
+                    print_memory_usage("Squared last RMST After submitting disruptive pool jobs")
+
+                    for i, result in enumerate(disruptive_rmsts):
+                        rmst = result.get(timeout=100000)
+                        times = self.get_shot_data(self.get_disruptive_shot_list()[i])['time'].values
+                        disruptive_rmst_integrals[i] = compute_simple_rmst_integral(rmst, times, True)
+
+                    print_memory_usage("Squared last After getting disruptive pool results")
+
+                if non_disruptive:
+                    for shot in self.get_non_disruptive_shot_list():
+                        non_disruptive_rmsts.append(pool.apply_async(self.get_restricted_mean_survival_time_shot, args=(shot,)))
+
+                    print_memory_usage("Squared last RMST After submitting non-disruptive pool jobs")
+
+                    for i, result in enumerate(non_disruptive_rmsts):
+                        rmst = result.get(timeout=100000)
+                        times = self.get_shot_data(self.get_non_disruptive_shot_list()[i])['time'].values
+                        non_disruptive_rmst_integrals[i] = compute_squared_last_rmst_integral(rmst, times, False)
+
+                    print_memory_usage("Squared last RMST After getting non-disruptive pool results")
+
+                pool.close()
+
+                print_memory_usage("Squared last RMST After closing pool")
+
+            if disruptive and non_disruptive:
+                return disruptive_rmst_integrals, non_disruptive_rmst_integrals
+            elif disruptive:
+                return disruptive_rmst_integrals
+            elif non_disruptive:
+                return non_disruptive_rmst_integrals

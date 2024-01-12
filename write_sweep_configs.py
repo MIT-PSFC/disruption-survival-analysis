@@ -18,7 +18,7 @@ alarm_types = ["sthr"]
 
 # List of validation metrics to use
 # auroc, aumal, auwtc, maxf1
-metrics = ["auroc", "auwtc", "rmstid"]
+metrics = ["auroc", "auwtc", "rmstsl"]
 
 # List of required warning times to train on (in seconds)
 required_warning_times = [0.01, 0.05, 0.1]

@@ -396,3 +396,37 @@ def compute_simple_rmst_integral(rmst, times, disruptive):
     simple_rmst_integral = np.trapz(np.abs(rmst - perfect_rmst), times)
 
     return simple_rmst_integral
+
+def compute_squared_last_rmst_integral(rmst, times, disruptive):
+    """A more-involved metric that computes the integral of the squared difference between the predicted RMST
+    and the perfect RMST over the last 1.5 seconds of the shot.
+    
+    Parameters
+    ----------
+    rmst : numpy array
+        The predicted RMST values for each time slice in the shot
+    times : numpy array
+        The times corresponding to each RMST value
+    disruptive : boolean
+        A boolean array indicating whether or not the shot actually disrupted
+    
+    Returns
+    -------
+    simple_rmst_integral : float
+        The simple RMST integral
+    """
+
+    if disruptive:
+        # Perfect rmst is a line with slope -1 that intersects 0 at the disruption time
+        # And flat at MAX_FUTURE_LIFETIME before then
+        perfect_rmst = np.minimum(times[0] - times + times[-1], MAX_FUTURE_LIFETIME)
+    else:
+        perfect_rmst = np.ones(len(times)) * MAX_FUTURE_LIFETIME
+
+    # Compute the integral of the squared difference between the predicted RMST and the perfect RMST
+    # over the last 1.5 seconds of the shot
+    last_1p5_seconds = times > (times[-1] - 1.5)
+    squared_difference = (rmst - perfect_rmst)**2
+    squared_last_rmst_integral = np.trapz(squared_difference[last_1p5_seconds], times[last_1p5_seconds])
+
+    return squared_last_rmst_integral
