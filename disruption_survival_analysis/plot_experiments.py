@@ -6,6 +6,8 @@ import matplotlib as mpl
 
 from disruption_survival_analysis.Experiments import Experiment
 
+from disruption_survival_analysis.DisruptionPredictors import MAX_FUTURE_LIFETIME
+
 LEGEND_FONT_SIZE = 12
 TICK_FONT_SIZE = 18
 LABEL_FONT_SIZE = 22
@@ -359,14 +361,14 @@ def plot_restricted_mean_survival_time_shot(experiment_list:list[Experiment], sh
     # Set boolean disruptive if shot number is in the disruptive shot list
     disruptive = shot_number in experiment_list[0].get_disruptive_shot_list()
 
-    for experiment in experiment_list:
-        ettd = experiment.get_restricted_mean_survival_time_shot(shot_number)
-        plt.plot(times, ettd, label=pretty_name(experiment.name, brief=True))
+    # for experiment in experiment_list:
+    #     ettd = experiment.get_restricted_mean_survival_time_shot(shot_number)
+    #     plt.plot(times, ettd, label=pretty_name(experiment.name, brief=True))
 
     
     if disruptive:
         # Plot a line with a slope of -1 that goes through the last point
-        y_points = times[-1] - times
+        y_points = np.minimum(times[-1] - times, MAX_FUTURE_LIFETIME)
         plt.plot(times, y_points, label="Ideal", linestyle='--', color='k')
     else:
         # Plot a horizontal line at 1

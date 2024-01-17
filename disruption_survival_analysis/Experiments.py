@@ -687,7 +687,7 @@ class Experiment:
                     for i, result in enumerate(disruptive_rmsts):
                         rmst = result.get(timeout=100000)
                         times = self.get_shot_data(self.get_disruptive_shot_list()[i])['time'].values
-                        disruptive_rmst_integrals[i] = compute_simple_rmst_integral(rmst, times, True)
+                        disruptive_rmst_integrals[i] = compute_squared_last_rmst_integral(rmst, times, True)
 
                     print_memory_usage("Squared last After getting disruptive pool results")
 

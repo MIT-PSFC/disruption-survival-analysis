@@ -389,7 +389,7 @@ def compute_simple_rmst_integral(rmst, times, disruptive):
     if disruptive:
         # Perfect rmst is a line with slope -1 that intersects 0 at the disruption time
         # And flat at MAX_FUTURE_LIFETIME before then
-        perfect_rmst = np.minimum(times[0] - times + times[-1], MAX_FUTURE_LIFETIME)
+        perfect_rmst = np.minimum(times[-1] - times, MAX_FUTURE_LIFETIME)
     else:
         perfect_rmst = np.ones(len(times)) * MAX_FUTURE_LIFETIME
 
@@ -419,7 +419,7 @@ def compute_squared_last_rmst_integral(rmst, times, disruptive):
     if disruptive:
         # Perfect rmst is a line with slope -1 that intersects 0 at the disruption time
         # And flat at MAX_FUTURE_LIFETIME before then
-        perfect_rmst = np.minimum(times[0] - times + times[-1], MAX_FUTURE_LIFETIME)
+        perfect_rmst = np.minimum(times[-1] - times, MAX_FUTURE_LIFETIME)
     else:
         perfect_rmst = np.ones(len(times)) * MAX_FUTURE_LIFETIME
 

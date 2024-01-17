@@ -328,7 +328,7 @@ def create_rmst_list(devices, dataset_paths, models, alarms, metrics, min_warnin
                         for min_warning_time in min_warning_times:
                             try:
                                 # Load rmst if it exists
-                                file_name = f"results/{device}/{dataset_path}/simple_rmst/{model}_{alarm}_{metric}_{int(min_warning_time*1000)}ms/all_rmst_results.pkl"
+                                file_name = f"results/{device}/{dataset_path}/squared_last_rmst/{model}_{alarm}_{metric}_{int(min_warning_time*1000)}ms/all_rmst_results.pkl"
                                 with open(file_name, 'rb') as f:
                                     rmst = dill.load(f)
                             except Exception as e:
