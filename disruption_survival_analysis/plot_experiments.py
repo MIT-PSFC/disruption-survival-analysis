@@ -3,6 +3,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+import dill
 
 from disruption_survival_analysis.Experiments import Experiment
 
@@ -15,6 +16,17 @@ TITLE_FONT_SIZE = 24
 
 #PLOT_STYLE = 'seaborn-v0_8-colorblind'
 PLOT_STYLE = 'seaborn-v0_8-poster'
+
+FAST_COMPILE = 300
+REVIEW_COMPILE = 400
+PAPER_COMPILE = 1200
+
+def save_fig(fig, name):
+    """ Save a figure to the plots directory with the given name."""
+
+    path = f"plots/{name}.png"
+
+    fig.savefig(path, format='png', bbox_inches='tight', dpi=REVIEW_COMPILE)
 
 # Plots of the metrics vs thresholds
 
@@ -279,7 +291,7 @@ def plot_avg_warning_times_vs_false_alarm_rates(experiment_list:list[Experiment]
 
     plt.rcParams.update(mpl.rcParamsDefault)
 
-def plot_warning_time_distribution(experiment:Experiment, false_alarm_rate, test=False):
+def plot_warning_time_distribution(experiment:Experiment, false_alarm_rate, test=False, save=None):
     """ Plot the warning time distribution for each experiment in the list.
 
     Parameters
@@ -340,14 +352,18 @@ def plot_warning_time_distribution(experiment:Experiment, false_alarm_rate, test
     plt.title(f"Warning Time Distribution at {unique_false_alarm_rates[index]*100:.2f}\% FPR", fontsize=TITLE_FONT_SIZE)
 
     if not test:
-        plt.show()
+        if save is not None:
+            dill.dump(all_warning_times, open(f"plots/save_warning_times.pkl", 'wb'))
+            save_fig(plt.gcf(), save)
+        else:
+            plt.show()
 
     plt.rcParams.update(mpl.rcParamsDefault)
 
 
 # Restricted mean survival time
 
-def plot_restricted_mean_survival_time_shot(experiment_list:list[Experiment], shot_number, test=False):
+def plot_restricted_mean_survival_time_shot(experiment_list:list[Experiment], shot_number, test=False, save=None):
     """Plot the restricted mean survival time for a given shot for each experiment in the list."""
 
     plt.figure()
@@ -361,9 +377,13 @@ def plot_restricted_mean_survival_time_shot(experiment_list:list[Experiment], sh
     # Set boolean disruptive if shot number is in the disruptive shot list
     disruptive = shot_number in experiment_list[0].get_disruptive_shot_list()
 
-    # for experiment in experiment_list:
-    #     ettd = experiment.get_restricted_mean_survival_time_shot(shot_number)
-    #     plt.plot(times, ettd, label=pretty_name(experiment.name, brief=True))
+    ettd_lines = {}
+
+    for experiment in experiment_list:
+        ettd = experiment.get_restricted_mean_survival_time_shot(shot_number)
+        t_ettd = {'t': times, 'ettd': ettd}
+        ettd_lines[experiment.name] = t_ettd
+        plt.plot(times, ettd, label=pretty_name(experiment.name, brief=True))
 
     
     if disruptive:
@@ -391,7 +411,11 @@ def plot_restricted_mean_survival_time_shot(experiment_list:list[Experiment], sh
         plt.title(f"Shot {int(shot_number)}, Not Disrupted", fontsize=TITLE_FONT_SIZE)
     plt.legend(loc='lower left')
     if not test:
-        plt.show()
+        if save is not None:
+            dill.dump(ettd_lines, open(f"plots/{save}_ettd_lines.pkl", 'wb'))
+            save_fig(plt.gcf(), save)
+        else:
+            plt.show()
 
     plt.rcParams.update(mpl.rcParamsDefault)
 
