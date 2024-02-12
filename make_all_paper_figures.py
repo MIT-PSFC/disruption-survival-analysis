@@ -9,6 +9,7 @@ from disruption_survival_analysis.plot_experiments import save_fig, plot_warning
 from disruption_survival_analysis.sweep_config import create_bootstrap_list
 from disruption_survival_analysis.experiment_utils import area_under_curve
 from hatched_alarm_definitions import plot_hatched_alarm_definitions
+from hatched_alarm_definitions_separate import true_positive_hatched
 FIG_PREFIX = 'paper_figures/Fig'
 
 # -----------
@@ -300,7 +301,8 @@ def alarm_definitions_hatched(fig_count):
     experiment = experiment_list[0]
 
     try:
-        fig = plot_hatched_alarm_definitions(experiment)
+        #fig = plot_hatched_alarm_definitions(experiment)
+        fig = true_positive_hatched(experiment)
 
         plt.show()
 
