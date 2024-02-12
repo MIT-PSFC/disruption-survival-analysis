@@ -251,6 +251,35 @@ def load_dataset(device, dataset_path, dataset_category):
     data = data.sort_values(['shot','time'])
     return data
 
+def load_raw_dataset(device):
+    """ Load the raw dataset from a device, sorted by shot number and time. Does not do any further processing.
+    Takes everything as a float
+
+    Parameters
+    ----------
+    device : str
+        The device for which to load the data
+    dataset_path : str
+        The path of the dataset to load
+    
+    Returns
+    -------
+    data : pandas.DataFrame
+        A dataframe containing the data in the dataset
+        In the form of data sorted first by shot then by time
+    """
+
+    filename = f"data/{device}/sql_no_short_shots.csv"
+
+    # Read into csv, with all feature values as floats
+    # Use chunksize to avoid memory issues
+    reader = pd.read_csv(filename, dtype=np.float64, chunksize=100000)
+    data = pd.concat(reader)
+
+    # Sort by shot number and time
+    data = data.sort_values(['shot','time'])
+    return data
+
 # def load_dataset_lazy(device, dataset_path, dataset_category):
 #     """Lazily load a dataset using polars"""
 

@@ -8,6 +8,7 @@ import os
 from disruption_survival_analysis.plot_experiments import save_fig, plot_warning_time_distribution
 from disruption_survival_analysis.sweep_config import create_bootstrap_list
 from disruption_survival_analysis.experiment_utils import area_under_curve
+from hatched_alarm_definitions import plot_hatched_alarm_definitions
 FIG_PREFIX = 'paper_figures/Fig'
 
 # -----------
@@ -149,179 +150,216 @@ def kaplan_meier(fig_count):
 
 def sr_labeling(fig_count):
 
-     PLOT_STYLE = 'seaborn-v0_8-poster'
-     import matplotlib as mpl
+    PLOT_STYLE = 'seaborn-v0_8-poster'
+    import matplotlib as mpl
 
-     LEGEND_FONT_SIZE = 12
-     TICK_FONT_SIZE = 18
-     LABEL_FONT_SIZE = 22
-     TITLE_FONT_SIZE = 24
+    LEGEND_FONT_SIZE = 12
+    TICK_FONT_SIZE = 18
+    LABEL_FONT_SIZE = 22
+    TITLE_FONT_SIZE = 24
 
-     plt.style.use(PLOT_STYLE)
-     plt.rc('text', usetex=True)
-     plt.rc('font', family='serif')
+    plt.style.use(PLOT_STYLE)
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
 
-     # Create a figure and axis
-     fig, (ax2, ax1) = plt.subplots(ncols=2, figsize=(21, 4))
+    # Create a figure and axis
+    fig, (ax2, ax1) = plt.subplots(ncols=2, figsize=(21, 4))
 
-     # Example data: time slices and corresponding binary labels
-     time_slices = [0, 1, 2, 3, 4, 5, 6, 7, 8]
-     binary_labels = [0, 0, 0, 0, 0, 0, 0, 0]
+    # Example data: time slices and corresponding binary labels
+    time_slices = [0, 1, 2, 3, 4, 5, 6, 7, 8]
+    binary_labels = [0, 0, 0, 0, 0, 0, 0, 0]
 
-     # Plotting vertical lines for each time slice
-     for time_slice, label in zip(time_slices, binary_labels):
-          ax1.axvline(x=time_slice, color='black', linestyle='--', alpha=0.7)
-          # Shade 0 regions in green and 1 regions in red
-          ax1.axvspan(time_slice, time_slice + 1, color='orange', alpha=0.1)
-          ax1.text(time_slice + 0.5, 0.7, r'$t = $' + f" {7 - time_slice}", fontsize=LABEL_FONT_SIZE, horizontalalignment='center', verticalalignment='center')
-          ax1.text(time_slice + 0.5, 0.3, r'$\delta = 1$', fontsize=LABEL_FONT_SIZE, horizontalalignment='center', verticalalignment='center')
+    # Plotting vertical lines for each time slice
+    for time_slice, label in zip(time_slices, binary_labels):
+        ax1.axvline(x=time_slice, color='black', linestyle='--', alpha=0.7)
+        # Shade 0 regions in green and 1 regions in red
+        ax1.axvspan(time_slice, time_slice + 1, color='orange', alpha=0.1)
+        ax1.text(time_slice + 0.5, 0.7, r'$t = $' + f" {7 - time_slice}", fontsize=LABEL_FONT_SIZE, horizontalalignment='center', verticalalignment='center')
+        ax1.text(time_slice + 0.5, 0.3, r'$\delta = 1$', fontsize=LABEL_FONT_SIZE, horizontalalignment='center', verticalalignment='center')
 
-     # Set plot title and labels
-     ax1.set_title('Survival Regression Disruptive Shot Labeling', fontsize=TITLE_FONT_SIZE)
-     ax1.set_xlim(0, 8)
+    # Set plot title and labels
+    ax1.set_title('Survival Regression Disruptive Shot Labeling', fontsize=TITLE_FONT_SIZE)
+    ax1.set_xlim(0, 8)
 
-     # Remove y ticks
-     ax1.set_yticks([])
+    # Remove y ticks
+    ax1.set_yticks([])
 
-     ax1.set_xticks([0, 1, 2, 3, 4, 5, 6, 7, 8], ["", "", "", "", "", "", "", "", r"$t_{\mathrm{disrupt}}$"], fontsize=TICK_FONT_SIZE+8)
+    ax1.set_xticks([0, 1, 2, 3, 4, 5, 6, 7, 8], ["", "", "", "", "", "", "", "", r"$t_{\mathrm{disrupt}}$"], fontsize=TICK_FONT_SIZE+8)
 
-     # Example data: time slices and corresponding binary labels
-     time_slices = [0, 1, 2, 3, 4, 5, 6, 7, 8]
+    # Example data: time slices and corresponding binary labels
+    time_slices = [0, 1, 2, 3, 4, 5, 6, 7, 8]
 
-     # Plotting vertical lines for each time slice
-     for time_slice, label in zip(time_slices, binary_labels):
-          ax2.axvline(x=time_slice, color='black', linestyle='--', alpha=0.7)
-          # Shade 0 regions in green and 1 regions in red
-          ax2.axvspan(time_slice, time_slice + 1, color='blue', alpha=0.1)
-          ax2.text(time_slice + 0.5, 0.7, r'$t = $' + f" {7 - time_slice}", fontsize=LABEL_FONT_SIZE, horizontalalignment='center', verticalalignment='center')
-          ax2.text(time_slice + 0.5, 0.3, r'$\delta = 0$', fontsize=LABEL_FONT_SIZE, horizontalalignment='center', verticalalignment='center')
+    # Plotting vertical lines for each time slice
+    for time_slice, label in zip(time_slices, binary_labels):
+        ax2.axvline(x=time_slice, color='black', linestyle='--', alpha=0.7)
+        # Shade 0 regions in green and 1 regions in red
+        ax2.axvspan(time_slice, time_slice + 1, color='blue', alpha=0.1)
+        ax2.text(time_slice + 0.5, 0.7, r'$t = $' + f" {7 - time_slice}", fontsize=LABEL_FONT_SIZE, horizontalalignment='center', verticalalignment='center')
+        ax2.text(time_slice + 0.5, 0.3, r'$\delta = 0$', fontsize=LABEL_FONT_SIZE, horizontalalignment='center', verticalalignment='center')
 
-     # Set plot title and labels
-     ax2.set_title('Survival Regression Non-Disruptive Shot Labeling', fontsize=TITLE_FONT_SIZE)
-     ax2.set_xlim(0, 8)
+    # Set plot title and labels
+    ax2.set_title('Survival Regression Non-Disruptive Shot Labeling', fontsize=TITLE_FONT_SIZE)
+    ax2.set_xlim(0, 8)
 
-     # Remove y ticks
-     ax2.set_yticks([])
+    # Remove y ticks
+    ax2.set_yticks([])
 
-     ax2.set_xticks([0, 1, 2, 3, 4, 5, 6, 7, 8], ["", "", "", "", "", "", "", "", r"$t_{\mathrm{end}}$"], fontsize=TICK_FONT_SIZE+8)
+    ax2.set_xticks([0, 1, 2, 3, 4, 5, 6, 7, 8], ["", "", "", "", "", "", "", "", r"$t_{\mathrm{end}}$"], fontsize=TICK_FONT_SIZE+8)
 
-     plt.subplots_adjust(wspace=0.1)
+    plt.subplots_adjust(wspace=0.1)
 
-     save_fig(fig, f"{FIG_PREFIX}{fig_count}")
-     plt.rcParams.update(mpl.rcParamsDefault)
+    save_fig(fig, f"{FIG_PREFIX}{fig_count}")
+    plt.rcParams.update(mpl.rcParamsDefault)
 
 def alarm_definitions(fig_count):
-     LEGEND_FONT_SIZE = 12
-     TICK_FONT_SIZE = 18
-     LABEL_FONT_SIZE = 22
-     TITLE_FONT_SIZE = 24
-     # Set up the figure and axis
+    LEGEND_FONT_SIZE = 12
+    TICK_FONT_SIZE = 18
+    LABEL_FONT_SIZE = 22
+    TITLE_FONT_SIZE = 24
+    # Set up the figure and axis
 
-     PLOT_STYLE = 'seaborn-v0_8-poster'
-     plt.style.use(PLOT_STYLE)
-     plt.rc('text', usetex=True)
-     plt.rc('font', family='serif')
+    PLOT_STYLE = 'seaborn-v0_8-poster'
+    plt.style.use(PLOT_STYLE)
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
 
-     fig, axes = plt.subplots(2, 2, figsize=(10, 4))
+    fig, axes = plt.subplots(2, 2, figsize=(10, 4))
 
-     # Remove y-axis for all plots
-     for ax in axes.flatten():
-          ax.get_yaxis().set_visible(False)
+    # Remove y-axis for all plots
+    for ax in axes.flatten():
+        ax.get_yaxis().set_visible(False)
 
-     # Upper Left Plot: True Positive
-     axes[0, 0].set_title('True Positive')
-     axes[0, 0].axvline(x=0.7, color='red')
-     axes[0, 0].axvline(x=2.5, ymax=0.49, color='blue', linestyle='--')
-     axes[0, 0].axvspan(2.5, 6, ymax=0.49, color='blue', alpha=0.1)
-     axes[0, 0].axvspan(0.7, 6, ymin=0.50, color='red', alpha=0.1)
-     axes[0, 0].set_xticks([0, 0.7, 2.5, 6])
-     axes[0, 0].set_xticklabels(['', r'$t_\textrm{alarm}$', r'$t_\textrm{disrupt} - \Delta t_\textrm{req}$', r'$t_\textrm{disrupt}$'])
-     axes[0, 0].set_xlim(0, 6)
-     axes[0, 0].text(3.4, 0.75, r'$\Delta t_\textrm{warn}$', fontsize=TICK_FONT_SIZE, horizontalalignment='center', verticalalignment='center')
-     axes[0, 0].text(4.3, 0.23, r'$\Delta t_\textrm{req}$', fontsize=TICK_FONT_SIZE, horizontalalignment='center', verticalalignment='center')
+    # Upper Left Plot: True Positive
+    axes[0, 0].set_title('True Positive')
+    axes[0, 0].axvline(x=0.7, color='red')
+    axes[0, 0].axvline(x=2.5, ymax=0.49, color='blue', linestyle='--')
+    axes[0, 0].axvspan(2.5, 6, ymax=0.49, color='blue', alpha=0.1)
+    axes[0, 0].axvspan(0.7, 6, ymin=0.50, color='red', alpha=0.1)
+    axes[0, 0].set_xticks([0, 0.7, 2.5, 6])
+    axes[0, 0].set_xticklabels(['', r'$t_\textrm{alarm}$', r'$t_\textrm{disrupt} - \Delta t_\textrm{req}$', r'$t_\textrm{disrupt}$'])
+    axes[0, 0].set_xlim(0, 6)
+    axes[0, 0].text(3.4, 0.75, r'$\Delta t_\textrm{warn}$', fontsize=TICK_FONT_SIZE, horizontalalignment='center', verticalalignment='center')
+    axes[0, 0].text(4.3, 0.23, r'$\Delta t_\textrm{req}$', fontsize=TICK_FONT_SIZE, horizontalalignment='center', verticalalignment='center')
 
-     # Upper Right Plot: False Positive
-     axes[0, 1].set_title('False Positive')
-     axes[0, 1].axvline(x=3, color='red')
-     axes[0, 1].set_xticks([0, 3, 6])
-     axes[0, 1].set_xticklabels(['', r'$t_\textrm{alarm}$', r'$t_\textrm{end}$'])
-     axes[0, 1].set_xlim(0, 6)
+    # Upper Right Plot: False Positive
+    axes[0, 1].set_title('False Positive')
+    axes[0, 1].axvline(x=3, color='red')
+    axes[0, 1].set_xticks([0, 3, 6])
+    axes[0, 1].set_xticklabels(['', r'$t_\textrm{alarm}$', r'$t_\textrm{end}$'])
+    axes[0, 1].set_xlim(0, 6)
 
-     # Lower Left Plot: False Negative
-     axes[1, 0].set_title('False Negative')
-     axes[1, 0].axvline(x=4.5, color='red')
-     axes[1, 0].axvline(x=2.5, ymax=0.49, color='blue', linestyle='--')
-     axes[1, 0].axvspan(2.5, 6, ymax=0.49, color='blue', alpha=0.1)
-     axes[1, 0].axvspan(4.5, 6, ymin=0.50, color='red', alpha=0.1)
-     axes[1, 0].set_xticks([0, 2.5, 4.5, 6])
-     axes[1, 0].set_xticklabels(['', r'$t_\textrm{disrupt} - \Delta t_\textrm{req}$', r'$t_\textrm{alarm}$', r'$t_\textrm{disrupt}$'])
-     axes[1, 0].set_xlim(0, 6)
-     axes[1, 0].text(5.3, 0.75, r'$\Delta t_\textrm{warn}$', fontsize=TICK_FONT_SIZE, horizontalalignment='center', verticalalignment='center')
-     axes[1, 0].text(3.8, 0.23, r'$\Delta t_\textrm{req}$', fontsize=TICK_FONT_SIZE, horizontalalignment='center', verticalalignment='center')
+    # Lower Left Plot: False Negative
+    axes[1, 0].set_title('False Negative')
+    axes[1, 0].axvline(x=4.5, color='red')
+    axes[1, 0].axvline(x=2.5, ymax=0.49, color='blue', linestyle='--')
+    axes[1, 0].axvspan(2.5, 6, ymax=0.49, color='blue', alpha=0.1)
+    axes[1, 0].axvspan(4.5, 6, ymin=0.50, color='red', alpha=0.1)
+    axes[1, 0].set_xticks([0, 2.5, 4.5, 6])
+    axes[1, 0].set_xticklabels(['', r'$t_\textrm{disrupt} - \Delta t_\textrm{req}$', r'$t_\textrm{alarm}$', r'$t_\textrm{disrupt}$'])
+    axes[1, 0].set_xlim(0, 6)
+    axes[1, 0].text(5.3, 0.75, r'$\Delta t_\textrm{warn}$', fontsize=TICK_FONT_SIZE, horizontalalignment='center', verticalalignment='center')
+    axes[1, 0].text(3.8, 0.23, r'$\Delta t_\textrm{req}$', fontsize=TICK_FONT_SIZE, horizontalalignment='center', verticalalignment='center')
 
-     # Lower Right Plot: True Negative
-     axes[1, 1].set_title('True Negative')
-     axes[1, 1].set_xticks([0, 6])
-     axes[1, 1].set_xticklabels(['', r'$t_\textrm{end}$'])
-     axes[1, 1].set_xlim(0, 6)
+    # Lower Right Plot: True Negative
+    axes[1, 1].set_title('True Negative')
+    axes[1, 1].set_xticks([0, 6])
+    axes[1, 1].set_xticklabels(['', r'$t_\textrm{end}$'])
+    axes[1, 1].set_xlim(0, 6)
 
-     # Adjust layout for better spacing
-     plt.tight_layout()
+    # Adjust layout for better spacing
+    plt.tight_layout()
 
-     save_fig(fig, f"{FIG_PREFIX}{fig_count}")
+    save_fig(fig, f"{FIG_PREFIX}{fig_count}")
 
-     plt.rcParams.update(mpl.rcParamsDefault)
+    plt.rcParams.update(mpl.rcParamsDefault)
+
+def alarm_definitions_hatched(fig_count):
+    # Load experiment_groups from disk
+    from disruption_survival_analysis.sweep_config import create_experiment_groups, get_experiments
+    from disruption_survival_analysis.plot_experiments import plot_restricted_mean_survival_time_shot
+    from disruption_survival_analysis.manage_datasets import load_disruptive_shot_list, load_non_disruptive_shot_list
+
+    #device = 'synthetic'
+    #dataset_path = 'test'
+    devices = ['cmod']
+    #dataset_paths = ['preliminary_dataset_no_ufo']
+    #dataset = 'sql_all_no_ufo'
+    dataset='paper_4'
+    dataset_paths = [f"{dataset}/stack_10"]
+
+    # models, alarms, metrics, and minimum warning times to use
+    models = ['dsm']
+    alarms = ['sthr']
+    metrics = ['auroc']
+    min_warning_times = [0.01]
+
+    experiment_groups = create_experiment_groups(devices, dataset_paths, models, alarms, metrics, min_warning_times)
+
+    experiment_list = get_experiments(experiment_groups, ['auroc'])
+
+    experiment = experiment_list[0]
+
+    try:
+        fig = plot_hatched_alarm_definitions(experiment)
+
+        plt.show()
+
+        #save_fig(fig, f"{FIG_PREFIX}{fig_count}")
+    except:
+        print("Could not plot hatched alarm definitions")
+    finally:
+        plt.rcParams.update(mpl.rcParamsDefault)
 
 def auwtc(fig_count):
-     LEGEND_FONT_SIZE = 12
-     TICK_FONT_SIZE = 22
-     LABEL_FONT_SIZE = 24
-     TITLE_FONT_SIZE = 26
-     
-     PLOT_STYLE = 'seaborn-v0_8-poster'
-     plt.style.use(PLOT_STYLE)
-     plt.rc('text', usetex=True)
-     plt.rc('font', family='serif')
+    LEGEND_FONT_SIZE = 12
+    TICK_FONT_SIZE = 22
+    LABEL_FONT_SIZE = 24
+    TITLE_FONT_SIZE = 26
 
-     plt.grid(True, color='w', linestyle='-', linewidth=1.5)
-     plt.gca().patch.set_facecolor('0.92')
+    PLOT_STYLE = 'seaborn-v0_8-poster'
+    plt.style.use(PLOT_STYLE)
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
 
-     fig = plt.figure()
+    plt.grid(True, color='w', linestyle='-', linewidth=1.5)
+    plt.gca().patch.set_facecolor('0.92')
 
-     # Create some example data
-     x = [0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08]
-     y = [0, 10, 25, 30, 40, 78, 90, 100, 120]
+    fig = plt.figure()
 
-     plt.plot(x, y, linewidth=8)
+    # Create some example data
+    x = [0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08]
+    y = [0, 10, 25, 30, 40, 78, 90, 100, 120]
 
-     plt.xlim([0, 0.05])
-     plt.ylim([0, 120])
+    plt.plot(x, y, linewidth=8)
 
-     plt.xticks([0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08],
-               ["0\%", "1\%", "2\%", "3\%", "4\%", "5\%", "6\%", "7\%", "8\%"])
+    plt.xlim([0, 0.05])
+    plt.ylim([0, 120])
 
-     # Make ticks bigger
-     plt.xticks(fontsize=TICK_FONT_SIZE+8)
-     plt.yticks(fontsize=TICK_FONT_SIZE+8)
+    plt.xticks([0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08],
+            ["0\%", "1\%", "2\%", "3\%", "4\%", "5\%", "6\%", "7\%", "8\%"])
 
-     #plt.legend(fontsize=LEGEND_FONT_SIZE)
-     plt.xlabel("FPR", fontsize=LABEL_FONT_SIZE+8)
-     plt.ylabel("IQM Warning Time [ms]", fontsize=LABEL_FONT_SIZE+8)
+    # Make ticks bigger
+    plt.xticks(fontsize=TICK_FONT_SIZE+8)
+    plt.yticks(fontsize=TICK_FONT_SIZE+8)
 
-     # Put a vertical line at 0.05 false alarm rate
-     plt.axvline(x=0.05, color='orange', linestyle='--', linewidth=6)
+    #plt.legend(fontsize=LEGEND_FONT_SIZE)
+    plt.xlabel("FPR", fontsize=LABEL_FONT_SIZE+8)
+    plt.ylabel("IQM Warning Time [ms]", fontsize=LABEL_FONT_SIZE+8)
 
-     # Shade in the region below the line
-     plt.fill_between(x[:6], 0, y[:6], color='green', alpha=0.15)
+    # Put a vertical line at 0.05 false alarm rate
+    plt.axvline(x=0.05, color='orange', linestyle='--', linewidth=6)
 
-     # Put a horizontal line at the required warning time
-     #plt.axhline(y=required_warning_time*1000, color='k', linestyle='--')
+    # Shade in the region below the line
+    plt.fill_between(x[:6], 0, y[:6], color='green', alpha=0.15)
 
-     plt.title("IQM Warning Time vs. FPR", fontsize=TITLE_FONT_SIZE+8)
-     
-     save_fig(fig, f"{FIG_PREFIX}{fig_count}")
+    # Put a horizontal line at the required warning time
+    #plt.axhline(y=required_warning_time*1000, color='k', linestyle='--')
 
-     plt.rcParams.update(mpl.rcParamsDefault)
+    plt.title("IQM Warning Time vs. FPR", fontsize=TITLE_FONT_SIZE+8)
+
+    save_fig(fig, f"{FIG_PREFIX}{fig_count}")
+
+    plt.rcParams.update(mpl.rcParamsDefault)
 
 def sthr(fig_count):
      LEGEND_FONT_SIZE = 12
@@ -721,6 +759,7 @@ def ettd_plots(fig_count):
 # kaplan_meier(2)
 # sr_labeling(3)
 # alarm_definitions(4)
+alarm_definitions_hatched(5)
 # auwtc(5)
 # sthr(6)
 # warning_time_distribution(7)
@@ -728,147 +767,146 @@ def ettd_plots(fig_count):
 # bootstrap_auwtc(9)
 
 
-# ettd_plots(10)
+#ettd_plots(10)
 
 
 
-# --------
-# DATASETS
-# --------
-devices = ['cmod', 'd3d']
-bootstrap_path = 'paper_4/stack_10/bootstraps'
-metrics = ['auroc', 'auwtc']
-warning_times_ms = [10, 50, 100]
-models = ['rf', 'km', 'cph', 'dcph', 'dsm']
-alarms = ['sthr']
+# # --------
+# # DATASETS
+# # --------
+# devices = ['cmod', 'd3d']
+# bootstrap_path = 'paper_4/stack_10/bootstraps'
+# metrics = ['auroc', 'auwtc']
+# warning_times_ms = [10, 50, 100]
+# models = ['rf', 'km', 'cph', 'dcph', 'dsm']
+# alarms = ['sthr']
 
 
-def pack_auroc_bootstrap_results(f):
-     # Make a new dataset for each bootstrap result
-     for device in devices:
-          for model in models:
-               for alarm in alarms:
-                    for metric in metrics:
-                         for warn in warning_times_ms:
-                              pkl_path = f"results/{device}/{bootstrap_path}/{model}_{alarm}_{metric}_{warn}ms_bootstrap.pkl"
-                              # Load AUROC bootstrap results
-                              with open(pkl_path, 'rb') as bootstrap_file:
-                                   bootstrap_results = dill.load(bootstrap_file)
-                                   # obtain the arrays of interest
-                                   fars = bootstrap_results['fars']
-                                   upper_tars = bootstrap_results['upper_tars']
-                                   lower_tars = bootstrap_results['lower_tars']
-                                   median_tars = bootstrap_results['median_tars']
+# def pack_auroc_bootstrap_results(f):
+#      # Make a new dataset for each bootstrap result
+#      for device in devices:
+#           for model in models:
+#                for alarm in alarms:
+#                     for metric in metrics:
+#                          for warn in warning_times_ms:
+#                               pkl_path = f"results/{device}/{bootstrap_path}/{model}_{alarm}_{metric}_{warn}ms_bootstrap.pkl"
+#                               # Load AUROC bootstrap results
+#                               with open(pkl_path, 'rb') as bootstrap_file:
+#                                    bootstrap_results = dill.load(bootstrap_file)
+#                                    # obtain the arrays of interest
+#                                    fars = bootstrap_results['fars']
+#                                    upper_tars = bootstrap_results['upper_tars']
+#                                    lower_tars = bootstrap_results['lower_tars']
+#                                    median_tars = bootstrap_results['median_tars']
 
-                                   names = ["FAR", "Q1 Avg TAR", "Median Avg TAR", "Q3 Avg TAR"]
+#                                    names = ["FAR", "Q1 Avg TAR", "Median Avg TAR", "Q3 Avg TAR"]
 
-                                   ds_dt = np.dtype({'names': names, 'formats': ['f8']*len(names)})
+#                                    ds_dt = np.dtype({'names': names, 'formats': ['f8']*len(names)})
 
-                                   rec_arr = np.rec.fromarrays([fars, lower_tars, median_tars, upper_tars], dtype=ds_dt)
+#                                    rec_arr = np.rec.fromarrays([fars, lower_tars, median_tars, upper_tars], dtype=ds_dt)
 
-                                   dset = f.create_dataset(f"bootstraps/auroc/{device}/{model}_{metric}_{warn}ms", data=rec_arr)
+#                                    dset = f.create_dataset(f"bootstraps/auroc/{device}/{model}_{metric}_{warn}ms", data=rec_arr)
 
-
-def pack_auwtc_bootstrap_results(f):
-     # Make a new dataset for each bootstrap result
-     for device in devices:
-          for model in models:
-               for alarm in alarms:
-                    for metric in metrics:
-                         for warn in warning_times_ms:
-                              pkl_path = f"results/{device}/{bootstrap_path}/{model}_{alarm}_{metric}_{warn}ms_bootstrap.pkl"
-                              # Load AUROC bootstrap results
+# def pack_auwtc_bootstrap_results(f):
+#      # Make a new dataset for each bootstrap result
+#      for device in devices:
+#           for model in models:
+#                for alarm in alarms:
+#                     for metric in metrics:
+#                          for warn in warning_times_ms:
+#                               pkl_path = f"results/{device}/{bootstrap_path}/{model}_{alarm}_{metric}_{warn}ms_bootstrap.pkl"
+#                               # Load AUROC bootstrap results
                               
-                              with open(pkl_path, 'rb') as bootstrap_file:
-                                   bootstrap_results = dill.load(bootstrap_file)
-                                   # obtain the arrays of interest
-                                   fars = bootstrap_results['fars']
-                                   upper_warns = bootstrap_results['upper_warns']
-                                   lower_warns = bootstrap_results['lower_warns']
-                                   median_warns = bootstrap_results['median_warns']
+#                               with open(pkl_path, 'rb') as bootstrap_file:
+#                                    bootstrap_results = dill.load(bootstrap_file)
+#                                    # obtain the arrays of interest
+#                                    fars = bootstrap_results['fars']
+#                                    upper_warns = bootstrap_results['upper_warns']
+#                                    lower_warns = bootstrap_results['lower_warns']
+#                                    median_warns = bootstrap_results['median_warns']
 
-                                   names = ["FAR", "Q1 IQM Warn", "Median IQM Warn", "Q3 IQM Warn"]
+#                                    names = ["FAR", "Q1 IQM Warn", "Median IQM Warn", "Q3 IQM Warn"]
 
-                                   ds_dt = np.dtype({'names': names, 'formats': ['f8']*len(names)})
+#                                    ds_dt = np.dtype({'names': names, 'formats': ['f8']*len(names)})
 
-                                   rec_arr = np.rec.fromarrays([fars, lower_warns, median_warns, upper_warns], dtype=ds_dt)
+#                                    rec_arr = np.rec.fromarrays([fars, lower_warns, median_warns, upper_warns], dtype=ds_dt)
 
-                                   if metric == 'auwtc' and warn == 50:
-                                        dset = f.create_dataset(f"bootstraps/auwtc/{device}/{model}_{metric}_all", data=rec_arr)
-                                   else:
-                                        dset = f.create_dataset(f"bootstraps/auwtc/{device}/{model}_{metric}_{warn}ms", data=rec_arr)
+#                                    if metric == 'auwtc' and warn == 50:
+#                                         dset = f.create_dataset(f"bootstraps/auwtc/{device}/{model}_{metric}_all", data=rec_arr)
+#                                    else:
+#                                         dset = f.create_dataset(f"bootstraps/auwtc/{device}/{model}_{metric}_{warn}ms", data=rec_arr)
 
-def pack_rmst_bootstrap_results(f):
-     metrics = ['auroc', 'auwtc', 'rmstsl']
+# def pack_rmst_bootstrap_results(f):
+#      metrics = ['auroc', 'auwtc', 'rmstsl']
 
-     # Make a new dataset for each bootstrap result
-     for device in devices:
-          for model in models:
-               for alarm in alarms:
-                    for metric in metrics:
-                         for warn in warning_times_ms:
-                              pkl_path = f"results/{device}/paper_4/stack_10/squared_last_rmst/{model}_{alarm}_{metric}_{warn}ms/all_rmst_results.pkl"
-                              # Load AUROC bootstrap results
-                              try:
-                                   with open(pkl_path, 'rb') as bootstrap_file:
-                                        bootstrap_results = dill.load(bootstrap_file)
-                                        # obtain the arrays of interest
-                                        disruptive_rmst_diffs = bootstrap_results['disruptive_rmst_diffs']
-                                        non_disruptive_rmst_diffs = bootstrap_results['non_disruptive_rmst_diffs']
+#      # Make a new dataset for each bootstrap result
+#      for device in devices:
+#           for model in models:
+#                for alarm in alarms:
+#                     for metric in metrics:
+#                          for warn in warning_times_ms:
+#                               pkl_path = f"results/{device}/paper_4/stack_10/squared_last_rmst/{model}_{alarm}_{metric}_{warn}ms/all_rmst_results.pkl"
+#                               # Load AUROC bootstrap results
+#                               try:
+#                                    with open(pkl_path, 'rb') as bootstrap_file:
+#                                         bootstrap_results = dill.load(bootstrap_file)
+#                                         # obtain the arrays of interest
+#                                         disruptive_rmst_diffs = bootstrap_results['disruptive_rmst_diffs']
+#                                         non_disruptive_rmst_diffs = bootstrap_results['non_disruptive_rmst_diffs']
 
-                                        if metric in ['auwtc', 'rmstsl'] and warn == 10:
-                                             dset = f.create_dataset(f"disruptive_rmst_squared_error/{device}/{model}_{metric}_all", data=disruptive_rmst_diffs)
-                                             dset = f.create_dataset(f"non_disruptive_rmst_squared_error/{device}/{model}_{metric}_all", data=non_disruptive_rmst_diffs)
-                                        else:
-                                             dset = f.create_dataset(f"disruptive_rmst_squared_error/{device}/{model}_{metric}_{warn}ms", data=disruptive_rmst_diffs)
-                                             dset = f.create_dataset(f"non_disruptive_rmst_squared_error/{device}/{model}_{metric}_{warn}ms", data=non_disruptive_rmst_diffs)
-                              except FileNotFoundError:
-                                   pass
+#                                         if metric in ['auwtc', 'rmstsl'] and warn == 10:
+#                                              dset = f.create_dataset(f"disruptive_rmst_squared_error/{device}/{model}_{metric}_all", data=disruptive_rmst_diffs)
+#                                              dset = f.create_dataset(f"non_disruptive_rmst_squared_error/{device}/{model}_{metric}_all", data=non_disruptive_rmst_diffs)
+#                                         else:
+#                                              dset = f.create_dataset(f"disruptive_rmst_squared_error/{device}/{model}_{metric}_{warn}ms", data=disruptive_rmst_diffs)
+#                                              dset = f.create_dataset(f"non_disruptive_rmst_squared_error/{device}/{model}_{metric}_{warn}ms", data=non_disruptive_rmst_diffs)
+#                               except FileNotFoundError:
+#                                    pass
 
-def pack_shot_duration_results(f):
+# def pack_shot_duration_results(f):
 
-     pkl_path = f"plots/save_warning_times.pkl"
-     with open(pkl_path, 'rb') as file:
-          warning_times = dill.load(file)
-          # obtain the arrays of interest
+#      pkl_path = f"plots/save_warning_times.pkl"
+#      with open(pkl_path, 'rb') as file:
+#           warning_times = dill.load(file)
+#           # obtain the arrays of interest
           
-          dset = f.create_dataset(f"cph_warning_times", data=warning_times)
+#           dset = f.create_dataset(f"cph_warning_times", data=warning_times)
 
-def pack_rmst_plot_results(f):
+# def pack_rmst_plot_results(f):
 
-     figs = ["Fig10", "Fig11", "Fig12", "Fig13"]
-     shots = [1150820011, 1140515021, 1120621012, 1120712029]
+#      figs = ["Fig10", "Fig11", "Fig12", "Fig13"]
+#      shots = [1150820011, 1140515021, 1120621012, 1120712029]
 
-     for fig, shot in zip(figs, shots):
-          pkl_path = f"plots/paper_figures/{fig}_ettd_lines.pkl"
-          with open(pkl_path, 'rb') as file:
-               data = dill.load(file)
-               # obtain the arrays of interest
-               t = data['rf_sthr_rmstsl_10ms']['t']
-               RF = data['rf_sthr_rmstsl_10ms']['ettd']
-               KM = data['km_sthr_rmstsl_10ms']['ettd']
-               CPH = data['cph_sthr_rmstsl_10ms']['ettd']
-               DCPH = data['dcph_sthr_rmstsl_10ms']['ettd']
-               DSM = data['dsm_sthr_rmstsl_10ms']['ettd']
+#      for fig, shot in zip(figs, shots):
+#           pkl_path = f"plots/paper_figures/{fig}_ettd_lines.pkl"
+#           with open(pkl_path, 'rb') as file:
+#                data = dill.load(file)
+#                # obtain the arrays of interest
+#                t = data['rf_sthr_rmstsl_10ms']['t']
+#                RF = data['rf_sthr_rmstsl_10ms']['ettd']
+#                KM = data['km_sthr_rmstsl_10ms']['ettd']
+#                CPH = data['cph_sthr_rmstsl_10ms']['ettd']
+#                DCPH = data['dcph_sthr_rmstsl_10ms']['ettd']
+#                DSM = data['dsm_sthr_rmstsl_10ms']['ettd']
 
-               names = ["t", "RF", "KM", "CPH", "DCPH", "DSM"]
+#                names = ["t", "RF", "KM", "CPH", "DCPH", "DSM"]
 
-               ds_dt = np.dtype({'names': names, 'formats': ['f8']*len(names)})
+#                ds_dt = np.dtype({'names': names, 'formats': ['f8']*len(names)})
 
-               rec_arr = np.rec.fromarrays([t, RF, KM, CPH, DCPH, DSM], dtype=ds_dt)
+#                rec_arr = np.rec.fromarrays([t, RF, KM, CPH, DCPH, DSM], dtype=ds_dt)
 
-               dset = f.create_dataset(f"cmod_rmst_plots/{shot}", data=rec_arr)
+#                dset = f.create_dataset(f"cmod_rmst_plots/{shot}", data=rec_arr)
 
-# Remove old file if it exists
-#if os.path.exists('plots/paper_figures/plot_data.hdf5'):
-#     os.remove('plots/paper_figures/plot_data.hdf5')
+# # Remove old file if it exists
+# #if os.path.exists('plots/paper_figures/plot_data.hdf5'):
+# #     os.remove('plots/paper_figures/plot_data.hdf5')
 
-f = h5py.File('plots/paper_figures/plot_data.hdf5', 'w')
-# Pack datasets
-pack_auroc_bootstrap_results(f)
-pack_auwtc_bootstrap_results(f)
+# f = h5py.File('plots/paper_figures/plot_data.hdf5', 'w')
+# # Pack datasets
+# pack_auroc_bootstrap_results(f)
+# pack_auwtc_bootstrap_results(f)
 
-pack_rmst_bootstrap_results(f)
-pack_shot_duration_results(f)
+# pack_rmst_bootstrap_results(f)
+# pack_shot_duration_results(f)
 
-pack_rmst_plot_results(f)
+# pack_rmst_plot_results(f)

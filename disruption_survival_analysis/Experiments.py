@@ -3,7 +3,7 @@ import sys
 import numpy as np
 
 from sklearn.metrics import roc_auc_score
-from disruption_survival_analysis.manage_datasets import load_dataset, print_memory_usage
+from disruption_survival_analysis.manage_datasets import load_dataset, print_memory_usage, load_raw_dataset
 from disruption_survival_analysis.experiment_utils import label_shot_data, timeslice_micro_avg, area_under_curve
 from disruption_survival_analysis.model_utils import get_model_for_experiment, name_model
 
@@ -130,6 +130,12 @@ class Experiment:
     def get_shot_data(self, shot):
         """ Returns the data for a given shot """
         return self.all_data[self.all_data['shot'] == shot]
+    
+    def get_raw_data(self, shot):
+        """Returns the raw data for a given shot (directly from SQL, no processing)"""
+
+        raw_data = load_raw_dataset(self.device)
+        return raw_data[raw_data['shot'] == shot]
 
     def get_shot_duration(self, shot):
         """ Returns the duration of a given shot """
@@ -160,17 +166,15 @@ class Experiment:
     # Get info from the predictor
 
     def get_predictor_risk(self, shot, horizon=None):
-        data = self.get_shot_data(shot)
-        return self.predictor.get_risk(shot, data, horizon=horizon)
-    
-    def get_predictor_risk_at_times(self, shot, horizon=None):
-        return self.predictor.get_risk_at_times(shot, self.get_shot_data(shot), horizon=horizon)
-    
-    def get_predictor_ettd(self, shot):
-        return self.predictor.get_ettd(shot, self.get_shot_data(shot))
-    
-    def get_predictor_ettd_at_times(self, shot):
-        return self.predictor.get_ettd_at_times(shot, self.get_shot_data(shot))
+        shot_data = self.get_shot_data(shot)
+        if isinstance(self.predictor, DisruptionPredictorSM):
+            return self.predictor.get_risks(shot_data, horizon)
+        elif isinstance(self.predictor, DisruptionPredictorRF):
+            return self.predictor.get_risks(shot_data)
+        elif isinstance(self.predictor, DisruptionPredictorKM):
+            return self.predictor.get_risks(shot_data, horizon)
+        else:
+            raise ValueError('Model type not supported')
 
     # Area Under ROC on a timeslice basis
 

@@ -243,6 +243,8 @@ class DisruptionPredictorKM(DisruptionPredictor):
         slopes = np.zeros(len(probs))
         slopes[0:num_fit_points] = np.nan
 
+        intercepts = np.zeros(len(probs))
+        intercepts[0:num_fit_points] = np.nan
 
         fit_times = times[0:num_fit_points].tolist()
         fit_probs = probs[0:num_fit_points].tolist()
@@ -258,11 +260,12 @@ class DisruptionPredictorKM(DisruptionPredictor):
                 fit_probs.pop(0)
 
             # Create a linear fit for the points
-            slope, _ = np.polyfit(fit_times, fit_probs, 1)
+            slope, intercept = np.polyfit(fit_times, fit_probs, 1)
 
             slopes[i] = slope
+            intercepts[i] = intercept
             
-        return slopes
+        return slopes, intercepts
 
     def get_survival(self, data_times, probs, t_horizon):
         """
@@ -273,7 +276,7 @@ class DisruptionPredictorKM(DisruptionPredictor):
         sample_times = np.arange(0, t_horizon, SAMPLE_TIME)
 
         # Calculate the slope for each time slice
-        slopes = self.calc_slopes(probs, data_times)
+        slopes, intercepts = self.calc_slopes(probs, data_times)
 
         survival_probs = np.zeros(len(probs))
 
@@ -284,7 +287,8 @@ class DisruptionPredictorKM(DisruptionPredictor):
                 continue
             
             # Calculate the probability of not disrupting until t + t_horizon
-            P_D = probs[i] + slope * sample_times
+            #P_D = probs[i] + slope * sample_times
+            P_D = intercepts[i] + slope * (data_times[i] + sample_times)
             # Restrict P_D to be between 0 and 1
             P_D = np.clip(P_D, 0, 1)
             # Even if the binary classifier predicts 100% we are in the disruptive class
